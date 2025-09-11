@@ -30,51 +30,68 @@ int HTTPServer::startServer()
 
 	//----------------CLIENT SOCKET----------------------
 
+	epoll_fd = epoll_create1(0);
+	this->server_event.events = EPOLLIN; //ready to read
+	this->server_event.data.fd = this->socket_server;
+	epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, this->socket_server, &this->server_event);
+
 	//leave server open for many clients (with while)
 	while(true)
 	{
-		//accept : new socket for a client
-		this->len = sizeof(this->sockaddr);
-		this->socket_client = accept(this->socket_server, NULL, NULL);
-		if (this->socket_client < 0)
+		int n = epoll_wait(epoll_fd, this->events, 10, -1);
+		for(int i = 0; i < n; i++)
 		{
-			std::cerr << "Failed to grab socket_client." << std::endl;
-			return 1;
+			if(this->events[i].data.fd == this->socket_server)
+			{
+				this->socket_client = accept(this->socket_server, NULL, NULL);
+				if (this->socket_client < 0)
+				{
+					std::cerr << "Failed to grab socket_client." << std::endl;
+					return 1;
+				}
+				this->client_event.events = EPOLLIN;
+				this->client_event.data.fd = this->socket_client;
+				epoll_ctl(this->epoll_fd, EPOLL_CTL_ADD, this->socket_client, &this->client_event);
+			}
+			else
+			{
+				int client_fd = this->events[i].data.fd;
+				char buf[1024];
+				int r = recv(client_fd, buf, sizeof(buf), 0);
+				if (r <= 0)
+				{
+					close(client_fd);
+				}
+				else
+				{
+					std::cout << buf << std::endl;
+					std::ifstream file("index.html");
+					std::stringstream buffer;
+					buffer << file.rdbuf();
+					std::string content = buffer.str();
+
+					std::stringstream size;
+					size << content.size();
+					std::string content_size = size.str();
+					
+					//prepare response
+					std::string response =
+					"HTTP/1.1 200 OK\r\n"
+					"Content-Type: text/html\r\n"
+					"Content-Length: " + content_size + "\r\n"
+					"Connection: close\r\n"
+					"\r\n" + content;
+
+					//send response
+					if(send(client_fd, response.c_str(), response.size(), 0) == -1)
+					{
+						std::cerr << "Error while sending." << std::endl;
+						close(client_fd);
+						epoll_ctl(this->epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+					}
+				}
+			}
 		}
-
-		//read client request (HTTP request)
-		char buffer_request[1024];
-		int bytes_received = recv(this->socket_client, buffer_request, sizeof(buffer_request) - 1, 0);
-		if (bytes_received < 0)
-		{
-			std::cout << "Error while reading the client request" << std::endl;
-			return 1;
-		}
-
-		std::ifstream file("index.html");
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string content = buffer.str();
-
-		std::stringstream size;
-		size << content.size();
-		std::string content_size = size.str();
-		
-		//prepare response
-		std::string response =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html\r\n"
-		"Content-Length: " + content_size + "\r\n"
-		"Connection: close\r\n"
-		"\r\n" + content;
-
-		//send response
-		if(send(this->socket_client, response.c_str(), response.size(), 0) == -1)
-		{
-			std::cerr << "Error while sending." << std::endl;
-			return 1;
-		}
-		close(this->socket_client);
 	}
 
 	return 0;
