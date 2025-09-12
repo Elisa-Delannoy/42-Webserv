@@ -1,6 +1,7 @@
 #include "HTTPServer.hpp"
+#include "ParseRequest.hpp"
 
-HTTPServer::HTTPServer() : buffer_request("default")
+HTTPServer::HTTPServer() : _buf("default")
 {
 	
 }
@@ -10,10 +11,10 @@ HTTPServer::~HTTPServer()
 
 }
 
-const char* HTTPServer::GetRequest(void) const
-{
-	return (this->buffer_request);
-}
+// const char* HTTPServer::GetRequest(void) const
+// {
+// 	return (this->_buf);
+// }
 
 /*
 Imagine une boîte aux lettres :
@@ -59,14 +60,15 @@ int HTTPServer::startServer()
 				{
 					std::cout << "EPOLLIN" << std::endl;
 
-					char buf[1024];
-					int r = recv(client_fd, buf, sizeof(buf), 0);
+					int r = recv(client_fd, this->_buf, sizeof(this->_buf), 0);
 					if (r <= 0)
 						close(client_fd);
 
-					std::cout << buf << std::endl;
+					std::cout << this->_buf << std::endl;
 
 					epoll.SetClientEpollout(i, this->_socket_client);
+					ParseRequest request(this->_buf);
+					request.DivideRequest();
 				}
 				if (epoll.getEvent(i).events & EPOLLOUT)
 				{

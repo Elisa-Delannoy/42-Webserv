@@ -79,7 +79,7 @@ Il peut aussi y avoir des paramètres dans le corps (ex : formulaire POST).
 class ParseRequest
 {
 	private:
-		HTTPServer& 						_request;
+		char*		 						_request;
 		std::string							_method;
 		std::string							_path;
 		std::string							_version;
@@ -87,7 +87,7 @@ class ParseRequest
 	
 	public:
 		// ParseRequest();
-		ParseRequest(HTTPServer &req);
+		ParseRequest(char* req);
 		~ParseRequest();
 		void	DivideRequest();
 		void 	DivideFirstLine(std::string first_line);

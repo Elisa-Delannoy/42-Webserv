@@ -8,7 +8,7 @@
 
 // }
 
-ParseRequest::ParseRequest(HTTPServer &req) : _request(req)
+ParseRequest::ParseRequest(char* req) : _request(req)
 {
 
 }
@@ -20,7 +20,7 @@ ParseRequest::~ParseRequest()
 
 void ParseRequest::DivideRequest()
 {
-	std::string 		string_request= this->_request.GetRequest();
+	std::string 		string_request= this->_request;
 	std::istringstream	ss_request(string_request);
 	std::string 		first_line;
 

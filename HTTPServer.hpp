@@ -20,14 +20,14 @@ class HTTPServer
 		void closeServer();
 		int prepareServerSocket();
 		
-		const char* GetRequest(void) const;
+		// const char* GetRequest(void) const;
 		
 		
 	private:
 		int _socket_server;
 		int _socket_client;
 		sockaddr_in _sockaddr;
-		char buffer_request[1024];
+		char _buf[1024];
 };
 
 #endif
