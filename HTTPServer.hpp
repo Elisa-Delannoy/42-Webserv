@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "Epoll.hpp"
 
 class HTTPServer
 {
@@ -20,10 +21,9 @@ class HTTPServer
 		int prepareServerSocket();
 
 	private:
-		int socket_server;
-		int socket_client;
-		sockaddr_in sockaddr;
-		socklen_t len;
+		int _socket_server;
+		int _socket_client;
+		sockaddr_in _sockaddr;
 };
 
 #endif
