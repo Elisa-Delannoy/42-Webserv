@@ -1,6 +1,6 @@
 #include "HTTPServer.hpp"
 
-HTTPServer::HTTPServer()
+HTTPServer::HTTPServer() : buffer_request("default")
 {
 	
 }
@@ -8,6 +8,11 @@ HTTPServer::HTTPServer()
 HTTPServer::~HTTPServer()
 {
 
+}
+
+const char* HTTPServer::GetRequest(void) const
+{
+	return (this->buffer_request);
 }
 
 /*
@@ -94,8 +99,7 @@ int HTTPServer::startServer()
 				}
 			}
 		}
-	}
-
+	}	
 	return 0;
 }
 
