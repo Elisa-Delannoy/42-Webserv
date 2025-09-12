@@ -1,14 +1,15 @@
 #ifndef _SERVERCONF_
-	#define _SERVEURCONF_
+	#define _SERVERCONF_
 
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 
 class ServerConf
 {
 	private:
-		std::string _server_name;
+		std::vector<std::string> _server_name;
 		std::string _host;
 		int _port;
 		int _client_body_size;
@@ -21,6 +22,8 @@ class ServerConf
 		void SetHost(std::string host);
 		void SetPort(int port);
 		void SetClientBodySize(int size);
+
+		std::vector<std::string> GetServerName() const;
 };
 
 #endif

@@ -2,7 +2,6 @@
 
 ServerConf::ServerConf()
 {
-	_server_name = "";
 	_host = "";
 	_port = 0;
 	_client_body_size = 0;
@@ -14,7 +13,7 @@ ServerConf::~ServerConf()
 
 void ServerConf::SetServerName(std::string server_name)
 {
-	_server_name = server_name;
+	_server_name.push_back(server_name);
 }
 
 void ServerConf::SetHost(std::string host)
@@ -32,3 +31,7 @@ void ServerConf::SetClientBodySize(int size)
 	_client_body_size = size;
 }
 
+std::vector<std::string> ServerConf::GetServerName() const
+{
+	return _server_name;
+}
