@@ -4,7 +4,8 @@ DEBUG_FLAGS = -g
 
 NAME = server
 SRC = main.cpp \
-	HTTPServer.cpp
+	HTTPServer.cpp \
+	ParseRequest.cpp
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)

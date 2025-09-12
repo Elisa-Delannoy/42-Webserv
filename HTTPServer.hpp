@@ -18,12 +18,16 @@ class HTTPServer
 		int startServer();
 		void closeServer();
 		int prepareServerSocket();
-
+		
+		const char* GetRequest(void) const;
+		
+		
 	private:
 		int socket_server;
 		int socket_client;
 		sockaddr_in sockaddr;
 		socklen_t len;
+		char buffer_request[1024];
 };
 
 #endif
