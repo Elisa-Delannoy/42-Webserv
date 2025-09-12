@@ -6,7 +6,7 @@ NAME = server
 SRC = main.cpp \
 	HTTPServer.cpp \
 	Epoll.cpp \
-	ParseRequest.cpp
+	ParseRequest.cpp \
 	ServerConf.cpp
 
 OBJ_DIR = objs
