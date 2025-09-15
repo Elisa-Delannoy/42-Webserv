@@ -81,11 +81,11 @@ class ParseRequest
 	private:
 		char*		 						_request;
 		std::string							_method;
-		std::string							_path;
 		std::string							_version;
 		std::map<std::string, std::string>	_headers;
 	
 	public:
+		std::string							_path;
 		// ParseRequest();
 		ParseRequest(char* req);
 		~ParseRequest();

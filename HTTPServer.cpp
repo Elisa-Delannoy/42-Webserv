@@ -29,6 +29,44 @@ et tu annonces “je suis prêt à recevoir du courrier” (listen)
 → tu attends que quelqu’un vienne.
 */
 
+void answerImg(int client_fd)
+{
+	struct stat img_info;
+
+	if (stat("cookie.jpeg", &img_info) < 0)
+	{
+		std::cerr << "Error stat file" << std::endl;
+		return;
+	}
+	std::ostringstream oss;
+	oss << img_info.st_size;
+	std::string size = oss.str();
+	std::string response =
+	"HTTP/1.1 200 OK\r\n"
+	"Content-Type: image/jpeg\r\n"
+	"Content-Length: " + size + "\r\n"
+	"Connection: keep alive\r\n"
+	"\r\n";
+
+	//SEND HEADERS
+	if(send(client_fd, response.c_str(), response.size(), 0) == -1)
+		std::cerr << "Error while sending." << std::endl;
+
+	//SEND BINARY DATAS
+	std::ifstream ifs("cookie.jpeg", std::ios::binary);
+	char *buffer = new char[img_info.st_size];
+	ifs.read(buffer, img_info.st_size);
+	int data_sent = 0;
+	while(data_sent < img_info.st_size)
+	{
+		int data_read = send(client_fd, buffer + data_sent, img_info.st_size, 0);
+		if(data_read == -1)
+			std::cerr << "Error while sending." << std::endl;
+		data_sent += data_read;
+	}
+	delete[] buffer;
+}
+
 int HTTPServer::startServer()
 {
 	if (prepareServerSocket() == 1)
@@ -37,6 +75,7 @@ int HTTPServer::startServer()
 	//----------------CLIENT SOCKET----------------------
 
 	Epoll epoll(this->_socket_server);
+	std::string path;
 
 	while(true)
 	{
@@ -69,31 +108,39 @@ int HTTPServer::startServer()
 					epoll.SetClientEpollout(i, this->_socket_client);
 					ParseRequest request(this->_buf);
 					request.DivideRequest();
+					path = request._path;
 				}
 				if (epoll.getEvent(i).events & EPOLLOUT)
 				{
-					std::cout << "EPOLLOUT" << std::endl;
-					std::ifstream file("index.html");
-					std::stringstream buffer;
-					std::stringstream size;
+					if (path == "/")
+					{
+						std::ifstream file("index.html");
+						std::stringstream buffer;
+						std::stringstream size;
 
-					buffer << file.rdbuf();
-					std::string content = buffer.str();
+						buffer << file.rdbuf();
+						std::string content = buffer.str();
 
-					size << content.size();
-					std::string content_size = size.str();
+						size << content.size();
+						std::string content_size = size.str();
 
-					//prepare response
-					std::string response =
-					"HTTP/1.1 200 OK\r\n"
-					"Content-Type: text/html\r\n"
-					"Content-Length: " + content_size + "\r\n"
-					"Connection: close\r\n"
-					"\r\n" + content;
+						//prepare response
+						std::string response =
+						"HTTP/1.1 200 OK\r\n"
+						"Content-Type: text/html\r\n"
+						"Content-Length: " + content_size + "\r\n"
+						"Connection: close\r\n"
+						"\r\n" + content;
 
-					//send response
-					if(send(client_fd, response.c_str(), response.size(), 0) == -1)
-						std::cerr << "Error while sending." << std::endl;
+						//send response
+						if(send(client_fd, response.c_str(), response.size(), 0) == -1)
+							std::cerr << "Error while sending." << std::endl;
+					}
+					else
+					{
+						answerImg(client_fd);
+						
+					}
 
 					close(client_fd);
 					epoll.deleteClient(client_fd);
