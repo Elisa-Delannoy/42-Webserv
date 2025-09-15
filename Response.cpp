@@ -1,8 +1,5 @@
 #include "Response.hpp"
 
-Response::Response()
-{ }
-
 Response::Response(int client_fd) : _client_fd(client_fd)
 { }
 
@@ -22,7 +19,7 @@ void Response::displayBody()
 	std::string content_size = size.str();
 
 	//prepare response
-	std::string response =
+	this->_response =
 	"HTTP/1.1 200 OK\r\n"
 	"Content-Type: text/html\r\n"
 	"Content-Length: " + content_size + "\r\n"
@@ -30,7 +27,7 @@ void Response::displayBody()
 	"\r\n" + content;
 
 	//send response
-	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
+	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
 		std::cerr << "Error while sending." << std::endl;
 }
 
@@ -46,7 +43,7 @@ void Response::displayImg()
 	std::ostringstream oss;
 	oss << img_info.st_size;
 	std::string size = oss.str();
-	std::string response =
+	this->_response =
 	"HTTP/1.1 200 OK\r\n"
 	"Content-Type: image/webp\r\n"
 	"Content-Length: " + size + "\r\n"
@@ -54,7 +51,7 @@ void Response::displayImg()
 	"\r\n";
 
 	//SEND HEADERS
-	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
+	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
 		std::cerr << "Error while sending." << std::endl;
 
 	//SEND BINARY DATAS

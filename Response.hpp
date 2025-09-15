@@ -11,7 +11,6 @@
 class Response
 {
 	public:
-		Response();
 		Response(int client_fd);
 		~Response();
 
@@ -19,6 +18,7 @@ class Response
 		void displayImg();
 
 	private:
+		std::string _response;
 		int _client_fd;
 };
 
