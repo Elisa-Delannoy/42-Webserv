@@ -7,8 +7,9 @@ SRC = main.cpp \
 	HTTPServer.cpp \
 	Epoll.cpp \
 	ParseRequest.cpp \
+	ParseBodyRequest.cpp \
 	ServerConf.cpp \
-	Response.cpp
+	Response.cpp \
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)

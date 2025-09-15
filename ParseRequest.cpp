@@ -1,5 +1,6 @@
 #include "HTTPServer.hpp"
 #include "ParseRequest.hpp"	
+#include "ParseBodyRequest.hpp"	
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -55,15 +56,23 @@ void ParseRequest::DivideRequest()
 		if (!line.empty() && line.at(line.size() - 1) == '\r')
 			line.erase(line.size() - 1);
 		if (line.empty())
+		{
 			body = true;
+			std::string	body_type = this->_header["Content-Type"];
+			std::istringstream	ss_body_len(this->_header["Content-Length"]);
+			int	body_len;
+			if (!(ss_body_len >> body_len) || !ss_body_len.eof() || body_len < 0)
+				return;
+			ParseBody	body(body_type, body_len);
+			body.ChooseContent(ss_request);
+			break;
+		}
 		if (body == false)
 			DivideHeader(line);
 	}
-	// for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); ++it) {
-    //     std::cout << "Name=" << it->first << "|content=" << it->second << std::endl;}
 }
 
-int ParseRequest::DivideFirstLine(std::string first_line)
+int ParseRequest::DivideFirstLine(std::string& first_line)
 {
 	int len = first_line.length() - 1;
 	std::istringstream	ss_first_line(first_line);
@@ -78,7 +87,7 @@ int ParseRequest::DivideFirstLine(std::string first_line)
 	return (1);
 }
 
-void ParseRequest::DivideHeader(std::string line)
+void ParseRequest::DivideHeader(std::string& line)
 {
 	std::string	name;
 	std::string	content;
