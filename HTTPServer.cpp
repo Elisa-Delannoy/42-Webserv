@@ -1,9 +1,10 @@
 #include "HTTPServer.hpp"
 #include "ParseRequest.hpp"
+#include <cstring>  /*ELISA*/
 
-HTTPServer::HTTPServer() : _buf("default")
+HTTPServer::HTTPServer()
 {
-	
+	memset(this->_buf, 0, sizeof(this->_buf));  /*ELISA*/
 }
 
 HTTPServer::~HTTPServer()
@@ -59,7 +60,7 @@ int HTTPServer::startServer()
 				if (epoll.getEvent(i).events & EPOLLIN)
 				{
 					std::cout << "EPOLLIN" << std::endl;
-
+					memset(this->_buf, 0, sizeof(this->_buf));  /*ELISA*/
 					int r = recv(client_fd, this->_buf, sizeof(this->_buf), 0);
 					if (r <= 0)
 						close(client_fd);
@@ -107,7 +108,7 @@ int HTTPServer::startServer()
 
 void HTTPServer::closeServer()
 {
-	// close(socket_client);
+	// close(socket_client);a
 	close(this->_socket_server);
 }
 

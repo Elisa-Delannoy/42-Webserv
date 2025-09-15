@@ -2,6 +2,7 @@
 #include "ParseRequest.hpp"	
 #include <iostream>
 #include <sstream>
+#include <string>
 
 // ParseRequest::ParseRequest()
 // {
@@ -22,16 +23,26 @@ void ParseRequest::DivideRequest()
 {
 	std::string 		string_request= this->_request;
 	std::istringstream	ss_request(string_request);
-	std::string 		first_line;
+	std::string 		line;
+	bool				body = false;
 
-	std::getline(ss_request, first_line);
-	std::cout << first_line << std::endl;
-	DivideFirstLine(first_line);
-
-
+	std::getline(ss_request, line);
+	if (DivideFirstLine(line) == 0)
+		return ;
+	while (std::getline(ss_request, line))
+	{
+		if (!line.empty() && line.at(line.size() - 1) == '\r')
+			line.erase(line.size() - 1);
+		if (line.empty())
+			body = true;
+		if (body == false)
+			DivideHeader(line);
+	}
+	// for (std::map<std::string, std::string>::const_iterator it = _header.begin(); it != _header.end(); ++it) {
+    //     std::cout << "Name=" << it->first << "|content=" << it->second << std::endl;}
 }
 
-void ParseRequest::DivideFirstLine(std::string first_line)
+int ParseRequest::DivideFirstLine(std::string first_line)
 {
 	int len = first_line.length() - 1;
 	std::istringstream	ss_first_line(first_line);
@@ -42,6 +53,19 @@ void ParseRequest::DivideFirstLine(std::string first_line)
 	// std::cout << len << " | " << len_w << std::endl;
 	
 	if (len - len_w != 2)
-		return;
+		return (0); /* VOIR POUR LES RETOURS ERREUR*/
+	return (1);
+}
 
+void ParseRequest::DivideHeader(std::string line)
+{
+	std::string	name;
+	std::string	content;
+	size_t		delimiter = line.find_first_of(':');
+	if (delimiter != std::string::npos)
+	{
+		name = line.substr(0, static_cast<int>(delimiter));
+		content = line.substr(static_cast<int>(delimiter) + 1, line.size());
+		this->_header[name]=content;
+	}
 }

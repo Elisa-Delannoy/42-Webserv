@@ -83,14 +83,15 @@ class ParseRequest
 		std::string							_method;
 		std::string							_path;
 		std::string							_version;
-		std::map<std::string, std::string>	_headers;
+		std::map<std::string, std::string>	_header;
 	
 	public:
 		// ParseRequest();
 		ParseRequest(char* req);
 		~ParseRequest();
 		void	DivideRequest();
-		void 	DivideFirstLine(std::string first_line);
+		int 	DivideFirstLine(std::string first_line);
+		void 	DivideHeader(std::string first_line);
 };
 
 #endif
