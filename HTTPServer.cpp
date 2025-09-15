@@ -30,6 +30,8 @@ et tu annonces “je suis prêt à recevoir du courrier” (listen)
 → tu attends que quelqu’un vienne.
 */
 
+
+
 int HTTPServer::startServer()
 {
 	if (prepareServerSocket() == 1)
@@ -73,32 +75,17 @@ int HTTPServer::startServer()
 				}
 				if (epoll.getEvent(i).events & EPOLLOUT)
 				{
-					std::cout << "EPOLLOUT" << std::endl;
-					std::ifstream file("index.html");
-					std::stringstream buffer;
-					std::stringstream size;
-
-					buffer << file.rdbuf();
-					std::string content = buffer.str();
-
-					size << content.size();
-					std::string content_size = size.str();
-
-					//prepare response
-					std::string response =
-					"HTTP/1.1 200 OK\r\n"
-					"Content-Type: text/html\r\n"
-					"Content-Length: " + content_size + "\r\n"
-					"Connection: close\r\n"
-					"\r\n" + content;
-
-					//send response
-					if(send(client_fd, response.c_str(), response.size(), 0) == -1)
-						std::cerr << "Error while sending." << std::endl;
-
+					Response resp(client_fd);
+					if (path == "/")
+					{
+						resp.displayBody();
+					}
+					else
+					{
+						resp.displayImg();
+					}
 					close(client_fd);
 					epoll.deleteClient(client_fd);
-					// std::cout << response << std::endl;
 				}
 			}
 		}
