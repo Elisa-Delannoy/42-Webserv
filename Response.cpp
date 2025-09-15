@@ -30,7 +30,7 @@ void Response::displayBody()
 	"\r\n" + content;
 
 	//send response
-	if(send(client_fd, response.c_str(), response.size(), 0) == -1)
+	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
 		std::cerr << "Error while sending." << std::endl;
 }
 

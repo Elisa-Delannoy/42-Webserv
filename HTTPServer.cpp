@@ -58,6 +58,7 @@ int HTTPServer::startServer()
 			}
 			else
 			{
+				ParseRequest request(this->_buf);
 				int client_fd = epoll.getEvent(i).data.fd;
 				if (epoll.getEvent(i).events & EPOLLIN)
 				{
@@ -70,13 +71,12 @@ int HTTPServer::startServer()
 					std::cout << this->_buf << std::endl;
 
 					epoll.SetClientEpollout(i, this->_socket_client);
-					ParseRequest request(this->_buf);
 					request.DivideRequest();
 				}
 				if (epoll.getEvent(i).events & EPOLLOUT)
 				{
 					Response resp(client_fd);
-					if (path == "/")
+					if (request.GetPath() == "/")
 					{
 						resp.displayBody();
 					}

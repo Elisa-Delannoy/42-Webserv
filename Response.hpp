@@ -2,6 +2,11 @@
 # define RESPONSE_HPP
 
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <sys/socket.h>
+#include <sys/stat.h>
 
 class Response
 {
