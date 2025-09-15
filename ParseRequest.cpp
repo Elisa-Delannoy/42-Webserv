@@ -19,6 +19,27 @@ ParseRequest::~ParseRequest()
 
 }
 
+const std::string&	ParseRequest::GetMethod() const
+{
+	return (this->_method);
+}
+
+const std::string&	ParseRequest::GetPath() const
+{
+	return (this->_path);
+}
+
+const std::string&	ParseRequest::GetVersion() const
+{
+	return (this->_version);
+}
+
+const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
+{
+	return (this->_header);
+}
+
+
 void ParseRequest::DivideRequest()
 {
 	std::string 		string_request= this->_request;

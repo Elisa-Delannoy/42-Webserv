@@ -92,6 +92,10 @@ class ParseRequest
 		void	DivideRequest();
 		int 	DivideFirstLine(std::string first_line);
 		void 	DivideHeader(std::string first_line);
+		const std::string&	GetMethod() const;
+		const std::string&	GetPath() const;
+		const std::string&	GetVersion() const;
+		const std::map<std::string, std::string>&	GetHeader() const;
 };
 
 #endif
