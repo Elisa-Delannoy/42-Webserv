@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include "Epoll.hpp"
+#include "Response.hpp"
 
 class HTTPServer
 {
