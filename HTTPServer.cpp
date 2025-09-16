@@ -58,9 +58,9 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				ParseRequest request(this->_buf);
+				ParseRequest request(this->_buf);	//moved request here because it is needed to send the response (second if)
 				int client_fd = epoll.getEvent(i).data.fd;
-				if (epoll.getEvent(i).events & EPOLLIN)
+				if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
 				{
 					std::cout << "EPOLLIN" << std::endl;
 					memset(this->_buf, 0, sizeof(this->_buf));  /*ELISA*/
@@ -73,17 +73,11 @@ int HTTPServer::startServer()
 					epoll.SetClientEpollout(i, this->_socket_client);
 					request.DivideRequest();
 				}
-				if (epoll.getEvent(i).events & EPOLLOUT)
+				if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 				{
 					Response resp(client_fd);
-					if (request.GetPath() == "/")
-					{
-						resp.displayBody();
-					}
-					else
-					{
-						resp.displayImg();
-					}
+					resp.sendHeaders(request);
+					resp.sendContent(request);
 					close(client_fd);
 					epoll.deleteClient(client_fd);
 				}
