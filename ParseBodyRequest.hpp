@@ -14,7 +14,8 @@ class ParseBody
 	public:
 		ParseBody(std::string& type, int len);
 		~ParseBody();
-		void  ChooseContent(std::istringstream& body);
+		void	ChooseContent(std::istringstream& body);
+		void	Form(std::istringstream& body);
 
 };
 

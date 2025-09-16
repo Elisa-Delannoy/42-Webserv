@@ -61,7 +61,7 @@ void ParseRequest::DivideRequest()
 			std::string	body_type = this->_header["Content-Type"];
 			std::istringstream	ss_body_len(this->_header["Content-Length"]);
 			int	body_len;
-			if (!(ss_body_len >> body_len) || !ss_body_len.eof() || body_len < 0)
+			if (!(ss_body_len >> body_len) || !ss_body_len.eof() || body_len <= 0)
 				return;
 			ParseBody	body(body_type, body_len);
 			body.ChooseContent(ss_request);
