@@ -105,6 +105,40 @@ void AddErrorPage(ServerConf& server, std::string line)
 	server.SetErrorPage(type_error, word);
 }
 
+bool CheckServerStart(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "server")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	return true;
+}
+
+bool CheckLocationStart(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "location")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	return true;
+}
+
 std::vector<ServerConf> ParsingConf()
 {
 	std::vector<ServerConf> servers;
@@ -113,7 +147,7 @@ std::vector<ServerConf> ParsingConf()
 	std::string line;
 	while (std::getline(conf, line))
 	{
-		if (line.find("server {") != std::string::npos)
+		if (CheckServerStart(line) == true)
 		{
 			ServerConf temp;
 			while (true)
@@ -129,6 +163,8 @@ std::vector<ServerConf> ParsingConf()
 					AddHostPort(temp, line);
 				if (line.find("error_page") != std::string::npos)
 					AddErrorPage(temp, line);
+				if (CheckLocationStart(line) == true)
+					temp.SetStaticLocation()
 			}
 			servers.push_back(temp);
 		}
@@ -146,5 +182,5 @@ int main()
 	std::cout << "HOST :" << servers[0].GetPort(0) << std::endl;
 	std::cout << "PORT :" << servers[0].GetHost(0) << std::endl;
 	std::cout << "ClientBody :" << servers[0].GetClientBodySize() << std::endl;
-	std::cout << "Error 404 :" << servers[0].GetErrorPath(403) << std::endl;
+	std::cout << "Error 404 :" << servers[0].GetErrorPath(404) << std::endl;
 }

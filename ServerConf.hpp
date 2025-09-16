@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <cstdlib>
+#include "StaticLocation.hpp"
 
 class ServerConf
 {
@@ -15,6 +16,7 @@ class ServerConf
 		int _client_body_size;
 		std::map<int, std::string> _error_pages;
 		std::vector<std::pair<std::string, int> > _host_port;
+		std::vector<StaticLocation> _static_location;
 	public:
 		ServerConf();
 		~ServerConf();
@@ -23,12 +25,15 @@ class ServerConf
 		void SetHostPort(std::string host, int port);
 		void SetClientBodySize(int size);
 		void SetErrorPage(int type_error, std::string path);
+		void SetStaticLocation(StaticLocation location);
 
 		std::vector<std::string> GetServerName() const;
 		int GetClientBodySize() const;
 		int GetPort(int nb) const;
 		std::string GetHost(int nb) const;
 		std::string GetErrorPath(int type_error);
+
+		void AddServerName(ServerConf& server, std::string line);
 };
 
 #endif

@@ -29,6 +29,11 @@ void ServerConf::SetErrorPage(int type_error, std::string path)
 	_error_pages[type_error] = path;
 }
 
+void ServerConf::SetStaticLocation(StaticLocation location)
+{
+	_static_location.push_back(location);
+}
+
 std::vector<std::string> ServerConf::GetServerName() const
 {
 	return _server_name;
