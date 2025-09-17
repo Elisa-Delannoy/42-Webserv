@@ -15,7 +15,8 @@ class ParseBody
 		ParseBody(std::string& type, int len);
 		~ParseBody();
 		void	ChooseContent(std::istringstream& body);
-		void	Form(std::istringstream& body);
+		void	AppForm(std::istringstream& body);
+		void	AppJson(std::istringstream& body);
 
 };
 
