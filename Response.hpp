@@ -19,7 +19,7 @@ class Response
 		void setContentType(std::string path);
 		void setContentLength(std::string path);
 		void sendHeaders(ParseRequest request);
-		void sendContent(ParseRequest request);
+		void sendContent(ParseRequest request, char* buf, int size);
 
 	private:
 		std::string _response;

@@ -4,7 +4,10 @@
 
 HTTPServer::HTTPServer()
 {
-	memset(this->_buf, 0, sizeof(this->_buf));  /*ELISA*/
+	//can't do that because we don't know the size yet
+	// memset(this->_header_buf, 0, sizeof(this->_header_buf));  /*ELISA*/
+	this->_size_header_buf = 0;
+	this->_size_body_buf = 0;
 }
 
 HTTPServer::~HTTPServer()
@@ -14,23 +17,47 @@ HTTPServer::~HTTPServer()
 
 // const char* HTTPServer::GetRequest(void) const
 // {
-// 	return (this->_buf);
+// 	return (this->_header_buf);
 // }
 
-/*
-Imagine une boîte aux lettres :
 
-Côté client : tu fabriques une boîte (socket),
-tu vas directement poster ta lettre (connect)
-→ la communication est possible.
+//READ REQUEST UNTIL END OF HEADERS
+//GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
+void HTTPServer::readHeaderRequest(int client_fd, std::string & header)
+{
+	char c;
 
-Côté serveur : tu fabriques une boîte (socket),
-tu dis “je la pose devant la maison au numéro 8080” (bind),
-et tu annonces “je suis prêt à recevoir du courrier” (listen)
-→ tu attends que quelqu’un vienne.
-*/
+	while (1)
+	{
+		recv(client_fd, &c, 1, 0);
+		header += c;
+		if (header.size() >= 4 && header.substr(header.size() - 4) == "\r\n\r\n")	//END OF HEADER
+			break;
+	}
 
+	size_t pos = header.find("Content-Length:");
+	if (pos != std::string::npos)
+	{
+		std::istringstream iss(header.substr(pos + 15));
+		iss >> this->_size_body_buf;
+	}
+	this->_size_header_buf = header.size()+1;
+}
 
+//ADD HEADERS REQUEST IN CHAR*
+void HTTPServer::getHeaderRequest(int client_fd)
+{
+	std::string header;
+	readHeaderRequest(client_fd, header);
+
+	this->_header_buf = new char[this->_size_header_buf+1];
+	int i = 0;
+	for(; i < this->_size_header_buf; i++)
+	{
+		this->_header_buf[i] = header[i];
+	}
+	this->_header_buf[i] = '\0';
+}
 
 int HTTPServer::startServer()
 {
@@ -58,26 +85,32 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				ParseRequest request(this->_buf);	//moved request here because it is needed to send the response (second if)
+				ParseRequest request(this->_header_buf);	//moved request here because it is needed to send the response (second if)
 				int client_fd = epoll.getEvent(i).data.fd;
+
 				if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
 				{
-					std::cout << "EPOLLIN" << std::endl;
-					memset(this->_buf, 0, sizeof(this->_buf));  /*ELISA*/
-					int r = recv(client_fd, this->_buf, sizeof(this->_buf), 0);
-					if (r <= 0)
-						close(client_fd);
+					std::cout << "------------REQUEST------------" << std::endl;
 
-					std::cout << this->_buf << std::endl;
+					getHeaderRequest(client_fd);
+
+					// memset(this->_header_buf, 0, this->_size_buf);  /*ELISA*/
+
+					//HERE RECV GOT THE HEADERS, WE CONTINUE TO SEE IF THERE IS A BODY
+					//FOR EXAMPLE AN UPLOAD
+					if (this->_size_body_buf != 0)
+						recv(client_fd, this->_body_buf, this->_size_body_buf, 0);
 
 					epoll.SetClientEpollout(i, this->_socket_client);
+					std::cout << this->_header_buf << std::endl;
 					request.DivideRequest();
 				}
+
 				if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 				{
 					Response resp(client_fd);
 					resp.sendHeaders(request);
-					resp.sendContent(request);
+					resp.sendContent(request, this->_body_buf, this->_size_body_buf);
 					close(client_fd);
 					epoll.deleteClient(client_fd);
 				}
