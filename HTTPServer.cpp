@@ -85,7 +85,7 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				ParseRequest request(this->_header_buf);	//moved request here because it is needed to send the response (second if)
+				ParseRequest request;	//moved request here because it is needed to send the response (second if)
 				int client_fd = epoll.getEvent(i).data.fd;
 
 				if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
@@ -99,11 +99,14 @@ int HTTPServer::startServer()
 					//HERE RECV GOT THE HEADERS, WE CONTINUE TO SEE IF THERE IS A BODY
 					//FOR EXAMPLE AN UPLOAD
 					if (this->_size_body_buf != 0)
+					{
+						this->_body_buf = new char[this->_size_body_buf];
 						recv(client_fd, this->_body_buf, this->_size_body_buf, 0);
+					}
 
 					epoll.SetClientEpollout(i, this->_socket_client);
 					std::cout << this->_header_buf << std::endl;
-					request.DivideRequest();
+					request.DivideRequest(this->_header_buf);
 				}
 
 				if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS

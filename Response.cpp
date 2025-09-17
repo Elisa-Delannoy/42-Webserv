@@ -84,21 +84,10 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 	}
 	else if (request.GetPath() == "/upload")
 	{
-		// this->_content.resize(size);
-		// char *body = NULL;
-		// for(size_t i = 0; i+3 < sizeof(buf); i++)
-		// {
-		// 	if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n')
-		// 	{
-		// 		body = buf + i + 4;
-		// 		break;
-		// 	}
-		// }
-	
-		std::ofstream out("fichier.webp", std::ios::binary);
+		//NEED TO FIND THE RIGHT PART TO SEND IN FILE
+		std::ofstream out("uploads/fichier.webp", std::ios::binary);
 		out.write(buf, size);
 		out.close();
-	
 	}
 	else
 	{

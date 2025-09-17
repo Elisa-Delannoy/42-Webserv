@@ -86,10 +86,10 @@ class ParseRequest
 		std::map<std::string, std::string>	_header;
 	
 	public:
-		// ParseRequest();
+		ParseRequest();
 		ParseRequest(char* req);
 		~ParseRequest();
-		void	DivideRequest();
+		void	DivideRequest(char* buf);
 		int 	DivideFirstLine(std::string first_line);
 		void 	DivideHeader(std::string first_line);
 		const std::string&	GetMethod() const;

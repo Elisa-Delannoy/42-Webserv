@@ -4,10 +4,10 @@
 #include <sstream>
 #include <string>
 
-// ParseRequest::ParseRequest()
-// {
+ParseRequest::ParseRequest()
+{
 
-// }
+}
 
 ParseRequest::ParseRequest(char* req) : _request(req)
 {
@@ -40,9 +40,9 @@ const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
 }
 
 
-void ParseRequest::DivideRequest()
+void ParseRequest::DivideRequest(char* buf)
 {
-	std::string 		string_request= this->_request;
+	std::string 		string_request = buf;
 	std::istringstream	ss_request(string_request);
 	std::string 		line;
 	bool				body = false;
