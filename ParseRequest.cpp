@@ -9,10 +9,10 @@ ParseRequest::ParseRequest()
 
 }
 
-ParseRequest::ParseRequest(char* req) : _request(req)
+/* ParseRequest::ParseRequest(char* req) : _request(req)
 {
 
-}
+} */
 
 ParseRequest::~ParseRequest()
 {

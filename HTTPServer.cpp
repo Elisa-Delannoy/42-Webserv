@@ -33,6 +33,7 @@ void HTTPServer::readHeaderRequest(int client_fd, std::string & header)
 		header += c;
 		if (header.size() >= 4 && header.substr(header.size() - 4) == "\r\n\r\n")	//END OF HEADER
 			break;
+		std::cout << c;
 	}
 
 	size_t pos = header.find("Content-Length:");
@@ -41,7 +42,7 @@ void HTTPServer::readHeaderRequest(int client_fd, std::string & header)
 		std::istringstream iss(header.substr(pos + 15));
 		iss >> this->_size_body_buf;
 	}
-	this->_size_header_buf = header.size()+1;
+	this->_size_header_buf = header.size();
 }
 
 //ADD HEADERS REQUEST IN CHAR*
@@ -50,7 +51,7 @@ void HTTPServer::getHeaderRequest(int client_fd)
 	std::string header;
 	readHeaderRequest(client_fd, header);
 
-	this->_header_buf = new char[this->_size_header_buf+1];
+	this->_header_buf = new char[this->_size_header_buf];
 	int i = 0;
 	for(; i < this->_size_header_buf; i++)
 	{
@@ -101,11 +102,18 @@ int HTTPServer::startServer()
 					if (this->_size_body_buf != 0)
 					{
 						this->_body_buf = new char[this->_size_body_buf];
-						recv(client_fd, this->_body_buf, this->_size_body_buf, 0);
+						int r = 0;
+						for (int i = 0; i < 10; i++)
+						{
+							r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
+							std::cout << "r : " << r << std::endl;
+							if (r >= this->_size_body_buf)
+								break;
+						}
 					}
 
 					epoll.SetClientEpollout(i, this->_socket_client);
-					std::cout << this->_header_buf << std::endl;
+					std::cout << "------HEADER-------" << this->_header_buf << std::endl;
 					request.DivideRequest(this->_header_buf);
 				}
 

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <algorithm>
 #include "ParseRequest.hpp"
 
 class Response

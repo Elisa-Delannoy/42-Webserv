@@ -44,7 +44,7 @@ void Response::setContentLength(std::string path)
 	else if (path == "/upload")
 	{
 		//A LA MANO FOR NOW, TO CHANGE AFTER
-		this->_content_length = "Content-Length: 235964\r\n";
+		this->_content_length = "Content-Length: 235966\r\n";
 	}
 	else
 	{
@@ -85,8 +85,45 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 	else if (request.GetPath() == "/upload")
 	{
 		//NEED TO FIND THE RIGHT PART TO SEND IN FILE
+		/*
+		------geckoformboundaryefcef49a019bb6f69c70ebbf79f40f2d
+		Content-Disposition: form-data; name="image"; filename="big_cookie.webp"
+		Content-Type: image/webp
+
+		RIFFژ
+		*/
+		std::string boundary;
+		for(int i = 0; buf[i] != '\r'; i++)
+			boundary += buf[i];
+
+		std::cout << "buf : " << buf << std::endl;
+
+		std::cout << "boundary : " << boundary << std::endl;
+
+		int i = 0;
+		for(; i < size; i++)
+		{
+			if (buf[i] == 'R' && buf[i+1] == 'I' && buf[i+2] == 'F' && buf[i+3] == 'F')
+				break;
+		}
+		std::cout << "body : " << buf+i << std::endl;
+
+		int j = i;
+		for(; j < size; j++)
+		{
+			if (buf[j] == '-' && buf[j + 1] == '-' && buf[j + 2] == '-'
+				&& buf[j+3] == '-' && buf[j + 4] == '-' && buf[j + 5] == '-'
+				&& buf[j+6] == 'g')
+				break;
+		}
+		int endfile = j;
+		if (buf[j-2] == '\r' && buf[j-1] == '\n')
+			endfile = j - 2;
+		std::cout << "i : " << i << std::endl;
+		std::cout << "j : " << j << std::endl;
+		std::cout << "size : " << j - i << std::endl;
 		std::ofstream out("uploads/fichier.webp", std::ios::binary);
-		out.write(buf, size);
+		out.write(buf + i, endfile - i);
 		out.close();
 	}
 	else
