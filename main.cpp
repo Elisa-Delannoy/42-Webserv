@@ -4,107 +4,6 @@
 #include <sstream>
 #include <cstdlib>
 
-void AddServerName(ServerConf& server, std::string line)
-{
-	std::istringstream ss(line);
-	std::string word;
-
-	ss >> word;
-	if (word != "server_name")
-		return ;
-	while (ss >> word)
-	{
-		if (!word.empty() && word[(word.length() - 1)] == ';')
-		{
-			word.erase(word.length() - 1);
-			server.SetServerName(word);
-			break;
-		}
-		server.SetServerName(word);
-	}
-}
-
-int CheckValue(std::string port)
-{
-	int intport = atoi(port.c_str());
-	std::ostringstream oss;
-	oss << intport;
-	if (oss.str() != port)
-		return -1;
-	return intport;
-}
-
-void AddHostPort(ServerConf& server, std::string line)
-{
-	std::istringstream ss(line);
-	std::string word;
-
-	ss >> word;
-	if (word != "listen")
-		return ;
-	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
-	int sep = word.find(':');
-	int port = CheckValue(word.substr(sep + 1, word.length()).c_str());
-	if (port == -1)
-		return;
-	server.SetHostPort(word.substr(0, sep), port);
-}
-
-int ClientBodyValue(int value, int multiplier)
-{
-	switch (multiplier)
-	{
-	case 'K':
-		value = value * 1000;
-		break;
-	case 'M':
-		value = value * 1000000;
-		break;
-	case 'G':
-		value = value * 1000000000;
-		break;
-	default:
-		break;
-	}
-	return value;
-}
-
-void AddClientBody(ServerConf& server, std::string line)
-{
-	std::istringstream ss(line);
-	std::string word;
-
-	ss >> word;
-	if (word != "client_max_body_size")
-		return ;
-	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
-	int value = atoi(word.substr(0, word.length() - 1).c_str());
-	char multiplier = word.substr(word.length() - 1).c_str()[0];
-	server.SetClientBodySize(ClientBodyValue(value, multiplier));
-}
-
-void AddErrorPage(ServerConf& server, std::string line)
-{
-	std::istringstream ss(line);
-	std::string word;
-
-	ss >> word;
-	if (word != "error_page")
-		return ;
-	ss >> word;
-	int type_error = CheckValue(word);
-	if (type_error == -1)
-		return;
-	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
-	server.SetErrorPage(type_error, word);
-}
-
 bool CheckServerStart(std::string line)
 {
 	std::istringstream ss(line);
@@ -130,10 +29,14 @@ bool CheckLocationStart(std::string line)
 	ss >> word;
 	if (word != "location")
 		return false;
-	ss >> word;
-	if (word != "{")
-		return false;
-	ss >> word;
+	while (word != "{")
+	{
+		std::string temp;
+		temp = word;
+		ss >> word;
+		if (temp == word)
+			break;
+	}
 	if (word != "{")
 		return false;
 	return true;
@@ -156,15 +59,15 @@ std::vector<ServerConf> ParsingConf()
 				if (line.find("}") != std::string::npos)
 					break;
 				if (line.find("server_name") != std::string::npos)
-					AddServerName(temp, line);
+					temp.AddServerName(temp, line);
 				if (line.find("client_max_body_size") != std::string::npos)
-					AddClientBody(temp, line);
+					temp.AddClientBody(temp, line);
 				if (line.find("listen") != std::string::npos)
-					AddHostPort(temp, line);
+					temp.AddHostPort(temp, line);
 				if (line.find("error_page") != std::string::npos)
-					AddErrorPage(temp, line);
+					temp.AddErrorPage(temp, line);
 				if (CheckLocationStart(line) == true)
-					temp.SetStaticLocation()
+					temp.AddStaticLocation(temp, conf);
 			}
 			servers.push_back(temp);
 		}
