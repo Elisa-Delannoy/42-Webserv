@@ -12,7 +12,8 @@ ParseBody::~ParseBody()
 
 void  ParseBody::ChooseContent(std::istringstream& body)
 {
-	std::cout << "type : " << this->_type << std::endl;
+	return;
+	// std::cout << "type : " << this->_type << std::endl;
 	if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
 		AppForm(body);
 	else if (this->_type.find("application/json") != std::string::npos)

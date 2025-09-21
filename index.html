@@ -1,61 +1,23 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-	<title>Webserv</title>
-</head>
-<body>
-	<h1>Webserv</h1>
-	
-	<form method="POST" action="/form">
-		<label for="name">Nom :</label>
-		<input type="text" id="name" name="name">
-		<br><br>
-		<label for="age">Âge :</label>
-		<input type="text" id="age" name="age">
-		<br><br>
-		<button type="submit">Envoyer</button>
-	</form>
-	<img src="img/big_cookie.webp" alt="a big cookie">
-</body>
-</html> -->
-
+<!-- index.html -->
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Formulaire JSON</title>
+    <meta charset="UTF-8">
+    <title>Upload de fichier</title>
 </head>
 <body>
+    <h1>Formulaire d'envoi</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <label for="name">Nom :</label>
+        <input type="text" id="name" name="name"><br><br>
 
-  <h1>Formulaire envoyé en JSON</h1>
+        <!-- <label for="file">Fichier :</label>
+        <input type="file" id="file" name="file"><br><br> -->
 
-  <form id="monFormulaire">
-    <label>Nom : <input type="text" name=":" required></label><br>
-    <label>Âge : <input type="number" name="age" required></label><br>
-    <button type="submit">Envoyer</button>
-  </form>
+         <label for="ville">Ville :</label>
+        <input type="text" id="ville" name="ville"><br><br>
 
-  <script>
-    document.getElementById('monFormulaire').addEventListener('submit', function (e) {
-      e.preventDefault(); // Empêche le rechargement de la page
-
-      // Récupération des données du formulaire
-      const formData = new FormData(this);
-      const data = Object.fromEntries(formData.entries());
-
-      // Envoi en JSON avec fetch, sans afficher la réponse
-      fetch('/soumettre', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      .catch(error => {
-        console.error('Erreur :', error); // Affiche uniquement les erreurs éventuelles
-      });
-    });
-  </script>
-
+        <button type="submit">Envoyer</button>
+    </form>
 </body>
 </html>
