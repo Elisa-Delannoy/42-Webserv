@@ -20,7 +20,8 @@ class HTTPServer
 		int startServer();
 		void closeServer();
 		int prepareServerSocket();
-		
+		void readHeaderRequest(int client_fd, std::string & header);
+		void getHeaderRequest(int client_fd);
 		// const char* GetRequest(void) const;
 		
 		
@@ -28,7 +29,10 @@ class HTTPServer
 		int _socket_server;
 		int _socket_client;
 		sockaddr_in _sockaddr;
-		char _buf[1024];
+		char* _header_buf;
+		char* _body_buf;
+		int _size_header_buf;
+		int _size_body_buf;
 };
 
 #endif

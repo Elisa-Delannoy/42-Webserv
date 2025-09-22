@@ -7,19 +7,29 @@
 #include <fstream>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <algorithm>
+#include "ParseRequest.hpp"
 
 class Response
 {
 	public:
-		Response();
 		Response(int client_fd);
 		~Response();
 
-		void displayBody();
-		void displayImg();
+		void setStatus(std::string version);
+		void setContentType(std::string path);
+		void setContentLength(std::string path);
+		void sendHeaders(ParseRequest request);
+		void sendContent(ParseRequest request, char* buf, int size);
 
 	private:
+		std::string _response;
+		std::string _content;
+		std::string _status;
+		std::string _content_type;
+		std::string _content_length;
 		int _client_fd;
+		struct stat _info;
 };
 
 #endif

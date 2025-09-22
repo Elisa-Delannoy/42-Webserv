@@ -92,17 +92,17 @@ Il peut aussi y avoir des paramètres dans le corps (ex : formulaire POST).
 class ParseRequest
 {
 	private:
-		char*		 						_request;
+		// char*		 						_request;
 		std::string							_method;
 		std::string							_path;
 		std::string							_version;
 		std::map<std::string, std::string>	_header;
 	
 	public:
-		// ParseRequest();
-		ParseRequest(char* req);
+		ParseRequest();
+		// ParseRequest(char* req);
 		~ParseRequest();
-		void	DivideRequest();
+		void	DivideRequest(char *buf);
 		int 	DivideFirstLine(std::string& first_line);
 		void 	DivideHeader(std::string& first_line);
 		const std::string&	GetMethod() const;
