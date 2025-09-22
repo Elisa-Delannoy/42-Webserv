@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include "Epoll.hpp"
 #include "Response.hpp"
+#include <vector>
+#include "ServerConf.hpp"
 
 class HTTPServer
 {
@@ -22,6 +24,9 @@ class HTTPServer
 		int prepareServerSocket();
 		void readHeaderRequest(int client_fd, std::string & header);
 		void getHeaderRequest(int client_fd);
+
+		std::vector<ServerConf> ParsingConf();
+		
 		// const char* GetRequest(void) const;
 		
 		

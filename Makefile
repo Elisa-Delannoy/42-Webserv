@@ -10,6 +10,8 @@ SRC = main.cpp \
 	ParseBodyRequest.cpp \
 	ServerConf.cpp \
 	Response.cpp \
+	ServerConf.cpp \
+	Location.cpp
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)
