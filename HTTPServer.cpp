@@ -29,13 +29,110 @@ et tu annonces “je suis prêt à recevoir du courrier” (listen)
 → tu attends que quelqu’un vienne.
 */
 
+bool CheckServerStart(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "server")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	ss >> word;
+	if (word != "{")
+		return false;
+	return true;
+}
+
+bool CheckLocationStart(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "location")
+		return false;
+	while (word != "{")
+	{
+		std::string temp;
+		temp = word;
+		ss >> word;
+		if (temp == word)
+			break;
+	}
+	if (word != "{")
+		return false;
+	return true;
+}
+
+std::vector<ServerConf> HTTPServer::ParsingConf()
+{
+	std::vector<ServerConf> servers;
+
+	std::ifstream conf("conf/valid.conf");
+	std::string line;
+	while (std::getline(conf, line))
+	{
+		if (CheckServerStart(line) == true)
+		{
+			ServerConf temp;
+			while (true)
+			{	
+				std::getline(conf, line);
+				if (line.find("}") != std::string::npos)
+					break;
+				if (line.find("server_name") != std::string::npos)
+					temp.AddServerName(line);
+				if (line.find("client_max_body_size") != std::string::npos)
+					temp.AddClientBody(line);
+				if (line.find("listen") != std::string::npos)
+					temp.AddHostPort(line);
+				if (line.find("error_page") != std::string::npos)
+					temp.AddErrorPage(line);
+				if (CheckLocationStart(line) == true)
+					temp.AddLocation(conf);
+			}
+			if (temp.GetErrorPath().empty())
+				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
+			servers.push_back(temp);
+		}
+	}
+	return servers;
+}
+
 int HTTPServer::startServer()
 {
+	std::vector<ServerConf> servers = ParsingConf();
+
+	size_t j = servers.size();
+	for (size_t r = 0; r < j; r++)
+	{
+		std::cout << "Serveru numero : " << r+1 << std::endl;
+		for (size_t i = 0; i < servers[r].GetServerName().size() ;i++)
+			std::cout << servers[r].GetServerName()[i] << std::endl;
+		std::cout << "HOST :" << servers[r].GetPort(0) << std::endl;
+		std::cout << "PORT :" << servers[r].GetHost(0) << std::endl;
+		std::cout << "ClientBody :" << servers[r].GetClientBodySize() << std::endl;
+		std::cout << "Error 404 :" << servers[r].GetErrorPath(404) << std::endl;
+		for (int f = 0; f < servers[r]._nb_location; f++)
+		{
+			std::cout << "location numero : " << f+1 << std::endl;
+			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
+			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
+				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
+			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
+			std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			std::cout << "\n";
+		}
+		std::cout << "\n";
+	}
+	
 	if (prepareServerSocket() == 1)
 		return 1;
 
 	//----------------CLIENT SOCKET----------------------
-
 	Epoll epoll(this->_socket_server);
 
 	while(true)

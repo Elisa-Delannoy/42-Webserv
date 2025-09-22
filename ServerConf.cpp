@@ -3,6 +3,7 @@
 ServerConf::ServerConf()
 {
 	_client_body_size = 0;
+	_nb_location = 0;
 }
 
 ServerConf::~ServerConf()
@@ -29,9 +30,9 @@ void ServerConf::SetErrorPage(int type_error, std::string path)
 	_error_pages[type_error] = path;
 }
 
-void ServerConf::SetStaticLocation(StaticLocation location)
+void ServerConf::SetLocation(Location location)
 {
-	_static_location.push_back(location);
+	_location.push_back(location);
 }
 
 std::vector<std::string> ServerConf::GetServerName() const
@@ -59,8 +60,17 @@ std::string ServerConf::GetErrorPath(int type_error)
 	return (_error_pages[type_error]);
 }
 
+std::map<int, std::string> ServerConf::GetErrorPath()
+{
+	return _error_pages;
+}
 
-void ServerConf::AddServerName(ServerConf& server, std::string& line)
+Location& ServerConf::GetLocation(int nb)
+{
+	return (_location[nb]);
+}
+
+void ServerConf::AddServerName(std::string& line)
 {
 	std::istringstream ss(line);
 	std::string word;
@@ -73,10 +83,10 @@ void ServerConf::AddServerName(ServerConf& server, std::string& line)
 		if (!word.empty() && word[(word.length() - 1)] == ';')
 		{
 			word.erase(word.length() - 1);
-			server.SetServerName(word);
+			this->SetServerName(word);
 			break;
 		}
-		server.SetServerName(word);
+		this->SetServerName(word);
 	}
 }
 
@@ -90,7 +100,7 @@ int CheckValue(std::string port)
 	return intport;
 }
 
-void ServerConf::AddHostPort(ServerConf& server, std::string& line)
+void ServerConf::AddHostPort(std::string& line)
 {
 	std::istringstream ss(line);
 	std::string word;
@@ -105,7 +115,7 @@ void ServerConf::AddHostPort(ServerConf& server, std::string& line)
 	int port = CheckValue(word.substr(sep + 1, word.length()).c_str());
 	if (port == -1)
 		return;
-	server.SetHostPort(word.substr(0, sep), port);
+	this->SetHostPort(word.substr(0, sep), port);
 }
 
 int ClientBodyValue(int value, int multiplier)
@@ -127,7 +137,7 @@ int ClientBodyValue(int value, int multiplier)
 	return value;
 }
 
-void ServerConf::AddClientBody(ServerConf& server, std::string& line)
+void ServerConf::AddClientBody(std::string& line)
 {
 	std::istringstream ss(line);
 	std::string word;
@@ -140,10 +150,10 @@ void ServerConf::AddClientBody(ServerConf& server, std::string& line)
 		word.erase(word.length() - 1);
 	int value = atoi(word.substr(0, word.length() - 1).c_str());
 	char multiplier = word.substr(word.length() - 1).c_str()[0];
-	server.SetClientBodySize(ClientBodyValue(value, multiplier));
+	this->SetClientBodySize(ClientBodyValue(value, multiplier));
 }
 
-void ServerConf::AddErrorPage(ServerConf& server, std::string& line)
+void ServerConf::AddErrorPage(std::string& line)
 {
 	std::istringstream ss(line);
 	std::string word;
@@ -158,13 +168,25 @@ void ServerConf::AddErrorPage(ServerConf& server, std::string& line)
 	ss >> word;
 	if (!word.empty() && word[(word.length() - 1)] == ';')
 		word.erase(word.length() - 1);
-	server.SetErrorPage(type_error, word);
+	this->SetErrorPage(type_error, word);
 }
 
-void ServerConf::AddStaticLocation(ServerConf& server, std::ifstream& conf)
+void ServerConf::AddLocation(std::ifstream& conf)
 {
-	(void)server;
 	std::string line;
-	std::getline(conf, line);
-	std::cout << line << std::endl;
+	Location location;
+	while (line.find("}") == std::string::npos)
+	{
+		std::getline(conf, line);
+		if (line.find("root") != std::string::npos)
+			location.AddRoot(line);
+		if (line.find("allow_methods") != std::string::npos)
+			location.AddMethods(line);
+		if (line.find("autoindex") != std::string::npos)
+			location.AddAutoindex(line);
+		if (line.find("cgi_pass") != std::string::npos)
+			location.AddCGIPass(line);
+	}
+	this->SetLocation(location);
+	_nb_location++;
 }

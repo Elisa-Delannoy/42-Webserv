@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "Epoll.hpp"
+#include <vector>
+#include "ServerConf.hpp"
 
 class HTTPServer
 {
@@ -19,6 +21,8 @@ class HTTPServer
 		int startServer();
 		void closeServer();
 		int prepareServerSocket();
+
+		std::vector<ServerConf> ParsingConf();
 		
 		// const char* GetRequest(void) const;
 		

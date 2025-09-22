@@ -1,8 +1,14 @@
 #pragma once
 
-#include "ServerConf.hpp"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <sstream>
+#include <cstdlib>
+#include <fstream>
+#include <cstdlib>
 
-class Location : public ServerConf
+class Location
 {
 	private:
 		std::string _root;
@@ -10,20 +16,25 @@ class Location : public ServerConf
 		bool _autoindex;
 		std::string _cgi_pass;
 	public:
+		int nb_methods;
+
 		Location();
 		~Location();
 
 		void SetRoot(std::string root);
 		void SetMethods(std::string methods);
 		void SetAutoindex(bool autoindex);
+		void SetCGIPass(std::string cgi);
 
 		std::string GetRoot() const;
 		std::string GetMethods(int nb) const;
 		bool GetAutoindex() const;
+		std::string GetCGIPass() const;
 
-		void AddRoot(Location& location, std::string line);
-		void AddMethods(Location& location, std::string line);
-		void AddAutoindex(Location& location, std::string line);
+		void AddRoot(std::string line);
+		void AddMethods(std::string line);
+		void AddAutoindex(std::string line);
+		void AddCGIPass(std::string line);
 };
 
 

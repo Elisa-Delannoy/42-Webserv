@@ -10,7 +10,7 @@
 #include <fstream>
 #include <cstdlib>
 
-class StaticLocation{};
+#include "Location.hpp"
 
 class ServerConf
 {
@@ -19,30 +19,31 @@ class ServerConf
 		int _client_body_size;
 		std::map<int, std::string> _error_pages;
 		std::vector<std::pair<std::string, int> > _host_port;
-		std::vector<StaticLocation> _static_location;
+		std::vector<Location> _location;
 	public:
+		int _nb_location;
 		ServerConf();
-		virtual ~ServerConf();
+		~ServerConf();
 		
 		void SetServerName(std::string server_name);
 		void SetHostPort(std::string host, int port);
 		void SetClientBodySize(int size);
 		void SetErrorPage(int type_error, std::string path);
-		void SetStaticLocation(StaticLocation location);
+		void SetLocation(Location location);
 
 		std::vector<std::string> GetServerName() const;
 		int GetClientBodySize() const;
 		int GetPort(int nb) const;
 		std::string GetHost(int nb) const;
 		std::string GetErrorPath(int type_error);
+		std::map<int, std::string> GetErrorPath();
+		Location& GetLocation(int nb);
 
-		void AddServerName(ServerConf& server, std::string& line);
-		void AddHostPort(ServerConf& server, std::string& line);
-		void AddClientBody(ServerConf& server, std::string& line);
-		void AddErrorPage(ServerConf& server, std::string& line);
-		void AddStaticLocation(ServerConf& server, std::ifstream& conf);
-
-
+		void AddServerName(std::string& line);
+		void AddHostPort(std::string& line);
+		void AddClientBody(std::string& line);
+		void AddErrorPage(std::string& line);
+		void AddLocation(std::ifstream& conf);
 };
 
 #endif
