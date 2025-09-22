@@ -1,4 +1,5 @@
 #include "HTTPServer.hpp"
+#include "ServerConf.hpp"
 #include "Epoll.hpp"
 #include "ParseRequest.hpp"
 

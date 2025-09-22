@@ -9,7 +9,10 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "Epoll.hpp"
+#include <vector>
+#include "ServerConf.hpp"
 #include "Response.hpp"
+
 
 class HTTPServer
 {
@@ -20,9 +23,16 @@ class HTTPServer
 		int startServer();
 		void closeServer();
 		int prepareServerSocket();
+
+
+		std::vector<ServerConf> ParsingConf();
+		
+		// const char* GetRequest(void) const;
+
 		void readHeaderRequest(int client_fd, std::string & header);
 		void getHeaderRequest(int client_fd);
 		void handleRequest(Epoll epoll, int i);
+
 		
 		
 	private:
