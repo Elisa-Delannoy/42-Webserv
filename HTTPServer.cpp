@@ -52,6 +52,45 @@ void HTTPServer::getHeaderRequest(int client_fd)
 	this->_header_buf[i] = '\0';
 }
 
+void HTTPServer::handleRequest(Epoll epoll, int i)
+{
+	ParseRequest request;
+	int client_fd = epoll.getEvent(i).data.fd;
+
+	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
+	{
+		std::cout << "------------REQUEST------------" << std::endl;
+
+		getHeaderRequest(client_fd);
+
+		if (this->_size_body_buf != 0)
+		{
+			this->_body_buf = new char[this->_size_body_buf];
+			int r = 0;
+			for (int i = 0; i < 10; i++)
+			{
+				r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
+				if (r >= this->_size_body_buf)
+					break;
+			}
+		}
+
+		epoll.SetClientEpollout(i, this->_socket_client);
+		request.DivideRequest(this->_header_buf);
+	}
+
+	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
+	{
+		Response resp(client_fd);
+		resp.sendHeaders(request);
+		resp.sendContent(request, this->_body_buf, this->_size_body_buf);
+		close(client_fd);
+		epoll.deleteClient(client_fd);
+		this->_size_body_buf = 0;
+		this->_size_header_buf = 0;
+	}
+}
+
 bool CheckServerStart(std::string line)
 {
 	std::istringstream ss(line);
@@ -175,41 +214,7 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				ParseRequest request;
-				int client_fd = epoll.getEvent(i).data.fd;
-
-				if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
-				{
-					std::cout << "------------REQUEST------------" << std::endl;
-
-					getHeaderRequest(client_fd);
-
-					if (this->_size_body_buf != 0)
-					{
-						this->_body_buf = new char[this->_size_body_buf];
-						int r = 0;
-						for (int i = 0; i < 10; i++)
-						{
-							r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
-							if (r >= this->_size_body_buf)
-								break;
-						}
-					}
-
-					epoll.SetClientEpollout(i, this->_socket_client);
-					request.DivideRequest(this->_header_buf);
-				}
-
-				if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
-				{
-					Response resp(client_fd);
-					resp.sendHeaders(request);
-					resp.sendContent(request, this->_body_buf, this->_size_body_buf);
-					close(client_fd);
-					epoll.deleteClient(client_fd);
-					this->_size_body_buf = 0;
-					this->_size_header_buf = 0;
-				}
+				handleRequest(epoll, i);
 			}
 			std::cout << std::endl;
 		}
