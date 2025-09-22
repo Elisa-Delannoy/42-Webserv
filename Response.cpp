@@ -134,7 +134,7 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 		int data_sent = 0;
 		while(data_sent < this->_info.st_size)
 		{
-			int data_read = send(this->_client_fd, buffer + data_sent, this->_info.st_size - data_sent, 0);
+			ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_info.st_size - data_sent, 0);
 			if (data_read == -1)
 				std::cerr << "Error while sending content." << std::endl;
 			data_sent += data_read;

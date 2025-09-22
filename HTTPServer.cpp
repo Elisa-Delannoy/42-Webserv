@@ -94,6 +94,7 @@ int HTTPServer::startServer()
 					std::cout << "------------REQUEST------------" << std::endl;
 
 					getHeaderRequest(client_fd);
+					std::cout << "Header recovered" << std::endl;
 
 					// memset(this->_header_buf, 0, this->_size_buf);  /*ELISA*/
 
@@ -110,6 +111,7 @@ int HTTPServer::startServer()
 							if (r >= this->_size_body_buf)
 								break;
 						}
+						std::cout << "Body recovered" << std::endl;
 					}
 
 					epoll.SetClientEpollout(i, this->_socket_client);
@@ -127,7 +129,8 @@ int HTTPServer::startServer()
 				}
 			}
 		}
-	}	
+	}
+	std::cout << "Loop exited" << std::endl;
 	return 0;
 }
 
