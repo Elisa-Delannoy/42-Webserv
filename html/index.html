@@ -1,0 +1,28 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Upload de fichier</title>
+</head>
+<body>
+    <h1>Formulaire d'envoi</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <label for="name">Nom :</label>
+        <input type="text" id="name" name="name"><br><br>
+
+        <!-- <label for="file">Fichier :</label>
+        <input type="file" id="file" name="file"><br><br> -->
+
+         <label for="ville">Ville :</label>
+        <input type="text" id="ville" name="ville"><br><br>
+
+        <button type="submit">Envoyer</button>
+    </form>
+    <img src="img/cookie.jpeg" alt="a big cookie">
+	<form action="/upload" method="POST" enctype="multipart/form-data">
+		<input type="file" name="image">
+		<input type="submit" value="Upload">
+	</form>
+</body>
+</html>

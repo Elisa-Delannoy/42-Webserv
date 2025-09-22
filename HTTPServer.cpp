@@ -1,9 +1,11 @@
 #include "HTTPServer.hpp"
 #include "ParseRequest.hpp"
+#include <cstring>  /*ELISA*/
 
-HTTPServer::HTTPServer() : _buf("default")
+HTTPServer::HTTPServer()
 {
-	
+	this->_size_header_buf = 0;
+	this->_size_body_buf = 0;
 }
 
 HTTPServer::~HTTPServer()
@@ -11,23 +13,83 @@ HTTPServer::~HTTPServer()
 
 }
 
-// const char* HTTPServer::GetRequest(void) const
-// {
-// 	return (this->_buf);
-// }
+//READ REQUEST UNTIL END OF HEADERS
+//GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
+void HTTPServer::readHeaderRequest(int client_fd, std::string & header)
+{
+	char c;
 
-/*
-Imagine une boîte aux lettres :
+	while (1)
+	{
+		recv(client_fd, &c, 1, 0);
+		header += c;
+		if (header.size() >= 4 && header.substr(header.size() - 4) == "\r\n\r\n")	//END OF HEADER
+			break;
+		std::cout << c;
+	}
 
-Côté client : tu fabriques une boîte (socket),
-tu vas directement poster ta lettre (connect)
-→ la communication est possible.
+	size_t pos = header.find("Content-Length:");
+	if (pos != std::string::npos)
+	{
+		std::istringstream iss(header.substr(pos + 15));
+		iss >> this->_size_body_buf;
+	}
+	this->_size_header_buf = header.size();
+}
 
-Côté serveur : tu fabriques une boîte (socket),
-tu dis “je la pose devant la maison au numéro 8080” (bind),
-et tu annonces “je suis prêt à recevoir du courrier” (listen)
-→ tu attends que quelqu’un vienne.
-*/
+//ADD HEADERS REQUEST IN CHAR*
+void HTTPServer::getHeaderRequest(int client_fd)
+{
+	std::string header;
+	readHeaderRequest(client_fd, header);
+
+	this->_header_buf = new char[this->_size_header_buf];
+	int i = 0;
+	for(; i < this->_size_header_buf; i++)
+	{
+		this->_header_buf[i] = header[i];
+	}
+	this->_header_buf[i] = '\0';
+}
+
+void HTTPServer::handleRequest(Epoll epoll, int i)
+{
+	ParseRequest request;
+	int client_fd = epoll.getEvent(i).data.fd;
+
+	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
+	{
+		std::cout << "------------REQUEST------------" << std::endl;
+
+		getHeaderRequest(client_fd);
+
+		if (this->_size_body_buf != 0)
+		{
+			this->_body_buf = new char[this->_size_body_buf];
+			int r = 0;
+			for (int i = 0; i < 10; i++)
+			{
+				r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
+				if (r >= this->_size_body_buf)
+					break;
+			}
+		}
+
+		epoll.SetClientEpollout(i, this->_socket_client);
+		request.DivideRequest(this->_header_buf);
+	}
+
+	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
+	{
+		Response resp(client_fd);
+		resp.sendHeaders(request);
+		resp.sendContent(request, this->_body_buf, this->_size_body_buf);
+		close(client_fd);
+		epoll.deleteClient(client_fd);
+		this->_size_body_buf = 0;
+		this->_size_header_buf = 0;
+	}
+}
 
 bool CheckServerStart(std::string line)
 {
@@ -152,59 +214,18 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				int client_fd = epoll.getEvent(i).data.fd;
-				if (epoll.getEvent(i).events & EPOLLIN)
-				{
-					std::cout << "EPOLLIN" << std::endl;
-
-					int r = recv(client_fd, this->_buf, sizeof(this->_buf), 0);
-					if (r <= 0)
-						close(client_fd);
-
-					std::cout << this->_buf << std::endl;
-
-					epoll.SetClientEpollout(i, this->_socket_client);
-					ParseRequest request(this->_buf);
-					request.DivideRequest();
-				}
-				if (epoll.getEvent(i).events & EPOLLOUT)
-				{
-					std::cout << "EPOLLOUT" << std::endl;
-					std::ifstream file("index.html");
-					std::stringstream buffer;
-					std::stringstream size;
-
-					buffer << file.rdbuf();
-					std::string content = buffer.str();
-
-					size << content.size();
-					std::string content_size = size.str();
-
-					//prepare response
-					std::string response =
-					"HTTP/1.1 200 OK\r\n"
-					"Content-Type: text/html\r\n"
-					"Content-Length: " + content_size + "\r\n"
-					"Connection: close\r\n"
-					"\r\n" + content;
-
-					//send response
-					if(send(client_fd, response.c_str(), response.size(), 0) == -1)
-						std::cerr << "Error while sending." << std::endl;
-
-					close(client_fd);
-					epoll.deleteClient(client_fd);
-					// std::cout << response << std::endl;
-				}
+				handleRequest(epoll, i);
 			}
+			std::cout << std::endl;
 		}
-	}	
+	}
+	std::cout << "Loop exited" << std::endl;
 	return 0;
 }
 
 void HTTPServer::closeServer()
 {
-	// close(socket_client);
+	// close(socket_client);a
 	close(this->_socket_server);
 }
 
