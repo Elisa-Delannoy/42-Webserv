@@ -33,7 +33,7 @@ void Response::setContentLength(std::string path)
 	std::string size;
 	if (path == "/")
 	{
-		if (stat("index.html", &this->_info) < 0)
+		if (stat("html/index.html", &this->_info) < 0)
 		{
 			std::cerr << "Error stat file" << std::endl;
 		}
@@ -74,7 +74,7 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 {
 	if (request.GetPath() == "/")
 	{
-		std::ifstream file("index.html");
+		std::ifstream file("html/index.html");
 		std::stringstream buffer;
 
 		buffer << file.rdbuf();
