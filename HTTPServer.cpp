@@ -4,8 +4,6 @@
 
 HTTPServer::HTTPServer()
 {
-	//can't do that because we don't know the size yet
-	// memset(this->_header_buf, 0, sizeof(this->_header_buf));  /*ELISA*/
 	this->_size_header_buf = 0;
 	this->_size_body_buf = 0;
 }
@@ -14,12 +12,6 @@ HTTPServer::~HTTPServer()
 {
 
 }
-
-// const char* HTTPServer::GetRequest(void) const
-// {
-// 	return (this->_header_buf);
-// }
-
 
 //READ REQUEST UNTIL END OF HEADERS
 //GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
@@ -86,7 +78,7 @@ int HTTPServer::startServer()
 			}
 			else
 			{
-				ParseRequest request;	//moved request here because it is needed to send the response (second if)
+				ParseRequest request;
 				int client_fd = epoll.getEvent(i).data.fd;
 
 				if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
@@ -94,12 +86,7 @@ int HTTPServer::startServer()
 					std::cout << "------------REQUEST------------" << std::endl;
 
 					getHeaderRequest(client_fd);
-					std::cout << "Header recovered" << std::endl;
 
-					// memset(this->_header_buf, 0, this->_size_buf);  /*ELISA*/
-
-					//HERE RECV GOT THE HEADERS, WE CONTINUE TO SEE IF THERE IS A BODY
-					//FOR EXAMPLE AN UPLOAD
 					if (this->_size_body_buf != 0)
 					{
 						this->_body_buf = new char[this->_size_body_buf];
@@ -107,15 +94,12 @@ int HTTPServer::startServer()
 						for (int i = 0; i < 10; i++)
 						{
 							r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
-							std::cout << "r : " << r << std::endl;
 							if (r >= this->_size_body_buf)
 								break;
 						}
-						std::cout << "Body recovered" << std::endl;
 					}
 
 					epoll.SetClientEpollout(i, this->_socket_client);
-					std::cout << "------HEADER-------" << this->_header_buf << std::endl;
 					request.DivideRequest(this->_header_buf);
 				}
 
@@ -126,8 +110,11 @@ int HTTPServer::startServer()
 					resp.sendContent(request, this->_body_buf, this->_size_body_buf);
 					close(client_fd);
 					epoll.deleteClient(client_fd);
+					this->_size_body_buf = 0;
+					this->_size_header_buf = 0;
 				}
 			}
+			std::cout << std::endl;
 		}
 	}
 	std::cout << "Loop exited" << std::endl;

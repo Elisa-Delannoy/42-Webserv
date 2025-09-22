@@ -96,17 +96,15 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 		for(int i = 0; buf[i] != '\r'; i++)
 			boundary += buf[i];
 
-		std::cout << "buf : " << buf << std::endl;
-
-		std::cout << "boundary : " << boundary << std::endl;
-
 		int i = 0;
 		for(; i < size; i++)
 		{
 			if (buf[i] == 'R' && buf[i+1] == 'I' && buf[i+2] == 'F' && buf[i+3] == 'F')
 				break;
 		}
-		std::cout << "body : " << buf+i << std::endl;
+
+		std::cout << std::endl;
+		std::cout << "BODY : " << buf+i << std::endl;
 
 		int j = i;
 		for(; j < size; j++)
@@ -119,10 +117,8 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 		int endfile = j;
 		if (buf[j-2] == '\r' && buf[j-1] == '\n')
 			endfile = j - 2;
-		std::cout << "i : " << i << std::endl;
-		std::cout << "j : " << j << std::endl;
-		std::cout << "size : " << j - i << std::endl;
-		std::ofstream out("uploads/fichier.webp", std::ios::binary);
+	
+		std::ofstream out("uploads/fichier.png", std::ios::binary);
 		out.write(buf + i, endfile - i);
 		out.close();
 	}
