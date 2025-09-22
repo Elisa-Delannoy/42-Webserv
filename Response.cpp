@@ -84,14 +84,6 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 	}
 	else if (request.GetPath() == "/upload")
 	{
-		//NEED TO FIND THE RIGHT PART TO SEND IN FILE
-		/*
-		------geckoformboundaryefcef49a019bb6f69c70ebbf79f40f2d
-		Content-Disposition: form-data; name="image"; filename="big_cookie.webp"
-		Content-Type: image/webp
-
-		RIFFژ
-		*/
 		std::string boundary;
 		for(int i = 0; buf[i] != '\r'; i++)
 			boundary += buf[i];

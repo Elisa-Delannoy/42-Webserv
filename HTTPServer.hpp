@@ -22,7 +22,7 @@ class HTTPServer
 		int prepareServerSocket();
 		void readHeaderRequest(int client_fd, std::string & header);
 		void getHeaderRequest(int client_fd);
-		// const char* GetRequest(void) const;
+		void handleRequest(Epoll epoll, int i);
 		
 		
 	private:
