@@ -2,7 +2,7 @@
 #include <map>
 #include <vector>
 
-ParseBody::ParseBody(std::string& type, int len) : _type(type), _len(len)
+ParseBody::ParseBody()
 {
 }
 
@@ -10,14 +10,36 @@ ParseBody::~ParseBody()
 {
 }
 
-void  ParseBody::ChooseContent(std::istringstream& body)
+int	ParseBody::FindBodyLen(ParseRequest& request)
 {
-	return;
-	// std::cout << "type : " << this->_type << std::endl;
+	std::map<std::string, std::string> head = request.GetHeader();
+	std::map<std::string, std::string>::iterator it = head.find("Content-Type");
+	if (it != head.end())
+		this->_type = it->second;
+	it = head.find("Content-Length");
+	if (it != head.end())
+	{
+		std::istringstream	ss_body_len(it->second);
+		if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
+			return (-1);
+		return (this->_len);
+		// this->_size_body_buf = atoi(it->second.c_str());
+	}
+	return (0);
+}
+
+void  ParseBody::ChooseContent(char* body)
+{
+	std::string 		string_body = body;
+	std::istringstream	ss_body(string_body);
+
+	// std::cout << "body\n" << string_body << '\n' << std::endl;
+
+	// std::cout << "type" << this->_type << std::endl;
 	if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
-		AppForm(body);
+		AppForm(ss_body);
 	else if (this->_type.find("application/json") != std::string::npos)
-		AppJson(body);
+		AppJson(ss_body);
 }
 
 void	ParseBody::AppForm(std::istringstream& body) /*voir si return ou si stock map en prive*/

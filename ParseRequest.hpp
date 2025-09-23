@@ -100,9 +100,7 @@ class ParseRequest
 	
 	public:
 		ParseRequest();
-		// ParseRequest(char* req);
 		~ParseRequest();
-		void	DivideRequest(char *buf);
 		int 	DivideFirstLine(std::string& first_line);
 		void 	DivideHeader(std::string& first_line);
 		const std::string&	GetMethod() const;

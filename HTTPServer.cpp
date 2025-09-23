@@ -1,11 +1,9 @@
 #include "HTTPServer.hpp"
-#include "ParseRequest.hpp"
-#include <cstring>  /*ELISA*/
+#include "ParseBodyRequest.hpp"
+#include <cstring>
 
 HTTPServer::HTTPServer()
 {
-	this->_size_header_buf = 0;
-	this->_size_body_buf = 0;
 }
 
 HTTPServer::~HTTPServer()
@@ -15,82 +13,72 @@ HTTPServer::~HTTPServer()
 
 //READ REQUEST UNTIL END OF HEADERS
 //GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
-void HTTPServer::readHeaderRequest(int client_fd, std::string & header)
+void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 {
-	char c;
-
+	char	c;
+	bool	first = false;
+	std::string	line;
 	while (1)
 	{
 		recv(client_fd, &c, 1, 0);
-		header += c;
-		if (header.size() >= 4 && header.substr(header.size() - 4) == "\r\n\r\n")	//END OF HEADER
-			break;
-		std::cout << c;
+		line += c;
+		if (c == '\n')
+		{
+			std::cout << line << std::endl;
+			line.erase(line.size() - 1);
+			if (!line.empty() && line.at(line.size() - 1) == '\r')
+				line.erase(line.size() - 1);
+			if (first == false && request.DivideFirstLine(line) == 0)
+				return;
+			first = true;
+			if (line.empty())
+				return;
+			request.DivideHeader(line);
+			line.clear();
+		}
 	}
-
-	size_t pos = header.find("Content-Length:");
-	if (pos != std::string::npos)
-	{
-		std::istringstream iss(header.substr(pos + 15));
-		iss >> this->_size_body_buf;
-	}
-	this->_size_header_buf = header.size();
 }
 
-//ADD HEADERS REQUEST IN CHAR*
-void HTTPServer::getHeaderRequest(int client_fd)
-{
-	std::string header;
-	readHeaderRequest(client_fd, header);
-
-	this->_header_buf = new char[this->_size_header_buf];
-	int i = 0;
-	for(; i < this->_size_header_buf; i++)
-	{
-		this->_header_buf[i] = header[i];
-	}
-	this->_header_buf[i] = '\0';
-}
 
 void HTTPServer::handleRequest(Epoll epoll, int i)
 {
 	ParseRequest request;
+	ParseBody	body;
 	int client_fd = epoll.getEvent(i).data.fd;
+	int body_len = 0;
 
 	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
 	{
 		std::cout << "------------REQUEST------------" << std::endl;
-
-		getHeaderRequest(client_fd);
-
-		if (this->_size_body_buf != 0)
+		readHeaderRequest(client_fd, request);
+		body_len = body.FindBodyLen(request);
+		if (body_len != 0)
 		{
-			this->_body_buf = new char[this->_size_body_buf];
+			this->_body_buf = new char[body_len];
 			int r = 0;
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < 10; i++) /*i < 10 ?*/
 			{
-				r += recv(client_fd, this->_body_buf + r, this->_size_body_buf, 0);
-				if (r >= this->_size_body_buf)
+				r += recv(client_fd, this->_body_buf + r, body_len, 0);
+				if (r >= body_len)
 					break;
 			}
 		}
-
 		epoll.SetClientEpollout(i, this->_socket_client);
-		request.DivideRequest(this->_header_buf);
+		body.ChooseContent(this->_body_buf);
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
 		Response resp(client_fd);
 		resp.sendHeaders(request);
-		resp.sendContent(request, this->_body_buf, this->_size_body_buf);
+		resp.sendContent(request, this->_body_buf, body_len);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
-		this->_size_body_buf = 0;
-		this->_size_header_buf = 0;
+		body_len = 0;
 	}
 }
 
+//PARSING CONF
 bool CheckServerStart(std::string line)
 {
 	std::istringstream ss(line);
@@ -108,6 +96,7 @@ bool CheckServerStart(std::string line)
 	return true;
 }
 
+//PARSING CONF
 bool CheckLocationStart(std::string line)
 {
 	std::istringstream ss(line);
@@ -129,6 +118,7 @@ bool CheckLocationStart(std::string line)
 	return true;
 }
 
+//PARSING CONF
 std::vector<ServerConf> HTTPServer::ParsingConf()
 {
 	std::vector<ServerConf> servers;

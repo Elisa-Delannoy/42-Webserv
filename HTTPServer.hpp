@@ -13,6 +13,7 @@
 #include "ServerConf.hpp"
 #include "Response.hpp"
 
+class ParseRequest;
 
 class HTTPServer
 {
@@ -28,8 +29,7 @@ class HTTPServer
 		
 		// const char* GetRequest(void) const;
 
-		void readHeaderRequest(int client_fd, std::string & header);
-		void getHeaderRequest(int client_fd);
+		void readHeaderRequest(int client_fd, ParseRequest& request);
 		void handleRequest(Epoll epoll, int i);
 
 		
@@ -38,10 +38,7 @@ class HTTPServer
 		int _socket_server;
 		int _socket_client;
 		sockaddr_in _sockaddr;
-		char* _header_buf;
 		char* _body_buf;
-		int _size_header_buf;
-		int _size_body_buf;
 };
 
 #endif

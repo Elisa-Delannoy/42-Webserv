@@ -12,11 +12,12 @@ class ParseBody
 		int			_len;
 
 	public:
-		ParseBody(std::string& type, int len);
+		ParseBody();
 		~ParseBody();
-		void	ChooseContent(std::istringstream& body);
+		void	ChooseContent(char* body);
 		void	AppForm(std::istringstream& body);
 		void	AppJson(std::istringstream& body);
+		int		FindBodyLen(ParseRequest& request);
 
 };
 
