@@ -196,7 +196,7 @@ int HTTPServer::startServer()
 
 	displayServers();
 
-	if (prepareServerSocket() == 1)
+	if (prepareServerSockets() == 1)
 		return 1;
 
 	//----------------CLIENT SOCKET----------------------
@@ -208,12 +208,11 @@ int HTTPServer::startServer()
 		for(int i = 0; i < n; i++)
 		{
 			bool event_is_server = false;
-			size_t size = this->servers.size();
-			for (size_t i = 0; i < size; i++)
+			for (size_t j = 0; j < this->servers.size(); j++)
 			{
-				if(epoll.getEvent(i).data.fd == this->_socket_server[i])
+				if(epoll.getEvent(i).data.fd == this->_socket_server[j])
 				{
-					this->_socket_client = accept(this->_socket_server[i], NULL, NULL);
+					this->_socket_client = accept(this->_socket_server[j], NULL, NULL);
 					if (this->_socket_client < 0)
 					{
 						std::cerr << "Failed to grab socket_client." << std::endl;
@@ -241,7 +240,7 @@ void HTTPServer::closeServer()
 		close(this->_socket_server[i]);
 }
 
-uint32_t HTTPServer::getAddr(std::string addr)
+uint32_t HTTPServer::prepareAddrForHtonl(std::string addr)
 {
 	uint32_t ret = 0;
 	std::vector<int> v;
@@ -258,68 +257,67 @@ uint32_t HTTPServer::getAddr(std::string addr)
 	return ret;
 }
 
-int HTTPServer::prepareServerSocket()
+bool HTTPServer::checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port)
+{
+	for(size_t i = 0; i < host_port.size(); i++)
+	{
+		if (host == host_port[i].first && port == host_port[i].second)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j)
+{
+	std::string host = this->servers[i].GetHost(j);
+	int port = this->servers[i].GetPort(j);
+	bool host_port_taken = checkPortHostTaken(host_port, host, port);
+
+	if(!host_port_taken)
+	{
+		//Linux kernel creates a new socket (point de communication)
+		int socket_server = socket(AF_INET, SOCK_STREAM, 0);
+		if (socket_server < 0)
+		{
+			std::cerr << "Cannot create socket" << std::endl;
+			return 1;
+		}
+
+		sockaddr_in sockaddr;
+		sockaddr.sin_family = AF_INET;
+		sockaddr.sin_addr.s_addr = htonl(prepareAddrForHtonl(host));
+		sockaddr.sin_port = htons(port);
+
+		host_port.push_back(std::make_pair(host, port));
+		
+		if (bind(socket_server, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
+		{
+			std::cerr << "Failed to bind to port " << port << "." << std::endl;
+			return 1;
+		}
+
+		if (listen(socket_server, 10))
+		{
+			std::cerr << "Failed to listen on socket." << std::endl;
+			return 1;
+		}
+		this->_socket_server.push_back(socket_server);
+	}
+	return 0;
+}
+
+int HTTPServer::prepareServerSockets()
 {
 	std::vector<std::pair<std::string, int> > host_port;
 
-	bool host_port_taken = false;
 	for (size_t i = 0; i < this->servers.size(); i++)
 	{
 		for(size_t j = 0; j < this->servers[i].GetHostPortSize(); j++)
 		{
-			std::string host = this->servers[i].GetHost(j);
-			int port = this->servers[i].GetPort(j);
-	
-			//check if port and host are already taken
-			for(size_t i = 0; i < host_port.size(); i++)
-			{
-				if (host == host_port[i].first && port == host_port[i].second)
-				{
-					host_port_taken = true;
-					break;
-				}
-			}
-	
-			if(!host_port_taken)
-			{
-				//Linux kernel creates a new socket (point de communication)
-				int socket_server = socket(AF_INET, SOCK_STREAM, 0);
-				if (socket_server < 0)
-				{
-					std::cerr << "Cannot create socket" << std::endl;
-					return 1;
-				}
-		
-				
-				sockaddr_in sockaddr;
-				sockaddr.sin_family = AF_INET;
-				sockaddr.sin_addr.s_addr = htonl(getAddr(host));
-				sockaddr.sin_port = htons(port);
-		
-				host_port.push_back(std::make_pair(host, port));
-				//until here the socket exists, but isn't attached to any ports or IP address
-		
-				//bind socket on port 8080 (htons(8080))
-				//INADDR_ANY => accept connections from any network interfaces (localhost, local IP, ...)
-				//without bind, the socket doesn't know "where to live"
-				if (bind(socket_server, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
-				{
-					std::cerr << "Failed to bind to port " << this->servers[i].GetPort(0) << "." << std::endl;
-					return 1;
-				}
-			
-				//until here, socket can communicate but cannot receive connections
-				//with listen => transforms socket in a server socket.
-				//add in queue up to 10 connections if accept is not done yet
-				//listen does not read datas, it prepares the socket only
-				if (listen(socket_server, 10))
-				{
-					std::cerr << "Failed to listen on socket." << std::endl;
-					return 1;
-				}
-				//socket becomes a server entry point
-				this->_socket_server.push_back(socket_server);
-			}
+			if (createServerSocket(host_port, i, j) == 1)
+				return 1;
 		}
 	}
 
