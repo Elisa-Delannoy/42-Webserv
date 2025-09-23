@@ -23,21 +23,22 @@ class HTTPServer
 
 		int startServer();
 		void closeServer();
-		int prepareServerSocket();
+		int prepareServerSockets();
+		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 
 		std::vector<ServerConf> ParsingConf();
-		
-		// const char* GetRequest(void) const;
+		void displayServers();
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
 		void handleRequest(Epoll epoll, int i);
 
-		
-		
+		uint32_t prepareAddrForHtonl(std::string addr);
+		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
+
 	private:
-		int _socket_server;
+		std::vector<ServerConf> servers;
+		std::vector<int> _socket_server;
 		int _socket_client;
-		sockaddr_in _sockaddr;
 		char* _body_buf;
 };
 

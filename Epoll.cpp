@@ -3,12 +3,18 @@
 Epoll::Epoll()
 {}
 
-Epoll::Epoll(int socket_server)
+Epoll::Epoll(std::vector<int> socket_servers)
 {
 	this->_epoll_fd = epoll_create1(0);
-	this->_server_event.events = EPOLLIN;
-	this->_server_event.data.fd = socket_server;
-	epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_server, &this->_server_event);
+	for(size_t i = 0; i < socket_servers.size(); i++)
+	{
+		std::cout << "i : " << i << std::endl;
+		epoll_event event;
+		event.events = EPOLLIN;
+		event.data.fd = socket_servers[i];
+		this->_servers_event.push_back(event);
+		epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i], &this->_servers_event[i]);
+	}
 }
 
 Epoll::~Epoll()

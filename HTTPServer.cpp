@@ -154,34 +154,39 @@ std::vector<ServerConf> HTTPServer::ParsingConf()
 	return servers;
 }
 
-int HTTPServer::startServer()
+void HTTPServer::displayServers()
 {
-	std::vector<ServerConf> servers = ParsingConf();
-
-	size_t j = servers.size();
+	size_t j = this->servers.size();
 	for (size_t r = 0; r < j; r++)
 	{
-		std::cout << "Serveru numero : " << r+1 << std::endl;
-		for (size_t i = 0; i < servers[r].GetServerName().size() ;i++)
-			std::cout << servers[r].GetServerName()[i] << std::endl;
-		std::cout << "HOST :" << servers[r].GetPort(0) << std::endl;
-		std::cout << "PORT :" << servers[r].GetHost(0) << std::endl;
-		std::cout << "ClientBody :" << servers[r].GetClientBodySize() << std::endl;
-		std::cout << "Error 404 :" << servers[r].GetErrorPath(404) << std::endl;
-		for (int f = 0; f < servers[r]._nb_location; f++)
+		std::cout << "Serveur numero : " << r+1 << std::endl;
+		for (size_t i = 0; i < this->servers[r].GetServerName().size() ;i++)
+			std::cout << this->servers[r].GetServerName()[i] << std::endl;
+		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;
+		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;
+		std::cout << "ClientBody :" << this->servers[r].GetClientBodySize() << std::endl;
+		std::cout << "Error 404 :" << this->servers[r].GetErrorPath(404) << std::endl;
+		for (int f = 0; f < this->servers[r]._nb_location; f++)
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
-			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
-			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
-				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
-			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
-			std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			std::cout << "ROOT Location :" << this->servers[r].GetLocation(f).GetRoot() << std::endl;
+			for (int i = 0; i < this->servers[r].GetLocation(f).nb_methods; i++)
+				std::cout << "ME Location :" << this->servers[r].GetLocation(f).GetMethods(i) << std::endl;
+			std::cout << "AUTOINNDEX Location : " << this->servers[r].GetLocation(f).GetAutoindex() << std::endl;
+			std::cout << "CGI Location : " << this->servers[r].GetLocation(f).GetCGIPass() << std::endl;
 			std::cout << "\n";
 		}
 		std::cout << "\n";
 	}
-	
-	if (prepareServerSocket() == 1)
+}
+
+int HTTPServer::startServer()
+{
+	this->servers = ParsingConf();
+
+	displayServers();
+
+	if (prepareServerSockets() == 1)
 		return 1;
 
 	//----------------CLIENT SOCKET----------------------
@@ -192,17 +197,22 @@ int HTTPServer::startServer()
 		int n = epoll.epollWait();
 		for(int i = 0; i < n; i++)
 		{
-			if(epoll.getEvent(i).data.fd == this->_socket_server)
+			bool event_is_server = false;
+			for (size_t j = 0; j < this->servers.size(); j++)
 			{
-				this->_socket_client = accept(this->_socket_server, NULL, NULL);
-				if (this->_socket_client < 0)
+				if(epoll.getEvent(i).data.fd == this->_socket_server[j])
 				{
-					std::cerr << "Failed to grab socket_client." << std::endl;
-					return 1;
+					this->_socket_client = accept(this->_socket_server[j], NULL, NULL);
+					if (this->_socket_client < 0)
+					{
+						std::cerr << "Failed to grab socket_client." << std::endl;
+						return 1;
+					}
+					epoll.setClientEpollin(this->_socket_client);
+					event_is_server = true;
 				}
-				epoll.setClientEpollin(this->_socket_client);
 			}
-			else
+			if(!event_is_server)
 			{
 				handleRequest(epoll, i);
 			}
@@ -215,45 +225,91 @@ int HTTPServer::startServer()
 
 void HTTPServer::closeServer()
 {
-	// close(socket_client);a
-	close(this->_socket_server);
+	size_t size = this->_socket_server.size();
+	for (size_t i = 0; i < size; i++)
+		close(this->_socket_server[i]);
 }
 
-int HTTPServer::prepareServerSocket()
+uint32_t HTTPServer::prepareAddrForHtonl(std::string addr)
 {
-	//----------------SERVER SOCKET----------------------
+	uint32_t ret = 0;
+	std::vector<int> v;
 
-	//Linux kernel creates a new socket (point de communication)
-	this->_socket_server = socket(AF_INET, SOCK_STREAM, 0);
-	if (this->_socket_server < 0)
+	for(size_t i = 0; i < addr.size(); i++)
 	{
-		std::cerr << "Cannot create socket" << std::endl;
-		return 1;
+		int octet = atoi(addr.c_str() + i);
+		v.push_back(octet);
+		while(addr[i] && addr[i] != '.')
+			i++;
+	}
+	ret = (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3];
+	v.clear();
+	return ret;
+}
+
+bool HTTPServer::checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port)
+{
+	for(size_t i = 0; i < host_port.size(); i++)
+	{
+		if (host == host_port[i].first && port == host_port[i].second)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j)
+{
+	std::string host = this->servers[i].GetHost(j);
+	int port = this->servers[i].GetPort(j);
+	bool host_port_taken = checkPortHostTaken(host_port, host, port);
+
+	if(!host_port_taken)
+	{
+		//Linux kernel creates a new socket (point de communication)
+		int socket_server = socket(AF_INET, SOCK_STREAM, 0);
+		if (socket_server < 0)
+		{
+			std::cerr << "Cannot create socket" << std::endl;
+			return 1;
+		}
+
+		sockaddr_in sockaddr;
+		sockaddr.sin_family = AF_INET;
+		sockaddr.sin_addr.s_addr = htonl(prepareAddrForHtonl(host));
+		sockaddr.sin_port = htons(port);
+
+		host_port.push_back(std::make_pair(host, port));
+		
+		if (bind(socket_server, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
+		{
+			std::cerr << "Failed to bind to port " << port << "." << std::endl;
+			return 1;
+		}
+
+		if (listen(socket_server, 10))
+		{
+			std::cerr << "Failed to listen on socket." << std::endl;
+			return 1;
+		}
+		this->_socket_server.push_back(socket_server);
+	}
+	return 0;
+}
+
+int HTTPServer::prepareServerSockets()
+{
+	std::vector<std::pair<std::string, int> > host_port;
+
+	for (size_t i = 0; i < this->servers.size(); i++)
+	{
+		for(size_t j = 0; j < this->servers[i].GetHostPortSize(); j++)
+		{
+			if (createServerSocket(host_port, i, j) == 1)
+				return 1;
+		}
 	}
 
-	this->_sockaddr.sin_family = AF_INET;
-	this->_sockaddr.sin_addr.s_addr = INADDR_ANY;
-	this->_sockaddr.sin_port = htons(8080);
-	//until here the socket exists, but isn't attached to any ports or IP address
-
-	//bind socket on port 8080 (htons(8080))
-	//INADDR_ANY => accept connections from any network interfaces (localhost, local IP, ...)
-	//without bind, the socket doesn't know "where to live"
-	if (bind(this->_socket_server, (struct sockaddr*)&this->_sockaddr, sizeof(this->_sockaddr)) < 0)
-	{
-		std::cerr << "Failed to bind to port 8080." << std::endl;
-		return 1;
-	}
-
-	//until here, socket can communicate but cannot receive connections
-	//with listen => transforms socket in a server socket.
-	//add in queue up to 10 connections if accept is not done yet
-	//listen does not read datas, it prepares the socket only
-	if (listen(this->_socket_server, 10))
-	{
-		std::cerr << "Failed to listen on socket." << std::endl;
-		return 1;
-	}
-	//socket becomes a server entry point
 	return 0;
 }

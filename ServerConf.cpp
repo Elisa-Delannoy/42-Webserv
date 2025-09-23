@@ -70,6 +70,11 @@ Location& ServerConf::GetLocation(int nb)
 	return (_location[nb]);
 }
 
+size_t ServerConf::GetHostPortSize() const
+{
+	return this->_host_port.size();
+}
+
 void ServerConf::AddServerName(std::string& line)
 {
 	std::istringstream ss(line);

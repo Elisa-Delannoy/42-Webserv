@@ -3,12 +3,13 @@
 
 #include <sys/epoll.h>
 #include <iostream>
+#include <vector>
 
 class Epoll
 {
 	public:
 		Epoll();
-		Epoll(int socket_server);
+		Epoll(std::vector<int> socket_servers);
 		~Epoll();
 
 		int epollWait();
@@ -22,7 +23,7 @@ class Epoll
 	private:
 		epoll_event _events[10];
 		epoll_event _client_event;
-		epoll_event _server_event;
+		std::vector<epoll_event> _servers_event;
 		int _epoll_fd;
 };
 
