@@ -18,7 +18,6 @@ class ParseBody
 		void	AppForm(std::istringstream& body);
 		void	AppJson(std::istringstream& body);
 		int		FindBodyLen(ParseRequest& request);
-
 };
 
 
