@@ -39,6 +39,8 @@ class ServerConf
 		std::map<int, std::string> GetErrorPath();
 		Location& GetLocation(int nb);
 
+		size_t GetHostPortSize() const;
+
 		void AddServerName(std::string& line);
 		void AddHostPort(std::string& line);
 		void AddClientBody(std::string& line);

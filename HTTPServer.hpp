@@ -25,19 +25,18 @@ class HTTPServer
 		int prepareServerSocket();
 
 		std::vector<ServerConf> ParsingConf();
-		
-		// const char* GetRequest(void) const;
+		void displayServers();
 
 		void readHeaderRequest(int client_fd, std::string & header);
 		void getHeaderRequest(int client_fd);
 		void handleRequest(Epoll epoll, int i);
 
-		
+		uint32_t getAddr(std::string addr);
 		
 	private:
-		int _socket_server;
+		std::vector<ServerConf> servers;
+		std::vector<int> _socket_server;
 		int _socket_client;
-		sockaddr_in _sockaddr;
 		char* _header_buf;
 		char* _body_buf;
 		int _size_header_buf;
