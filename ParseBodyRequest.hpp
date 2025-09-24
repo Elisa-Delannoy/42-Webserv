@@ -14,10 +14,22 @@ class ParseBody
 	public:
 		ParseBody();
 		~ParseBody();
+		
+		int		FindBodyLen(ParseRequest& request);
 		void	ChooseContent(char* body);
 		void	AppForm(std::istringstream& body);
 		void	AppJson(std::istringstream& body);
-		int		FindBodyLen(ParseRequest& request);
+		void	AppMultipart(std::istringstream& body);
+		
+		struct Part
+		{
+			std::string	name;
+			std::string	filename;
+			std::string	type;
+			std::vector<char>	content;
+		};
+		
+
 };
 
 
