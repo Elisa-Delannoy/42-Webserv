@@ -39,7 +39,6 @@ class HTTPServer
 		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
 
 	private:
-		std::vector<ServerConf> servers;
 		std::vector<int> _socket_server;
 		int _socket_client;
 		char* _body_buf;
