@@ -6,6 +6,37 @@ Response::Response(int client_fd, int body_len) : _client_fd(client_fd), _body_l
 Response::~Response()
 { }
 
+/*
+Si l’upload est réussi ✅
+
+Tu peux répondre avec 200 OK et un petit message HTML :
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+Content-Length: ...
+
+<html>
+  <body>
+    <h1>Upload réussi !</h1>
+  </body>
+</html>
+
+Ou bien, tu peux renvoyer 201 Created si tu veux être strict avec HTTP, surtout si tu as créé une “ressource” (le fichier sur ton serveur).
+Exemple :
+HTTP/1.1 201 Created
+Location: /uploads/monfichier.jpg
+
+
+Si l’upload échoue ❌
+
+Tu renvoies un code d’erreur approprié :
+
+400 Bad Request si la requête est mal formée.
+
+413 Payload Too Large si le fichier est trop gros.
+
+500 Internal Server Error si c’est un bug serveur.
+*/
+
 std::string Response::setStatus(std::string version)
 {
 	return (version + " 200 OK\r\n");
@@ -21,7 +52,7 @@ std::string Response::setContentType(std::string path)
 	}
 	else if (path == "/favicon.ico")
 	{
-		ret += "image/jpeg";
+		ret += "image/svg+xml";
 	}
 	else if (path == "/upload")
 	{
@@ -61,7 +92,7 @@ std::string Response::setContentLength(std::string path)
 	}
 	else if (path == "/favicon.ico")
 	{
-		size = setSize("img/favicon.jpeg");
+		size = setSize("img/favicon.svg");
 	}
 	else
 	{
@@ -113,7 +144,7 @@ void Response::sendBody(ParseRequest request, char* buf)
 	}
 	else if (path == "/favicon.ico")
 	{
-		sendImage(path);
+		sendImage("/img/favicon.svg");
 	}
 	else if (path == "/upload")
 	{
