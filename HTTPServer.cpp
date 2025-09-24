@@ -18,7 +18,6 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	char	c;
 	bool	first = false;
 	std::string	line;
-	std::cout << "recv header : ";
 	while (1)
 	{
 		recv(client_fd, &c, 1, 0);
@@ -39,7 +38,6 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 			line.clear();
 		}
 	}
-	std::cout << "------end recv header-------" << std::endl;
 }
 
 void HTTPServer::handleRequest(Epoll epoll, int i)

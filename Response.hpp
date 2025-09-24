@@ -16,11 +16,14 @@ class Response
 		Response(int client_fd, int body_len);
 		~Response();
 
-		void setStatus(std::string version);
-		void setContentType(std::string path);
-		void setContentLength(std::string path);
+		std::string setStatus(std::string version);
+		std::string setContentType(std::string path);
+		std::string setContentLength(std::string path);
 		void sendHeaders(ParseRequest header);
 		void sendBody(ParseRequest request, char* buf);
+		void sendImage(std::string path_image);
+
+		std::string setSize(const char* path_image);
 
 	private:
 		std::string _response;

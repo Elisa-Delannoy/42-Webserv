@@ -6,28 +6,47 @@ Response::Response(int client_fd, int body_len) : _client_fd(client_fd), _body_l
 Response::~Response()
 { }
 
-void Response::setStatus(std::string version)
+std::string Response::setStatus(std::string version)
 {
-	this->_status = version + " 200 OK\r\n";
+	return (version + " 200 OK\r\n");
 }
 
-void Response::setContentType(std::string path)
+std::string Response::setContentType(std::string path)
 {
+	std::string ret = "Content-Type: ";
+	std::string type;
 	if (path == "/")
 	{
-		this->_content_type = "Content-Type: text/html\r\n";
+		ret += "text/html";
+	}
+	else if (path == "/favicon.ico")
+	{
+		ret += "image/jpeg";
 	}
 	else if (path == "/upload")
 	{
-		this->_content_type = "Content-Type: image/webp\r\n";
+		ret += "image/webp";
 	}
 	else
 	{
-		this->_content_type = "Content-Type: image/jpeg\r\n";
+		ret += "image/jpeg";
 	}
+	return (ret + "\r\n");
 }
 
-void Response::setContentLength(std::string path)
+std::string Response::setSize(const char* path_image)
+{
+	std::ostringstream oss;
+	if (stat(path_image, &this->_info) < 0)
+	{
+		std::cerr << "Error stat file" << std::endl;
+	}
+	oss << this->_info.st_size;
+	this->_body_len = this->_info.st_size;
+	return oss.str();
+}
+
+std::string Response::setContentLength(std::string path)
 {
 	std::ostringstream oss;
 	std::string size;
@@ -35,37 +54,27 @@ void Response::setContentLength(std::string path)
 	{
 		oss << this->_body_len;
 		size = oss.str();
-		this->_content_length = "Content-Length: " + size + "\r\n";
 	}
-	if (path == "/")
+	else if (path == "/")
 	{
-		if (stat("html/index.html", &this->_info) < 0)
-		{
-			std::cerr << "Error stat file" << std::endl;
-		}
-		oss << this->_info.st_size;
-		size = oss.str();
-		this->_content_length = "Content-Length: " + size + "\r\n";
-		this->_body_len = this->_info.st_size;
+		size = setSize("html/index.html");
+	}
+	else if (path == "/favicon.ico")
+	{
+		size = setSize("img/favicon.jpeg");
 	}
 	else
 	{
-		if (stat("img/cookie.jpeg", &this->_info) < 0)
-		{
-			std::cerr << "Error stat file" << std::endl;
-		}
-		oss << this->_info.st_size;
-		size = oss.str();
-		this->_content_length = "Content-Length: " + size + "\r\n";
-		this->_body_len = this->_info.st_size;
+		size = setSize("img/cookie.jpeg");
 	}
+	return "Content-Length: " + size + "\r\n";
 }
 
 void Response::sendHeaders(ParseRequest header)
 {
-	this->setStatus(header.GetVersion());
-	this->setContentType(header.GetPath());
-	this->setContentLength(header.GetPath());
+	this->_status = setStatus(header.GetVersion());
+	this->_content_type = setContentType(header.GetPath());
+	this->_content_length = setContentLength(header.GetPath());
 
 	this->_response = this->_status + this->_content_type + this->_content_length + "\r\n";
 
@@ -73,9 +82,26 @@ void Response::sendHeaders(ParseRequest header)
 		std::cerr << "Error while sending headers." << std::endl;
 }
 
+void Response::sendImage(std::string path_image)
+{
+	std::ifstream ifs(path_image.c_str() + 1, std::ios::binary); //c.str() + 1 to skip first '/'
+	char *buffer = new char[this->_body_len];
+	ifs.read(buffer, this->_body_len);
+	int data_sent = 0;
+	while(data_sent < this->_body_len)
+	{
+		ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_body_len - data_sent, 0);
+		if (data_read == -1)
+			std::cerr << "Error while sending content." << std::endl;
+		data_sent += data_read;
+	}
+	delete[] buffer;
+}
+
 void Response::sendBody(ParseRequest request, char* buf)
 {
-	if (request.GetPath() == "/")
+	std::string path = request.GetPath();
+	if (path == "/")
 	{
 		std::ifstream file("html/index.html");
 		std::stringstream buffer;
@@ -85,7 +111,11 @@ void Response::sendBody(ParseRequest request, char* buf)
 		if(send(this->_client_fd, this->_content.c_str(), this->_content.size(), 0) == -1)
 			std::cerr << "Error while sending content." << std::endl;
 	}
-	else if (request.GetPath() == "/upload")
+	else if (path == "/favicon.ico")
+	{
+		sendImage(path);
+	}
+	else if (path == "/upload")
 	{
 		std::string boundary;
 		for(int i = 0; buf[i] != '\r'; i++)
@@ -119,17 +149,6 @@ void Response::sendBody(ParseRequest request, char* buf)
 	}
 	else
 	{
-		std::ifstream ifs("img/cookie.jpeg", std::ios::binary);
-		char *buffer = new char[this->_body_len];
-		ifs.read(buffer, this->_body_len);
-		int data_sent = 0;
-		while(data_sent < this->_body_len)
-		{
-			ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_body_len - data_sent, 0);
-			if (data_read == -1)
-				std::cerr << "Error while sending content." << std::endl;
-			data_sent += data_read;
-		}
-		delete[] buffer;
+		sendImage(path);
 	}
 }
