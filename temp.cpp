@@ -23,11 +23,11 @@ void AddServerName(ServerConf& server, std::string line)
 	}
 }
 
-std::vector<ServerConf> ParsingConf()
+std::vector<ServerConf> ParsingConf(std::string conf_file)
 {
 	std::vector<ServerConf> servers;
 
-	std::ifstream conf("conf/valid.conf");
+	std::ifstream conf(conf_file);
 	std::string line;
 	while (std::getline(conf, line))
 	{

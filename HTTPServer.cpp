@@ -58,7 +58,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 			int r = 0;
 			for (int i = 0; i < 10; i++) /*i < 10 ?*/
 			{
-				r += recv(client_fd, this->_body_buf + r, body_len, 0);
+				r += recv(client_fd, this->_body_buf + r, body_len -r, 0);
 				if (r >= body_len)
 					break;
 			}
@@ -119,11 +119,11 @@ bool CheckLocationStart(std::string line)
 }
 
 //PARSING CONF
-std::vector<ServerConf> HTTPServer::ParsingConf()
+std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 {
 	std::vector<ServerConf> servers;
 
-	std::ifstream conf("conf/valid.conf");
+	std::ifstream conf(conf_file.c_str());
 	std::string line;
 	while (std::getline(conf, line))
 	{
@@ -180,9 +180,9 @@ void HTTPServer::displayServers()
 	}
 }
 
-int HTTPServer::startServer()
+int HTTPServer::startServer(std::string conf_file)
 {
-	this->servers = ParsingConf();
+	this->servers = ParsingConf(conf_file);
 
 	displayServers();
 

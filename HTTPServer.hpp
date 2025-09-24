@@ -21,12 +21,12 @@ class HTTPServer
 		HTTPServer();
 		~HTTPServer();
 
-		int startServer();
+		int startServer(std::string conf_file);
 		void closeServer();
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 
-		std::vector<ServerConf> ParsingConf();
+		std::vector<ServerConf> ParsingConf(std::string conf_file);
 		void displayServers();
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
