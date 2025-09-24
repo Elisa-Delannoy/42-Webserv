@@ -7,6 +7,16 @@ Response::~Response()
 { }
 
 /*
+| **Code HTTP**                                           | **Body nécessaire ?** | **Exemple concret**                                          | **Comment l’envoyer**                                                                                 |
+| ------------------------------------------------------- | --------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `200 OK`                                                | Oui                   | `GET /` → `index.html`, image, JSON                          | Lire le fichier ou générer le body → envoyer header (`Content-Type`, `Content-Length`) → envoyer body |
+| `204 No Content`                                        | Non                   | `GET /favicon.ico` quand on ne sert pas d’icône              | Envoyer seulement le header `HTTP/1.1 204 No Content`                                                 |
+| `301 Moved Permanently` / `302 Found` / `303 See Other` | Non                   | Redirection après un POST ou changement d’URL                | Envoyer header avec `Location: /nouvelle-page` → body optionnel ou vide                               |
+| `304 Not Modified`                                      | Non                   | Cache : le fichier n’a pas changé depuis la dernière requête | Envoyer seulement le header `HTTP/1.1 304 Not Modified`                                               |
+| `404 Not Found`                                         | Optionnel             | Fichier demandé inexistant                                   | Header seul si minimaliste, ou header + body HTML si tu veux afficher un message                      |
+| `500 Internal Server Error`                             | Optionnel             | Problème serveur lors de la lecture d’un fichier             | Header seul ou header + body HTML expliquant l’erreur                                                 |
+
+
 Si l’upload est réussi ✅
 
 Tu peux répondre avec 200 OK et un petit message HTML :
@@ -35,6 +45,46 @@ Tu renvoies un code d’erreur approprié :
 413 Payload Too Large si le fichier est trop gros.
 
 500 Internal Server Error si c’est un bug serveur.
+
+
+
+
+Quand le client fait un POST, il envoie des données (ex: formulaire d’upload).
+
+Si ton serveur renvoie directement du HTML avec 200 OK, le navigateur reste sur l’URL du POST.
+
+Si l’utilisateur rafraîchit la page, le navigateur va proposer de renvoyer le POST → ça peut provoquer un deuxième upload (pas cool).
+
+👉 Pour éviter ça, on utilise le pattern PRG (Post / Redirect / Get) :
+
+Le client envoie un POST avec son fichier.
+
+Le serveur traite le fichier, l’enregistre, puis répond :
+HTTP/1.1 303 See Other
+Location: /upload_success.html
+Le navigateur reçoit ça et fait automatiquement un GET /upload_success.html.
+
+L’utilisateur voit une page de confirmation, et un refresh de la page ne répète pas le POST.
+Après avoir écrit le fichier côté serveur, tu peux envoyer quelque chose comme :
+HTTP/1.1 303 See Other
+Location: /upload_success.html
+Content-Length: 0
+ici pas de corps (body), juste l’en-tête Location. Le navigateur ira chercher /upload_success.html en GET.
+
+Comparaison avec les autres codes possibles
+
+200 OK : tu affiches directement la page de confirmation → mais le problème de "rafraîchir = re-upload" existe.
+
+201 Created : indique que la ressource est créée (bien pour une API REST), mais dans un site web classique ça oblige le client à rester sur l’URL du POST.
+
+303 See Other : meilleure pratique pour un site avec formulaire ou upload → évite les re-POST accidentels.
+
+
+ETAPES A SUIVRE :
+1. verifier si le body est bon et pret a envoyer (si body il y a)
+2. envoyer header adequat
+3. envoyer body. Si erreur avec send => on stop send et osef
+
 */
 
 std::string Response::setStatus(std::string version)
