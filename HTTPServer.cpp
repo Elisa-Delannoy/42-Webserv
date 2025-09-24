@@ -144,7 +144,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 				if (line.find("error_page") != std::string::npos)
 					temp.AddErrorPage(line);
 				if (CheckLocationStart(line) == true)
-					temp.AddLocation(conf);
+					temp.AddLocation(conf, line);
 			}
 			if (temp.GetErrorPath().empty())
 				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
@@ -156,7 +156,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 
 void HTTPServer::displayServers()
 {
-	size_t j = this->servers.size();
+	size_t j = servers.size();
 	for (size_t r = 0; r < j; r++)
 	{
 		std::cout << "Serveur numero : " << r+1 << std::endl;
@@ -169,11 +169,12 @@ void HTTPServer::displayServers()
 		for (int f = 0; f < this->servers[r]._nb_location; f++)
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
-			std::cout << "ROOT Location :" << this->servers[r].GetLocation(f).GetRoot() << std::endl;
-			for (int i = 0; i < this->servers[r].GetLocation(f).nb_methods; i++)
-				std::cout << "ME Location :" << this->servers[r].GetLocation(f).GetMethods(i) << std::endl;
-			std::cout << "AUTOINNDEX Location : " << this->servers[r].GetLocation(f).GetAutoindex() << std::endl;
-			std::cout << "CGI Location : " << this->servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			std::cout << "NAME Location :" << servers[r].GetLocation(f).GetName() << std::endl;
+			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
+			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
+				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
+			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
+			std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
 			std::cout << "\n";
 		}
 		std::cout << "\n";

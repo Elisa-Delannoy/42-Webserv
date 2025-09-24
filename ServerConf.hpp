@@ -45,7 +45,7 @@ class ServerConf
 		void AddHostPort(std::string& line);
 		void AddClientBody(std::string& line);
 		void AddErrorPage(std::string& line);
-		void AddLocation(std::ifstream& conf);
+		void AddLocation(std::ifstream& conf, std::string& line);
 };
 
 #endif

@@ -2,6 +2,7 @@
 
 Location::Location()
 {
+	_name = "";
 	_root = "";
 	_cgi_pass = "";
 	_autoindex = false;
@@ -10,6 +11,11 @@ Location::Location()
 
 Location::~Location()
 {
+}
+
+void Location::SetName(std::string name)
+{
+	_name = name;
 }
 
 void Location::SetRoot(std::string root)
@@ -32,6 +38,11 @@ void Location::SetCGIPass(std::string cgi)
 	_cgi_pass = cgi;
 }
 
+std::string Location::GetName() const
+{
+	return _name;
+}
+
 std::string Location::GetRoot() const
 {
 	return _root;
@@ -50,6 +61,20 @@ bool Location::GetAutoindex() const
 std::string Location::GetCGIPass() const
 {
 	return _cgi_pass;
+}
+
+void Location::AddName(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "location")
+		return;
+	ss >> word;
+	if (word == "~")
+		ss >> word;
+	SetName(word);
 }
 
 void Location::AddRoot(std::string line)

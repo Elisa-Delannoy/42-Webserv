@@ -28,6 +28,9 @@ class HTTPServer
 
 		std::vector<ServerConf> ParsingConf(std::string conf_file);
 		void displayServers();
+		std::vector<ServerConf> servers;
+		
+		// const char* GetRequest(void) const;
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
 		void handleRequest(Epoll epoll, int i);

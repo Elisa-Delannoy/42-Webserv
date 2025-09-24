@@ -3,17 +3,19 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <ServerConf.hpp>
+#include <ParseRequest.hpp>
 
 class ExecCGI
 {
 	private:
 		char **argv;
 		char **envp;
-		int pipefd[2];
-		pid_t pid;
 	public:
 		ExecCGI();
 		~ExecCGI();
+
+		void Execution(std::vector<ServerConf> servers);
 
 		void SetArgv(std::vector<std::string> &vec);
 		void SetEnvp(std::vector<std::string> &vec);
