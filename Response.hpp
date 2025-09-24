@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <map>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <algorithm>
@@ -16,11 +17,15 @@ class Response
 		Response(int client_fd, int body_len);
 		~Response();
 
-		std::string setStatus(std::string version);
+		std::string setStatus(std::string version, std::string code);
 		std::string setContentType(std::string path);
 		std::string setContentLength(std::string path);
-		void sendHeaders(ParseRequest header);
-		void sendBody(ParseRequest request, char* buf);
+		void setHeader(std::string version, std::string path, int code);
+		void sendHeader();
+		void sendBody();
+		void sendResponse(ParseRequest header, char* buf);
+
+		int checkBody(const char* path);
 		void sendImage(std::string path_image);
 
 		std::string setSize(const char* path_image);
@@ -31,6 +36,7 @@ class Response
 		std::string _status;
 		std::string _content_type;
 		std::string _content_length;
+		std::string _connection;
 		int _client_fd;
 		struct stat _info;
 		int _body_len;

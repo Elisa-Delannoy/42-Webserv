@@ -70,8 +70,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
 		Response resp(client_fd, body_len);
-		resp.sendHeaders(header);
-		resp.sendBody(header, this->_body_buf);
+		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
 		body_len = 0;

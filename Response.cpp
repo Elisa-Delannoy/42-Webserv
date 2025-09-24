@@ -86,10 +86,107 @@ ETAPES A SUIVRE :
 3. envoyer body. Si erreur avec send => on stop send et osef
 
 */
-
-std::string Response::setStatus(std::string version)
+void Response::setHeader(std::string version, std::string path, int code)
 {
-	return (version + " 200 OK\r\n");
+	if (code == 200)
+	{
+		this->_status = setStatus(version, " 200 OK\r\n");
+		this->_content_length = setContentLength(path);
+	}
+	if (code == 500)
+	{
+		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
+		this->_content_length = "0";
+	}
+	this->_content_type = setContentType(path);
+}
+
+void Response::sendHeader()
+{
+	this->_response = this->_status + this->_content_type
+		+ this->_content_length + "\r\n";
+
+	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
+		std::cerr << "Error while sending headers." << std::endl;
+}
+
+void Response::sendResponse(ParseRequest header, char* buf)
+{
+	(void)buf;
+
+	std::string path = header.GetPath();
+	std::string method = header.GetMethod();
+	std::string version = header.GetVersion();
+
+	if (method == "GET")
+	{
+		if (path == "/")
+		{
+			if (checkBody("html/index.html") == 0)
+			{
+				setHeader(version, path, 200);
+				sendHeader();
+				//send body html
+				// if (send(this->_client_fd, this->_content.c_str(), this->_content.size(), 0) == -1)
+				// 	std::cerr << "Error while sending content." << std::endl;
+				sendBody();
+			}
+			else
+			{
+				setHeader(version, path, 500);
+				sendHeader();
+			}
+		}
+		else if (path.substr(0, 5) == "/img/")
+		{
+			if (checkBody(path.substr(1).c_str()) == 0)
+			{
+				setHeader(version, path, 200);
+				sendHeader();
+				sendBody();
+			}
+		}
+	}
+	else if (method == "POST")
+	{
+
+	}
+}
+
+void Response::sendBody()
+{
+	size_t data_sent = 0;
+	while(data_sent < this->_content.size())
+	{
+		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
+			this->_content.size() - data_sent, 0);
+		if (data_read == -1)
+		{
+			std::cerr << "Error while sending content." << std::endl;
+			break;
+		}
+		data_sent += data_read;
+	}
+}
+
+int Response::checkBody(const char* path)
+{
+	std::ifstream file(path, std::ios::binary);
+	if (!file.is_open())
+		return 1;
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	if (file.fail())
+		return 1;
+	file.close();
+	this->_content = buffer.str();
+	return 0;
+}
+
+std::string Response::setStatus(std::string version, std::string code)
+{
+	return (version + code);
 }
 
 std::string Response::setContentType(std::string path)
@@ -151,18 +248,6 @@ std::string Response::setContentLength(std::string path)
 	return "Content-Length: " + size + "\r\n";
 }
 
-void Response::sendHeaders(ParseRequest header)
-{
-	this->_status = setStatus(header.GetVersion());
-	this->_content_type = setContentType(header.GetPath());
-	this->_content_length = setContentLength(header.GetPath());
-
-	this->_response = this->_status + this->_content_type + this->_content_length + "\r\n";
-
-	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
-		std::cerr << "Error while sending headers." << std::endl;
-}
-
 void Response::sendImage(std::string path_image)
 {
 	std::ifstream ifs(path_image.c_str() + 1, std::ios::binary); //c.str() + 1 to skip first '/'
@@ -179,20 +264,10 @@ void Response::sendImage(std::string path_image)
 	delete[] buffer;
 }
 
-void Response::sendBody(ParseRequest request, char* buf)
+/* void Response::sendBody(ParseRequest request, char* buf)
 {
 	std::string path = request.GetPath();
-	if (path == "/")
-	{
-		std::ifstream file("html/index.html");
-		std::stringstream buffer;
-
-		buffer << file.rdbuf();
-		this->_content = buffer.str();
-		if(send(this->_client_fd, this->_content.c_str(), this->_content.size(), 0) == -1)
-			std::cerr << "Error while sending content." << std::endl;
-	}
-	else if (path == "/favicon.ico")
+	if (path == "/favicon.ico")
 	{
 		sendImage("/img/favicon.svg");
 	}
@@ -232,4 +307,4 @@ void Response::sendBody(ParseRequest request, char* buf)
 	{
 		sendImage(path);
 	}
-}
+} */
