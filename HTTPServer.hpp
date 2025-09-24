@@ -22,6 +22,7 @@ class HTTPServer
 		~HTTPServer();
 
 		int startServer(std::string conf_file);
+		int runServer();
 		void closeServer();
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);

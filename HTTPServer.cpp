@@ -22,6 +22,7 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	{
 		recv(client_fd, &c, 1, 0);
 		line += c;
+		std::cout << c;
 		if (c == '\n')
 		{
 			std::cout << line << std::endl;
@@ -39,10 +40,9 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	}
 }
 
-
 void HTTPServer::handleRequest(Epoll epoll, int i)
 {
-	ParseRequest request;
+	ParseRequest header;
 	ParseBody	body;
 	int client_fd = epoll.getEvent(i).data.fd;
 	int body_len = 0;
@@ -50,8 +50,8 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
 	{
 		std::cout << "------------REQUEST------------" << std::endl;
-		readHeaderRequest(client_fd, request);
-		body_len = body.FindBodyLen(request);
+		readHeaderRequest(client_fd, header);
+		body_len = body.FindBodyLen(header);
 		if (body_len != 0)
 		{
 			this->_body_buf = new char[body_len];
@@ -62,16 +62,16 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 				if (r >= body_len)
 					break;
 			}
+			body.ChooseContent(this->_body_buf);
 		}
 		epoll.SetClientEpollout(i, this->_socket_client);
-		body.ChooseContent(this->_body_buf);
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
-		Response resp(client_fd);
-		resp.sendHeaders(request);
-		resp.sendContent(request, this->_body_buf, body_len);
+		Response resp(client_fd, body_len);
+		resp.sendHeaders(header);
+		resp.sendBody(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
 		body_len = 0;
@@ -181,16 +181,8 @@ void HTTPServer::displayServers()
 	}
 }
 
-int HTTPServer::startServer(std::string conf_file)
+int HTTPServer::runServer()
 {
-	this->servers = ParsingConf(conf_file);
-
-	displayServers();
-
-	if (prepareServerSockets() == 1)
-		return 1;
-
-	//----------------CLIENT SOCKET----------------------
 	Epoll epoll(this->_socket_server);
 
 	while(true)
@@ -221,6 +213,20 @@ int HTTPServer::startServer(std::string conf_file)
 		}
 	}
 	std::cout << "Loop exited" << std::endl;
+	return 0;
+}
+
+int HTTPServer::startServer(std::string conf_file)
+{
+	this->servers = ParsingConf(conf_file);
+
+	displayServers();
+
+	if (prepareServerSockets() == 1)
+		return 1;
+
+	if (runServer() == 1)
+		return 1;
 	return 0;
 }
 
