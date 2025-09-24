@@ -11,6 +11,8 @@
 #include <algorithm>
 #include "ParseRequest.hpp"
 
+#define ROOT "html/index.html"
+
 class Response
 {
 	public:
@@ -23,6 +25,7 @@ class Response
 		void setHeader(std::string version, std::string path, int code);
 		void sendHeader();
 		void sendBody();
+		void sendHeaderAndBody();
 		void sendResponse(ParseRequest header, char* buf);
 
 		int checkBody(const char* path);

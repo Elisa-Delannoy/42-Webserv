@@ -93,6 +93,12 @@ void Response::setHeader(std::string version, std::string path, int code)
 		this->_status = setStatus(version, " 200 OK\r\n");
 		this->_content_length = setContentLength(path);
 	}
+	if (code == 204)
+	{
+		this->_status = setStatus(version, " 204 No Content\r\n");
+		this->_content_length = "0";
+		return ;
+	}
 	if (code == 500)
 	{
 		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
@@ -110,6 +116,12 @@ void Response::sendHeader()
 		std::cerr << "Error while sending headers." << std::endl;
 }
 
+void Response::sendHeaderAndBody()
+{
+	sendHeader();
+	sendBody();
+}
+
 void Response::sendResponse(ParseRequest header, char* buf)
 {
 	(void)buf;
@@ -122,14 +134,10 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	{
 		if (path == "/")
 		{
-			if (checkBody("html/index.html") == 0)
+			if (checkBody(ROOT) == 0)
 			{
 				setHeader(version, path, 200);
-				sendHeader();
-				//send body html
-				// if (send(this->_client_fd, this->_content.c_str(), this->_content.size(), 0) == -1)
-				// 	std::cerr << "Error while sending content." << std::endl;
-				sendBody();
+				sendHeaderAndBody();
 			}
 			else
 			{
@@ -139,12 +147,21 @@ void Response::sendResponse(ParseRequest header, char* buf)
 		}
 		else if (path.substr(0, 5) == "/img/")
 		{
-			if (checkBody(path.substr(1).c_str()) == 0)
+			if (checkBody(path.substr(1).c_str()) == 0) //path without first '/'
 			{
 				setHeader(version, path, 200);
-				sendHeader();
-				sendBody();
+				sendHeaderAndBody();
 			}
+			else
+			{
+				setHeader(version, path, 500);
+				sendHeader();
+			}
+		}
+		else if (path == "/favicon.ico") //just in case, we ignore it
+		{
+			setHeader(version, path, 204);
+			sendHeader();
 		}
 	}
 	else if (method == "POST")
@@ -169,6 +186,8 @@ void Response::sendBody()
 	}
 }
 
+//Return 0 if ok
+//Return 1 if not
 int Response::checkBody(const char* path)
 {
 	std::ifstream file(path, std::ios::binary);
@@ -179,6 +198,7 @@ int Response::checkBody(const char* path)
 	buffer << file.rdbuf();
 	if (file.fail())
 		return 1;
+
 	file.close();
 	this->_content = buffer.str();
 	return 0;
@@ -192,22 +212,33 @@ std::string Response::setStatus(std::string version, std::string code)
 std::string Response::setContentType(std::string path)
 {
 	std::string ret = "Content-Type: ";
-	std::string type;
 	if (path == "/")
 	{
 		ret += "text/html";
 	}
-	else if (path == "/favicon.ico")
-	{
-		ret += "image/svg+xml";
-	}
-	else if (path == "/upload")
-	{
-		ret += "image/webp";
-	}
 	else
 	{
-		ret += "image/jpeg";
+		size_t i = path.size() - 1;
+		while (path[i - 1] != '.')
+			i--;
+		std::string type = path.substr(i);
+
+		if (type == "jpg")
+			ret += "image/jpg";
+		if (type == "jpeg")
+			ret += "image/jpeg";
+		if (type == "png")
+			ret += "image/png";
+		if (type == "gif")
+			ret += "image/gif";
+		if (type == "svg")
+			ret += "image/svg+xml";
+		if (type == "webp")
+			ret += "image/webp";
+		if (type == "ico")
+			ret += "image/x-icon";
+		if (type == "avif")
+			ret += "image/avif";
 	}
 	return (ret + "\r\n");
 }
@@ -235,42 +266,17 @@ std::string Response::setContentLength(std::string path)
 	}
 	else if (path == "/")
 	{
-		size = setSize("html/index.html");
-	}
-	else if (path == "/favicon.ico")
-	{
-		size = setSize("img/favicon.svg");
+		size = setSize(ROOT);
 	}
 	else
 	{
-		size = setSize("img/cookie.jpeg");
+		size = setSize(path.c_str() + 1);
 	}
 	return "Content-Length: " + size + "\r\n";
 }
 
-void Response::sendImage(std::string path_image)
-{
-	std::ifstream ifs(path_image.c_str() + 1, std::ios::binary); //c.str() + 1 to skip first '/'
-	char *buffer = new char[this->_body_len];
-	ifs.read(buffer, this->_body_len);
-	int data_sent = 0;
-	while(data_sent < this->_body_len)
-	{
-		ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_body_len - data_sent, 0);
-		if (data_read == -1)
-			std::cerr << "Error while sending content." << std::endl;
-		data_sent += data_read;
-	}
-	delete[] buffer;
-}
-
 /* void Response::sendBody(ParseRequest request, char* buf)
 {
-	std::string path = request.GetPath();
-	if (path == "/favicon.ico")
-	{
-		sendImage("/img/favicon.svg");
-	}
 	else if (path == "/upload")
 	{
 		std::string boundary;
@@ -302,9 +308,5 @@ void Response::sendImage(std::string path_image)
 		std::ofstream out("uploads/fichier.png", std::ios::binary);
 		out.write(buf + i, endfile - i);
 		out.close();
-	}
-	else
-	{
-		sendImage(path);
 	}
 } */
