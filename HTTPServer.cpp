@@ -180,16 +180,8 @@ void HTTPServer::displayServers()
 	}
 }
 
-int HTTPServer::startServer(std::string conf_file)
+int HTTPServer::runServer()
 {
-	this->servers = ParsingConf(conf_file);
-
-	displayServers();
-
-	if (prepareServerSockets() == 1)
-		return 1;
-
-	//----------------CLIENT SOCKET----------------------
 	Epoll epoll(this->_socket_server);
 
 	while(true)
@@ -220,6 +212,20 @@ int HTTPServer::startServer(std::string conf_file)
 		}
 	}
 	std::cout << "Loop exited" << std::endl;
+	return 0;
+}
+
+int HTTPServer::startServer(std::string conf_file)
+{
+	this->servers = ParsingConf(conf_file);
+
+	displayServers();
+
+	if (prepareServerSockets() == 1)
+		return 1;
+
+	if (runServer() == 1)
+		return 1;
 	return 0;
 }
 
