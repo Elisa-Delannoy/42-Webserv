@@ -8,7 +8,6 @@ Epoll::Epoll(std::vector<int> socket_servers)
 	this->_epoll_fd = epoll_create1(0);
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
-		std::cout << "i : " << i << std::endl;
 		epoll_event event;
 		event.events = EPOLLIN;
 		event.data.fd = socket_servers[i];

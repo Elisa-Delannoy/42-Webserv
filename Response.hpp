@@ -13,14 +13,14 @@
 class Response
 {
 	public:
-		Response(int client_fd);
+		Response(int client_fd, int body_len);
 		~Response();
 
 		void setStatus(std::string version);
 		void setContentType(std::string path);
 		void setContentLength(std::string path);
-		void sendHeaders(ParseRequest request);
-		void sendContent(ParseRequest request, char* buf, int size);
+		void sendHeaders(ParseRequest header);
+		void sendBody(ParseRequest request, char* buf);
 
 	private:
 		std::string _response;
@@ -30,6 +30,7 @@ class Response
 		std::string _content_length;
 		int _client_fd;
 		struct stat _info;
+		int _body_len;
 };
 
 #endif

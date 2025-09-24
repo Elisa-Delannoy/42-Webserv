@@ -1,6 +1,6 @@
 #include "Response.hpp"
 
-Response::Response(int client_fd) : _client_fd(client_fd)
+Response::Response(int client_fd, int body_len) : _client_fd(client_fd), _body_len(body_len)
 { }
 
 Response::~Response()
@@ -31,6 +31,12 @@ void Response::setContentLength(std::string path)
 {
 	std::ostringstream oss;
 	std::string size;
+	if (this->_body_len > 0)
+	{
+		oss << this->_body_len;
+		size = oss.str();
+		this->_content_length = "Content-Length: " + size + "\r\n";
+	}
 	if (path == "/")
 	{
 		if (stat("html/index.html", &this->_info) < 0)
@@ -40,11 +46,7 @@ void Response::setContentLength(std::string path)
 		oss << this->_info.st_size;
 		size = oss.str();
 		this->_content_length = "Content-Length: " + size + "\r\n";
-	}
-	else if (path == "/upload")
-	{
-		//A LA MANO FOR NOW, TO CHANGE AFTER
-		this->_content_length = "Content-Length: 235966\r\n";
+		this->_body_len = this->_info.st_size;
 	}
 	else
 	{
@@ -55,14 +57,15 @@ void Response::setContentLength(std::string path)
 		oss << this->_info.st_size;
 		size = oss.str();
 		this->_content_length = "Content-Length: " + size + "\r\n";
+		this->_body_len = this->_info.st_size;
 	}
 }
 
-void Response::sendHeaders(ParseRequest request)
+void Response::sendHeaders(ParseRequest header)
 {
-	this->setStatus(request.GetVersion());
-	this->setContentType(request.GetPath());
-	this->setContentLength(request.GetPath());
+	this->setStatus(header.GetVersion());
+	this->setContentType(header.GetPath());
+	this->setContentLength(header.GetPath());
 
 	this->_response = this->_status + this->_content_type + this->_content_length + "\r\n";
 
@@ -70,7 +73,7 @@ void Response::sendHeaders(ParseRequest request)
 		std::cerr << "Error while sending headers." << std::endl;
 }
 
-void Response::sendContent(ParseRequest request, char* buf, int size)
+void Response::sendBody(ParseRequest request, char* buf)
 {
 	if (request.GetPath() == "/")
 	{
@@ -89,7 +92,7 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 			boundary += buf[i];
 
 		int i = 0;
-		for(; i < size; i++)
+		for(; i < this->_body_len; i++)
 		{
 			if (buf[i] == 'R' && buf[i+1] == 'I' && buf[i+2] == 'F' && buf[i+3] == 'F')
 				break;
@@ -99,7 +102,7 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 		std::cout << "BODY : " << buf+i << std::endl;
 
 		int j = i;
-		for(; j < size; j++)
+		for(; j < this->_body_len; j++)
 		{
 			if (buf[j] == '-' && buf[j + 1] == '-' && buf[j + 2] == '-'
 				&& buf[j+3] == '-' && buf[j + 4] == '-' && buf[j + 5] == '-'
@@ -117,12 +120,12 @@ void Response::sendContent(ParseRequest request, char* buf, int size)
 	else
 	{
 		std::ifstream ifs("img/cookie.jpeg", std::ios::binary);
-		char *buffer = new char[this->_info.st_size];
-		ifs.read(buffer, this->_info.st_size);
+		char *buffer = new char[this->_body_len];
+		ifs.read(buffer, this->_body_len);
 		int data_sent = 0;
-		while(data_sent < this->_info.st_size)
+		while(data_sent < this->_body_len)
 		{
-			ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_info.st_size - data_sent, 0);
+			ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_body_len - data_sent, 0);
 			if (data_read == -1)
 				std::cerr << "Error while sending content." << std::endl;
 			data_sent += data_read;
