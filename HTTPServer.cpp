@@ -144,7 +144,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf()
 				if (line.find("error_page") != std::string::npos)
 					temp.AddErrorPage(line);
 				if (CheckLocationStart(line) == true)
-					temp.AddLocation(conf);
+					temp.AddLocation(conf, line);
 			}
 			if (temp.GetErrorPath().empty())
 				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
@@ -156,7 +156,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf()
 
 int HTTPServer::startServer()
 {
-	std::vector<ServerConf> servers = ParsingConf();
+	servers = ParsingConf();
 
 	size_t j = servers.size();
 	for (size_t r = 0; r < j; r++)
@@ -171,6 +171,7 @@ int HTTPServer::startServer()
 		for (int f = 0; f < servers[r]._nb_location; f++)
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
+			std::cout << "NAME Location :" << servers[r].GetLocation(f).GetName() << std::endl;
 			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
 			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
 				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;

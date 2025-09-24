@@ -26,6 +26,7 @@ class HTTPServer
 		int prepareServerSocket();
 
 		std::vector<ServerConf> ParsingConf();
+		std::vector<ServerConf> servers;
 		
 		// const char* GetRequest(void) const;
 
