@@ -138,7 +138,7 @@ void Response::sendError(int code)
 			this->_content = ERROR404;
 		if (code == 500)
 			this->_content = ERROR500;
-		this->_content_length = setContentLength(path);
+		// this->_content_length = setContentLength(path);
 	}
 	else
 	{
