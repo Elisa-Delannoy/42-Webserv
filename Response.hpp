@@ -11,14 +11,14 @@
 #include <algorithm>
 #include "ParseRequest.hpp"
 
-#define ROOT "html/index.html"
+#define ROOT "html/ndex.html"
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
 
 class Response
 {
 	public:
-		Response(int client_fd, int body_len, std::map<int, std::string> errors_path);
+		Response(std::map<int, std::string> errors_path, int client_fd, int body_len);
 		~Response();
 
 		std::string setStatus(std::string version, std::string code);
@@ -27,14 +27,15 @@ class Response
 		void setHeader(std::string version, std::string path, int code);
 		void sendHeader();
 		void sendBody();
-		void sendErrorBody();
+		void sendError(int code);
 		void sendHeaderAndBody();
 		void sendResponse(ParseRequest header, char* buf);
 
 		int checkBody(const char* path);
 		void sendImage(std::string path_image);
 
-		std::string setErrorPath(std::string path);
+		std::string GetErrorPath(int type_error);
+		
 
 		std::string setSize(const char* path_image);
 

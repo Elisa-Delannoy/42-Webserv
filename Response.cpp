@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
-Response::Response(int client_fd, int body_len, std::map<int, std::string> errors_path) :
-	_client_fd(client_fd), _body_len(body_len), _errors_path(errors_path)
+Response::Response(std::map<int, std::string> errors_path, int client_fd, int body_len) :
+	_errors_path(errors_path), _client_fd(client_fd), _body_len(body_len)
 { }
 
 Response::~Response()
@@ -129,9 +129,25 @@ void Response::sendHeaderAndBody()
 	sendBody();
 }
 
-void Response::sendErrorBody()
+void Response::sendError(int code)
 {
-
+	if (this->_errors_path.empty())
+	{
+		std::cout << "---------EMPTY---------" << std::endl;
+		if (code == 404)
+			this->_content = ERROR404;
+		if (code == 500)
+			this->_content = ERROR500;
+		this->_content_length = setContentLength(path);
+	}
+	else
+	{
+		std::cout << "---------FILLED---------" << std::endl;
+		std::string path = GetErrorPath(code).c_str();
+		checkBody(path.c_str()+1);
+		this->_content_length = setContentLength(path);
+	}
+	sendHeaderAndBody();
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -154,7 +170,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 			else
 			{
 				setHeader(version, path, 500);
-				sendHeader();
+				sendError(500);
 			}
 		}
 		else if (path.substr(0, 5) == "/img/")
@@ -292,9 +308,10 @@ std::string Response::setContentLength(std::string path)
 	return "Content-Length: " + size + "\r\n";
 }
 
-void Response::setErrorPath(std::string path)
+
+std::string Response::GetErrorPath(int code)
 {
-	return path;
+	return (this->_errors_path[code]);
 }
 
 /* void Response::sendBody(ParseRequest request, char* buf)

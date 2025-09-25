@@ -70,9 +70,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
-		Response resp(client_fd, body_len);
-		resp.set404Path(this->servers[server_index].GetErrorPath(404));
-		resp.set500Path(this->servers[server_index].GetErrorPath(500));
+		Response resp(this->servers[server_index].GetErrorPath(), client_fd, body_len);
 		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
@@ -148,11 +146,11 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 				if (CheckLocationStart(line) == true)
 					temp.AddLocation(conf, line);
 			}
-			if (temp.GetErrorPath().empty())
+			/* if (temp.GetErrorPath().empty())
 			{
 				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
 				temp.SetErrorPage(500, "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>");
-			}
+			} */
 			servers.push_back(temp);
 		}
 	}
