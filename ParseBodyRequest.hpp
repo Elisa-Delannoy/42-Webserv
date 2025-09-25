@@ -4,6 +4,7 @@
 # include "HTTPServer.hpp"
 # include "ParseRequest.hpp"
 # include <map>
+# include <iomanip>
 
 class ParseBody
 {
@@ -19,14 +20,27 @@ class ParseBody
 		void	ChooseContent(char* body);
 		void	AppForm(std::istringstream& body);
 		void	AppJson(std::istringstream& body);
-		void	AppMultipart(std::istringstream& body);
+		void	AppMultipart(std::vector<char>& body);
+		
 		
 		struct Part
 		{
+			std::string	type;
 			std::string	name;
 			std::string	filename;
-			std::string	type;
 			std::vector<char>	content;
+
+			friend std::ostream& operator<<(std::ostream& out, const Part& parts)
+			{
+				out << "Type: " << parts.type << " Name: " << parts.name << ", Filename: " << parts.filename << ", Content: ";
+				if (!parts.content.empty())
+				{
+					for(std::vector<char>::const_iterator it = parts.content.begin(); it != parts.content.end(); it++)
+						out << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)*(it);
+					out << std::endl;
+				}
+				return (out);
+			}
 		};
 		
 

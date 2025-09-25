@@ -56,11 +56,12 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 		{
 			this->_body_buf = new char[body_len];
 			int r = 0;
-			for (int i = 0; i < 10; i++) /*i < 10 ?*/
+			for (int i = 0; i < 1000; i++) /*i < 10 ?*/
 			{
 				r += recv(client_fd, this->_body_buf + r, body_len -r, 0);
 				if (r >= body_len)
 					break;
+				std::cout << i << std::endl;
 			}
 			body.ChooseContent(this->_body_buf);
 		}

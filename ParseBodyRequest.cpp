@@ -35,18 +35,21 @@ int	ParseBody::FindBodyLen(ParseRequest& request)
 
 void  ParseBody::ChooseContent(char* body)
 {
-	std::string 		string_body = body;
-	std::istringstream	ss_body(string_body);
+	std::vector<char>	to_parse(body, body + this->_len);
+
+
+	// std::string 		string_body = body;
+	// std::istringstream	ss_body(string_body);
 
 	// std::cout << "body\n" << string_body << '\n' << std::endl;
-	// std::cout << "type" << this->_type << std::endl;
+	std::cout << "type:" << this->_type << std::endl;
 
-	if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
-		AppForm(ss_body);
-	else if (this->_type.find("application/json") != std::string::npos)
-		AppJson(ss_body);
-	else if (this->_type.find("multipart/form-data") != std::string::npos)
-		AppMultipart(ss_body);
+	// if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
+	// 	AppForm(ss_body);
+	// else if (this->_type.find("application/json") != std::string::npos)
+	// 	AppJson(ss_body);
+	if (this->_type.find("multipart/form-data") != std::string::npos)
+		AppMultipart(to_parse);
 }
 
 void	ParseBody::AppForm(std::istringstream& body) /*voir si return ou si stock map en prive*/
@@ -195,18 +198,16 @@ std::string	SelectValue(std::string to_find, std::string sep, std::string body)
 void	SetPart(ParseBody::Part& parts, std::string head)
 {
 	parts.type = SelectValue("Content-Disposition:", ";", head);
-	std::cout << "type|" << parts.type << std::endl;
+	// std::cout << "type|" << parts.type << std::endl;
 	parts.name =  SelectValue("name=", "\"", head);
-	std::cout << "name|" <<  parts.name << std::endl;
+	// std::cout << "name|" <<  parts.name << std::endl;
 	parts.filename =  SelectValue("filename=", "\"", head);
-	std::cout << "filename|" << parts.filename << std::endl;
+	// std::cout << "filename|" << parts.filename << std::endl;
 }
 
 // void SetContent(ParseBody::Part& parts, std::istringstream& body)
 // {
-
-
-
+// 	parts.content = 
 // 	if (s_body == "--" + boundary || (boundary.size() >= 1 && s_body.size() >= 1 + boundary.size() && s_body.compare(2, boundary.size() - 1, boundary, 0, boundary.size() - 1)==0))
 // 	{
 // 		std::cout << "content=" << ctn << std::endl;
@@ -219,117 +220,65 @@ void	SetPart(ParseBody::Part& parts, std::string head)
 
 // }
 
-std::vector<char>::iterator	FindPart(std::string boundary, std::vector<char> body, size_t start)
+std::vector<char>::iterator	FindPart(std::string& boundary, std::vector<char>& body, std::vector<char>::iterator it)
 {
-	std::vector<char>::iterator	it = std::search(body.begin() + start, body.end(), boundary.begin(), boundary.end());
-	return (it);
+	std::vector<char>::iterator	new_it = std::search(it, body.end(), boundary.begin(), boundary.end());
+	return (new_it);
 }
-
-void	ParseBody::AppMultipart(std::istringstream& body)
+void	ParseBody::AppMultipart(std::vector<char>& r_body)
 {
-	std::vector<char>	r_body(this->_len);
-	body.read(&r_body[0], this->_len);
-	if (body.gcount() < this->_len)
-		return; /*voir pour erreur*/
-	
 	int	boud = this->_type.find("boundary=");
 	std::string	boundary = this->_type.substr(boud + 9);
-	int	start = 0;
+	std::vector<char>::iterator	it_head = r_body.begin();
+	std::vector<Part>	body_request;
+	size_t	index = 0;
+	Part	parts;
 
 	while (1)
 	{
-		std::vector<char>::iterator	it_head = FindPart(boundary, r_body, start);
-		it_head += boundary.size() + 2;
+		if (index >= r_body.size() - 4 - boundary.size())
+			break ;
+		it_head = FindPart(boundary, r_body, it_head);
+		if (it_head < r_body.end())
+			it_head += boundary.size();
 		if (*(it_head) == '\r')
 			it_head++;
 		if (*(it_head) == '\n')
 			it_head++;
 		if (it_head >= r_body.end())
 			break;
-		std::vector<char>::iterator	end_head = FindPart("\r\n\r\n", r_body, start);
+
+		std::string	end = "\r\n\r\n";
+		std::vector<char>::iterator	end_head = FindPart(end, r_body, it_head);
 		if (end_head != r_body.end())
 		{
-			Part	parts;
-			std::string	head(it + boundary.size(), end_head);
-			std::cout << "head" << head << std::endl;
+			std::string	head(it_head, end_head);
 			SetPart(parts, head);
+			std::vector<char>::iterator	it_body = end_head + 4;
+			if (it_body >= r_body.end())
+				break;
+			std::vector<char>::iterator	end_body = FindPart(boundary, r_body, it_body);
+			if (end_body >= r_body.end())
+				break;
+			parts.content = std::vector<char>(it_body, end_body);
+			body_request.push_back(parts);
+			// for (std::vector<char>::const_iterator test = end_body; test != r_body.end(); test++)
+			// {
+			// 	std::cout << *(test);
+			// }
+			index = std::distance(r_body.begin(), end_body);
 		}
-		std::vector<char>::iterator	it_body = end_head + 4;
-		std::vector<char>::iterator	end_body = FindPart(boundary, r_body, it_body);
-		
-		
-
-
-
-
-		// std::vector<char>::iterator	it_next = FindPart(boundary, r_body, start + 1);
-		// it = 
-		
 	}
+	// std::cout << "vector" << std::endl;
+	// for (std::vector<Part>::const_iterator it = body_request.begin(); it != body_request.end(); it++)
+	// {
+	// 	std::cout << *(it) << std::endl;
+	// }
+	// std::cout << "\n\nfin vector" << std::endl;
+
+
+	std::ofstream out("uploads/fichier.png", std::ios::binary);
+	out.write(parts.content.data(), parts.content.size());
+	out.close();
+
 }
-
-// void	ParseBody::AppMultipart(std::istringstream& body)
-// {
-// 	std::string			s_body;
-// 	std::vector<Part>	v_body;
-// 	int		tot_len;
-
-// 	int	boud = this->_type.find("boundary=");
-// 	std::string	boundary = this->_type.substr(boud + 9);
-// 	std::string	ctn;
-
-// 	getline(body, s_body);
-// 	tot_len = s_body.size() + 1;
-
-// 	while (tot_len < this->_len)
-// 	{
-// 		if (!s_body.empty() && s_body.at(s_body.size() - 1) == '\r')
-// 			s_body.erase(s_body.size() - 1);
-// 		bool	contt = false;
-// 		std::cout << "len = " << tot_len << " | tot = " << this->_len << std::endl;
-// 		std::cout << "1|" << s_body << "|" << std::endl;
-// 		if (s_body == "--" + boundary)
-// 		{
-// 			Part	parts;
-// 			while (getline(body, s_body))
-// 			{
-// 				tot_len += s_body.size() + 1;
-
-// 				if (contt == false && !s_body.empty() && s_body.size() >= 1 && s_body.at(s_body.size() - 1) == '\r')
-// 					s_body.erase(s_body.size() - 1);
-// 				// std::cout << "2|" << s_body << "|" << std::endl;
-// 				// if (contt == true)
-// 				// {
-// 				// 	ctn = ctn + s_body + "\n";
-// 				// 	std::cout << "ctt|" << ctn << std::endl;
-// 				// }
-// 				if (s_body.empty())
-// 				{
-// 					contt = true;
-// 					SetContent(parts, body);
-// 					break;
-// 				}
-
-// 				if (contt == false)
-// 					SetPart(parts, s_body);	
-// 				// if (s_body == "--" + boundary || (boundary.size() >= 1 && s_body.size() >= 1 + boundary.size() && s_body.compare(2, boundary.size() - 1, boundary, 0, boundary.size() - 1)==0))
-// 				// {
-// 				// 	std::cout << "content=" << ctn << std::endl;
-// 				// 	if (contt == true)
-// 				// 		parts.content = std::vector<char>(ctn.begin(), ctn.end());
-// 				// 	v_body.push_back(parts);
-// 				// 	contt = false;
-// 				// 	break;
-// 				// }
-// 			}
-// 		}
-// 		else
-// 		{
-// 			getline(body, s_body);
-// 			tot_len += s_body.size() + 1;
-// 			if (!s_body.empty() && s_body.at(s_body.size() - 1) == '\r')
-// 				s_body.erase(s_body.size() - 1);
-// 		}
-// 	}
-// 	std::cout << "END len = " << tot_len << " | tot = " << this->_len << std::endl;
-// }

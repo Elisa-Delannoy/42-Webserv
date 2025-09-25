@@ -224,9 +224,9 @@ void Response::sendBody(ParseRequest request, char* buf)
 		if (buf[j-2] == '\r' && buf[j-1] == '\n')
 			endfile = j - 2;
 	
-		std::ofstream out("uploads/fichier.png", std::ios::binary);
-		out.write(buf + i, endfile - i);
-		out.close();
+		// std::ofstream out("uploads/fichier.png", std::ios::binary);
+		// out.write(buf + i, endfile - i);
+		// out.close();
 	}
 	else
 	{
