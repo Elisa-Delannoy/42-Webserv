@@ -1,6 +1,4 @@
 #include "ParseBodyRequest.hpp"
-#include <map>
-#include <vector>
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 void	printmap(std::map<std::string, std::string>& map)

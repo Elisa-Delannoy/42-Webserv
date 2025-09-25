@@ -9,6 +9,8 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <map>
+#include <vector>
 
 class ParseBody
 {
