@@ -86,8 +86,11 @@ Il peut aussi y avoir des paramètres dans le corps (ex : formulaire POST).
 #ifndef PARSEREQUEST_HPP
 # define PARSEREQUEST_HPP
 
-# include "HTTPServer.hpp"
 # include <map>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 class ParseRequest
 {

@@ -195,3 +195,23 @@ void ServerConf::AddLocation(std::ifstream& conf, std::string& line)
 	this->SetLocation(location);
 	_nb_location++;
 }
+
+bool ServerConf::checkMethods(std::string method, int nb)
+{
+	for (int i = 0; i < GetLocation(nb).nb_methods; i++)
+	{
+		if (GetLocation(nb).GetMethods(i) == method)
+			return true;
+	}
+	return false;
+}
+
+int ServerConf::checkLocation(std::string name)
+{
+	for (int i = 0; i < _nb_location; i++)
+	{
+		if (GetLocation(i).GetName().find(name))
+			return i;
+	}
+	return -1;
+}

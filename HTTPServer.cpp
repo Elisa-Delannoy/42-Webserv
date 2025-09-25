@@ -44,6 +44,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 {
 	ParseRequest header;
 	ParseBody	body;
+	ExecCGI cgi;
 	int client_fd = epoll.getEvent(i).data.fd;
 	int body_len = 0;
 
@@ -71,6 +72,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
+		cgi.CheckCGI(header, body, servers);
 		Response resp(this->servers[server_index].GetErrorPath(), client_fd, body_len);
 		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);

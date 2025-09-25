@@ -1,10 +1,14 @@
 #ifndef PARSEBODYREQUEST_HPP
 # define PARSEBODYREQUEST_HPP
 
-# include "HTTPServer.hpp"
 # include "ParseRequest.hpp"
 # include <map>
 # include <iomanip>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <algorithm>
 
 class ParseBody
 {
@@ -47,6 +51,9 @@ class ParseBody
 		};
 		
 
+
+		int GetContentLen() const;
+		std::string GetContentType() const;
 };
 
 
