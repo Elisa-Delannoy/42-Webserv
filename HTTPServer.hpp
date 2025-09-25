@@ -21,13 +21,17 @@ class HTTPServer
 		HTTPServer();
 		~HTTPServer();
 
-		int startServer();
+		int startServer(std::string conf_file);
+		int runServer();
 		void closeServer();
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 
-		std::vector<ServerConf> ParsingConf();
+		std::vector<ServerConf> ParsingConf(std::string conf_file);
 		void displayServers();
+		std::vector<ServerConf> servers;
+		
+		// const char* GetRequest(void) const;
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
 		void handleRequest(Epoll epoll, int i);
@@ -36,7 +40,6 @@ class HTTPServer
 		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
 
 	private:
-		std::vector<ServerConf> servers;
 		std::vector<int> _socket_server;
 		int _socket_client;
 		char* _body_buf;

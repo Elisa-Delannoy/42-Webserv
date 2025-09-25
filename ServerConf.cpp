@@ -176,10 +176,10 @@ void ServerConf::AddErrorPage(std::string& line)
 	this->SetErrorPage(type_error, word);
 }
 
-void ServerConf::AddLocation(std::ifstream& conf)
+void ServerConf::AddLocation(std::ifstream& conf, std::string& line)
 {
-	std::string line;
 	Location location;
+	location.AddName(line);
 	while (line.find("}") == std::string::npos)
 	{
 		std::getline(conf, line);

@@ -22,6 +22,7 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	{
 		recv(client_fd, &c, 1, 0);
 		line += c;
+		std::cout << c;
 		if (c == '\n')
 		{
 			std::cout << line << std::endl;
@@ -39,10 +40,9 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	}
 }
 
-
 void HTTPServer::handleRequest(Epoll epoll, int i)
 {
-	ParseRequest request;
+	ParseRequest header;
 	ParseBody	body;
 	int client_fd = epoll.getEvent(i).data.fd;
 	int body_len = 0;
@@ -50,28 +50,28 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
 	{
 		std::cout << "------------REQUEST------------" << std::endl;
-		readHeaderRequest(client_fd, request);
-		body_len = body.FindBodyLen(request);
+		readHeaderRequest(client_fd, header);
+		body_len = body.FindBodyLen(header);
 		if (body_len != 0)
 		{
 			this->_body_buf = new char[body_len];
 			int r = 0;
 			for (int i = 0; i < 10; i++) /*i < 10 ?*/
 			{
-				r += recv(client_fd, this->_body_buf + r, body_len, 0);
+				r += recv(client_fd, this->_body_buf + r, body_len -r, 0);
 				if (r >= body_len)
 					break;
 			}
+			body.ChooseContent(this->_body_buf);
 		}
 		epoll.SetClientEpollout(i, this->_socket_client);
-		body.ChooseContent(this->_body_buf);
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
-		Response resp(client_fd);
-		resp.sendHeaders(request);
-		resp.sendContent(request, this->_body_buf, body_len);
+		Response resp(client_fd, body_len);
+		resp.sendHeaders(header);
+		resp.sendBody(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
 		body_len = 0;
@@ -119,11 +119,11 @@ bool CheckLocationStart(std::string line)
 }
 
 //PARSING CONF
-std::vector<ServerConf> HTTPServer::ParsingConf()
+std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 {
 	std::vector<ServerConf> servers;
 
-	std::ifstream conf("conf/valid.conf");
+	std::ifstream conf(conf_file.c_str());
 	std::string line;
 	while (std::getline(conf, line))
 	{
@@ -144,7 +144,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf()
 				if (line.find("error_page") != std::string::npos)
 					temp.AddErrorPage(line);
 				if (CheckLocationStart(line) == true)
-					temp.AddLocation(conf);
+					temp.AddLocation(conf, line);
 			}
 			if (temp.GetErrorPath().empty())
 				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
@@ -156,7 +156,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf()
 
 void HTTPServer::displayServers()
 {
-	size_t j = this->servers.size();
+	size_t j = servers.size();
 	for (size_t r = 0; r < j; r++)
 	{
 		std::cout << "Serveur numero : " << r+1 << std::endl;
@@ -169,27 +169,20 @@ void HTTPServer::displayServers()
 		for (int f = 0; f < this->servers[r]._nb_location; f++)
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
-			std::cout << "ROOT Location :" << this->servers[r].GetLocation(f).GetRoot() << std::endl;
-			for (int i = 0; i < this->servers[r].GetLocation(f).nb_methods; i++)
-				std::cout << "ME Location :" << this->servers[r].GetLocation(f).GetMethods(i) << std::endl;
-			std::cout << "AUTOINNDEX Location : " << this->servers[r].GetLocation(f).GetAutoindex() << std::endl;
-			std::cout << "CGI Location : " << this->servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			std::cout << "NAME Location :" << servers[r].GetLocation(f).GetName() << std::endl;
+			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
+			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
+				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
+			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
+			std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
 			std::cout << "\n";
 		}
 		std::cout << "\n";
 	}
 }
 
-int HTTPServer::startServer()
+int HTTPServer::runServer()
 {
-	this->servers = ParsingConf();
-
-	displayServers();
-
-	if (prepareServerSockets() == 1)
-		return 1;
-
-	//----------------CLIENT SOCKET----------------------
 	Epoll epoll(this->_socket_server);
 
 	while(true)
@@ -220,6 +213,20 @@ int HTTPServer::startServer()
 		}
 	}
 	std::cout << "Loop exited" << std::endl;
+	return 0;
+}
+
+int HTTPServer::startServer(std::string conf_file)
+{
+	this->servers = ParsingConf(conf_file);
+
+	displayServers();
+
+	if (prepareServerSockets() == 1)
+		return 1;
+
+	if (runServer() == 1)
+		return 1;
 	return 0;
 }
 
