@@ -18,8 +18,8 @@ class ParseBody
 		
 		int		FindBodyLen(ParseRequest& request);
 		void	ChooseContent(char* body);
-		void	AppForm(std::istringstream& body);
-		void	AppJson(std::istringstream& body);
+		void	AppForm(char* body_req);
+		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);
 		
 		
@@ -36,7 +36,10 @@ class ParseBody
 				if (!parts.content.empty())
 				{
 					for(std::vector<char>::const_iterator it = parts.content.begin(); it != parts.content.end(); it++)
-						out << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)*(it);
+					{
+						// out << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)*(it);
+						out << *it;
+					}
 					out << std::endl;
 				}
 				return (out);
