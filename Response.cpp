@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
-Response::Response(int client_fd, int body_len) : _client_fd(client_fd), _body_len(body_len)
+Response::Response(std::map<int, std::string> errors_path, int client_fd, int body_len) :
+	_errors_path(errors_path), _client_fd(client_fd), _body_len(body_len)
 { }
 
 Response::~Response()
@@ -86,31 +87,191 @@ ETAPES A SUIVRE :
 3. envoyer body. Si erreur avec send => on stop send et osef
 
 */
-
-std::string Response::setStatus(std::string version)
+void Response::setHeader(std::string version, std::string path, int code)
 {
-	return (version + " 200 OK\r\n");
+	if (code == 200)
+	{
+		this->_status = setStatus(version, " 200 OK\r\n");
+		this->_content_length = setContentLength(path);
+	}
+	if (code == 204)
+	{
+		this->_status = setStatus(version, " 204 No Content\r\n");
+		this->_content_length = "0";
+		return ;
+	}
+	if (code == 404)
+	{
+		this->_status = setStatus(version, " 404 Not Found\r\n");
+		this->_content_length = "0";
+		return ;
+	}
+	if (code == 500)
+	{
+		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
+		this->_content_length = "0";
+	}
+	this->_content_type = setContentType(path);
+}
+
+void Response::sendHeader()
+{
+	this->_response = this->_status + this->_content_type
+		+ this->_content_length + "\r\n";
+
+	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
+		std::cerr << "Error while sending headers." << std::endl;
+}
+
+void Response::sendHeaderAndBody()
+{
+	sendHeader();
+	sendBody();
+}
+
+void Response::sendError(int code)
+{
+	if (this->_errors_path.empty())
+	{
+		std::cout << "---------EMPTY---------" << std::endl;
+		if (code == 404)
+			this->_content = ERROR404;
+		if (code == 500)
+			this->_content = ERROR500;
+		this->_content_length = setContentLength(path);
+	}
+	else
+	{
+		std::cout << "---------FILLED---------" << std::endl;
+		std::string path = GetErrorPath(code).c_str();
+		checkBody(path.c_str()+1);
+		this->_content_length = setContentLength(path);
+	}
+	sendHeaderAndBody();
+}
+
+void Response::sendResponse(ParseRequest header, char* buf)
+{
+	(void)buf;
+
+	std::string path = header.GetPath();
+	std::string method = header.GetMethod();
+	std::string version = header.GetVersion();
+
+	if (method == "GET")
+	{
+		if (path == "/")
+		{
+			if (checkBody(ROOT) == 0)
+			{
+				setHeader(version, path, 200);
+				sendHeaderAndBody();
+			}
+			else
+			{
+				setHeader(version, path, 500);
+				sendError(500);
+			}
+		}
+		else if (path.substr(0, 5) == "/img/")
+		{
+			if (checkBody(path.substr(1).c_str()) == 0) //path without first '/'
+			{
+				setHeader(version, path, 200);
+				sendHeaderAndBody();
+			}
+			else if (checkBody(path.substr(1).c_str()) == 404) //wrong path
+			{
+				setHeader(version, path, 404);
+				sendHeader();
+			}
+			else
+			{
+				setHeader(version, path, 500);
+				sendHeader();
+			}
+		}
+		else if (path == "/favicon.ico") //just in case, we ignore it
+		{
+			setHeader(version, path, 204);
+			sendHeader();
+		}
+	}
+	else if (method == "POST")
+	{
+
+	}
+}
+
+void Response::sendBody()
+{
+	size_t data_sent = 0;
+	while(data_sent < this->_content.size())
+	{
+		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
+			this->_content.size() - data_sent, 0);
+		if (data_read == -1)
+		{
+			std::cerr << "Error while sending content." << std::endl;
+			break;
+		}
+		data_sent += data_read;
+	}
+}
+
+//Return 0 if ok
+//Return 1 if not
+int Response::checkBody(const char* path)
+{
+	std::ifstream file(path, std::ios::binary);
+	if (!file.is_open()) //wrong path, invalid rights, inexisting file
+		return 404;
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	if (file.fail()) //reading problem
+		return 1;
+
+	file.close();
+	this->_content = buffer.str();
+	return 0;
+}
+
+std::string Response::setStatus(std::string version, std::string code)
+{
+	return (version + code);
 }
 
 std::string Response::setContentType(std::string path)
 {
 	std::string ret = "Content-Type: ";
-	std::string type;
 	if (path == "/")
 	{
 		ret += "text/html";
 	}
-	else if (path == "/favicon.ico")
-	{
-		ret += "image/svg+xml";
-	}
-	else if (path == "/upload")
-	{
-		ret += "image/webp";
-	}
 	else
 	{
-		ret += "image/jpeg";
+		size_t i = path.size() - 1;
+		while (path[i - 1] != '.')
+			i--;
+		std::string type = path.substr(i);
+
+		if (type == "jpg")
+			ret += "image/jpg";
+		if (type == "jpeg")
+			ret += "image/jpeg";
+		if (type == "png")
+			ret += "image/png";
+		if (type == "gif")
+			ret += "image/gif";
+		if (type == "svg")
+			ret += "image/svg+xml";
+		if (type == "webp")
+			ret += "image/webp";
+		if (type == "ico")
+			ret += "image/x-icon";
+		if (type == "avif")
+			ret += "image/avif";
 	}
 	return (ret + "\r\n");
 }
@@ -138,64 +299,23 @@ std::string Response::setContentLength(std::string path)
 	}
 	else if (path == "/")
 	{
-		size = setSize("html/index.html");
-	}
-	else if (path == "/favicon.ico")
-	{
-		size = setSize("img/favicon.svg");
+		size = setSize(ROOT);
 	}
 	else
 	{
-		size = setSize("img/cookie.jpeg");
+		size = setSize(path.c_str() + 1);
 	}
 	return "Content-Length: " + size + "\r\n";
 }
 
-void Response::sendHeaders(ParseRequest header)
+
+std::string Response::GetErrorPath(int code)
 {
-	this->_status = setStatus(header.GetVersion());
-	this->_content_type = setContentType(header.GetPath());
-	this->_content_length = setContentLength(header.GetPath());
-
-	this->_response = this->_status + this->_content_type + this->_content_length + "\r\n";
-
-	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
-		std::cerr << "Error while sending headers." << std::endl;
+	return (this->_errors_path[code]);
 }
 
-void Response::sendImage(std::string path_image)
+/* void Response::sendBody(ParseRequest request, char* buf)
 {
-	std::ifstream ifs(path_image.c_str() + 1, std::ios::binary); //c.str() + 1 to skip first '/'
-	char *buffer = new char[this->_body_len];
-	ifs.read(buffer, this->_body_len);
-	int data_sent = 0;
-	while(data_sent < this->_body_len)
-	{
-		ssize_t data_read = send(this->_client_fd, buffer + data_sent, this->_body_len - data_sent, 0);
-		if (data_read == -1)
-			std::cerr << "Error while sending content." << std::endl;
-		data_sent += data_read;
-	}
-	delete[] buffer;
-}
-
-void Response::sendBody(ParseRequest request, char* buf)
-{
-	std::string path = request.GetPath();
-	if (path == "/")
-	{
-		std::ifstream file("html/index.html");
-		std::stringstream buffer;
-
-		buffer << file.rdbuf();
-		this->_content = buffer.str();
-		if(send(this->_client_fd, this->_content.c_str(), this->_content.size(), 0) == -1)
-			std::cerr << "Error while sending content." << std::endl;
-	}
-	else if (path == "/favicon.ico")
-	{
-		sendImage("/img/favicon.svg");
-	}
 	else if (path == "/upload")
 	{
 		std::string boundary;
@@ -228,8 +348,4 @@ void Response::sendBody(ParseRequest request, char* buf)
 		// out.write(buf + i, endfile - i);
 		// out.close();
 	}
-	else
-	{
-		sendImage(path);
-	}
-}
+} */

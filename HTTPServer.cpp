@@ -40,7 +40,7 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	}
 }
 
-void HTTPServer::handleRequest(Epoll epoll, int i)
+void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 {
 	ParseRequest header;
 	ParseBody	body;
@@ -63,6 +63,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 					break;
 				std::cout << i << std::endl;
 			}
+			std::cout << "Body_buf : " << this->_body_buf << std::endl;
 			body.ChooseContent(this->_body_buf);
 		}
 		epoll.SetClientEpollout(i, this->_socket_client);
@@ -70,9 +71,8 @@ void HTTPServer::handleRequest(Epoll epoll, int i)
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
-		Response resp(client_fd, body_len);
-		resp.sendHeaders(header);
-		resp.sendBody(header, this->_body_buf);
+		Response resp(this->servers[server_index].GetErrorPath(), client_fd, body_len);
+		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);
 		body_len = 0;
@@ -147,8 +147,11 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 				if (CheckLocationStart(line) == true)
 					temp.AddLocation(conf, line);
 			}
-			if (temp.GetErrorPath().empty())
+			/* if (temp.GetErrorPath().empty())
+			{
 				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
+				temp.SetErrorPage(500, "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>");
+			} */
 			servers.push_back(temp);
 		}
 	}
@@ -167,6 +170,7 @@ void HTTPServer::displayServers()
 		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;
 		std::cout << "ClientBody :" << this->servers[r].GetClientBodySize() << std::endl;
 		std::cout << "Error 404 :" << this->servers[r].GetErrorPath(404) << std::endl;
+		std::cout << "Error 500 :" << this->servers[r].GetErrorPath(500) << std::endl;
 		for (int f = 0; f < this->servers[r]._nb_location; f++)
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
@@ -188,12 +192,14 @@ int HTTPServer::runServer()
 
 	while(true)
 	{
+		size_t a;
 		int n = epoll.epollWait();
 		for(int i = 0; i < n; i++)
 		{
 			bool event_is_server = false;
 			for (size_t j = 0; j < this->servers.size(); j++)
 			{
+				a = j;
 				if(epoll.getEvent(i).data.fd == this->_socket_server[j])
 				{
 					this->_socket_client = accept(this->_socket_server[j], NULL, NULL);
@@ -204,11 +210,12 @@ int HTTPServer::runServer()
 					}
 					epoll.setClientEpollin(this->_socket_client);
 					event_is_server = true;
+					this->_attached_server = j;
 				}
 			}
 			if(!event_is_server)
 			{
-				handleRequest(epoll, i);
+				handleRequest(epoll, i, this->_attached_server);
 			}
 			std::cout << std::endl;
 		}

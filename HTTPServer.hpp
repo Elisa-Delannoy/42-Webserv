@@ -34,7 +34,7 @@ class HTTPServer
 		// const char* GetRequest(void) const;
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
-		void handleRequest(Epoll epoll, int i);
+		void handleRequest(Epoll epoll, int i, size_t server_index);
 
 		uint32_t prepareAddrForHtonl(std::string addr);
 		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
@@ -42,6 +42,7 @@ class HTTPServer
 	private:
 		std::vector<int> _socket_server;
 		int _socket_client;
+		size_t _attached_server;
 		char* _body_buf;
 };
 
