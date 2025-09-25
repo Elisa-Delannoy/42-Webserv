@@ -12,8 +12,8 @@
 #include <vector>
 #include "ServerConf.hpp"
 #include "Response.hpp"
-
-class ParseRequest;
+#include "ExecCGI.hpp"
+#include "ParseRequest.hpp"
 
 class HTTPServer
 {
@@ -27,10 +27,11 @@ class HTTPServer
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 
+		//Parsing .conf
 		std::vector<ServerConf> ParsingConf(std::string conf_file);
 		void displayServers();
 		std::vector<ServerConf> servers;
-		
+
 		// const char* GetRequest(void) const;
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);

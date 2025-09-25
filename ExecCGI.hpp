@@ -3,20 +3,22 @@
 #include <string>
 #include <vector>
 #include <cstring>
-#include <ServerConf.hpp>
-#include <ParseRequest.hpp>
+#include "ServerConf.hpp"
+#include "ParseRequest.hpp"
+#include "ParseBodyRequest.hpp"
 
 class ExecCGI
 {
 	private:
-		char **argv;
-		char **envp;
+		char **_argv;
+		char **_envp;
 	public:
 		ExecCGI();
 		~ExecCGI();
 
-		void Execution(std::vector<ServerConf> servers);
+		void Execution(ParseRequest header, ParseBody body, Location location);
+		bool CheckCGI(ParseRequest header, ParseBody body, std::vector<ServerConf> servers);
 
-		void SetArgv(std::vector<std::string> &vec);
-		void SetEnvp(std::vector<std::string> &vec);
+		void SetArgv(std::string path, Location location);
+		void SetEnvp(ParseRequest header, ParseBody body, Location location);
 };

@@ -10,6 +10,17 @@ ParseBody::~ParseBody()
 {
 }
 
+int ParseBody::GetContentLen() const
+{
+	return _len;
+}
+
+std::string ParseBody::GetContentType() const
+{
+	return _type;
+}
+
+
 int	ParseBody::FindBodyLen(ParseRequest& request)
 {
 	std::map<std::string, std::string> head = request.GetHeader();

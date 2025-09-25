@@ -11,6 +11,7 @@ SRC = main.cpp \
 	ParseBodyRequest.cpp \
 	ServerConf.cpp \
 	Response.cpp \
+	ExecCGI.cpp
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)

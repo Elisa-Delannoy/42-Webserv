@@ -38,7 +38,6 @@ class ServerConf
 		std::string GetErrorPath(int type_error);
 		std::map<int, std::string> GetErrorPath();
 		Location& GetLocation(int nb);
-
 		size_t GetHostPortSize() const;
 
 		void AddServerName(std::string& line);
@@ -46,6 +45,9 @@ class ServerConf
 		void AddClientBody(std::string& line);
 		void AddErrorPage(std::string& line);
 		void AddLocation(std::ifstream& conf, std::string& line);
+
+		bool checkMethods(std::string method, int nb);
+		int checkLocation(std::string name);
 };
 
 #endif

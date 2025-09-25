@@ -1,9 +1,12 @@
 #ifndef PARSEBODYREQUEST_HPP
 # define PARSEBODYREQUEST_HPP
 
-# include "HTTPServer.hpp"
 # include "ParseRequest.hpp"
 # include <map>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 class ParseBody
 {
@@ -18,6 +21,9 @@ class ParseBody
 		void	AppForm(std::istringstream& body);
 		void	AppJson(std::istringstream& body);
 		int		FindBodyLen(ParseRequest& request);
+
+		int GetContentLen() const;
+		std::string GetContentType() const;
 };
 
 
