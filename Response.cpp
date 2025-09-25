@@ -1,6 +1,7 @@
 #include "Response.hpp"
 
-Response::Response(int client_fd, int body_len) : _client_fd(client_fd), _body_len(body_len)
+Response::Response(int client_fd, int body_len, std::map<int, std::string> errors_path) :
+	_client_fd(client_fd), _body_len(body_len), _errors_path(errors_path)
 { }
 
 Response::~Response()
@@ -99,6 +100,12 @@ void Response::setHeader(std::string version, std::string path, int code)
 		this->_content_length = "0";
 		return ;
 	}
+	if (code == 404)
+	{
+		this->_status = setStatus(version, " 404 Not Found\r\n");
+		this->_content_length = "0";
+		return ;
+	}
 	if (code == 500)
 	{
 		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
@@ -120,6 +127,11 @@ void Response::sendHeaderAndBody()
 {
 	sendHeader();
 	sendBody();
+}
+
+void Response::sendErrorBody()
+{
+
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -151,6 +163,11 @@ void Response::sendResponse(ParseRequest header, char* buf)
 			{
 				setHeader(version, path, 200);
 				sendHeaderAndBody();
+			}
+			else if (checkBody(path.substr(1).c_str()) == 404) //wrong path
+			{
+				setHeader(version, path, 404);
+				sendHeader();
 			}
 			else
 			{
@@ -191,12 +208,12 @@ void Response::sendBody()
 int Response::checkBody(const char* path)
 {
 	std::ifstream file(path, std::ios::binary);
-	if (!file.is_open())
-		return 1;
+	if (!file.is_open()) //wrong path, invalid rights, inexisting file
+		return 404;
 
 	std::stringstream buffer;
 	buffer << file.rdbuf();
-	if (file.fail())
+	if (file.fail()) //reading problem
 		return 1;
 
 	file.close();
@@ -273,6 +290,11 @@ std::string Response::setContentLength(std::string path)
 		size = setSize(path.c_str() + 1);
 	}
 	return "Content-Length: " + size + "\r\n";
+}
+
+void Response::setErrorPath(std::string path)
+{
+	return path;
 }
 
 /* void Response::sendBody(ParseRequest request, char* buf)
