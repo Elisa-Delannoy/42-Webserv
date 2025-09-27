@@ -209,7 +209,7 @@ void Response::sendBody()
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
-			this->_content.size() - data_sent, 0);
+			this->_content.size() - data_sent, 0);  /*pourquoi ssize_t ?*/
 		if (data_read == -1)
 		{
 			std::cerr << "Error while sending content." << std::endl;
@@ -221,7 +221,7 @@ void Response::sendBody()
 
 //Return 0 if ok
 //Return 1 if not
-int Response::checkBody(const char* path)
+int Response::checkBody(const char* path) 
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file.is_open()) //wrong path, invalid rights, inexisting file

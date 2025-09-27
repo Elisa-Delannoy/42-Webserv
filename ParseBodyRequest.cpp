@@ -51,7 +51,7 @@ std::string ParseBody::GetContentType() const
 }
 
 
-int	ParseBody::FindBodyLen(ParseRequest& request)
+int	ParseBody::FindBodyLen(ParseRequest& request) /*revoir car pas forcément content lenght mais aussi Transfer-Encoding: chunked*/
 {
 	std::map<std::string, std::string> head = request.GetHeader();
 	std::map<std::string, std::string>::iterator it = head.find("Content-Type");
@@ -235,7 +235,6 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 	std::vector<char>::iterator	it_head = r_body.begin();
 	std::vector<Part>	body_request;
 	size_t	index = 0;
-	Part	parts;
 
 	while (1)
 	{
@@ -245,6 +244,7 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 		std::vector<char>::iterator	end_head = FindPart(end, r_body, it_head);
 		if (end_head != r_body.end())
 		{
+			Part	parts;
 			std::string	head(it_head, end_head);
 			SetPart(parts, head);
 			index = BodyMultipart(end_head, boundary, r_body, parts);

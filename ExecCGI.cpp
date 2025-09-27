@@ -46,7 +46,7 @@ void ExecCGI::SetArgv(std::string path, Location location)
 	_argv[argv.size()] = NULL;
 }
 
-bool ExecCGI::CheckCGI(ParseRequest header, ParseBody body, std::vector<ServerConf> servers)
+bool ExecCGI::CheckCGI(ParseRequest header, ParseBody body, std::vector<ServerConf> servers) /*reference ?*/
 {
 	if (header.GetPath().find(".php") != std::string::npos)
 	{

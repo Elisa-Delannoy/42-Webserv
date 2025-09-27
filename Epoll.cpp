@@ -5,7 +5,7 @@ Epoll::Epoll()
 
 Epoll::Epoll(std::vector<int> socket_servers)
 {
-	this->_epoll_fd = epoll_create1(0);
+	this->_epoll_fd = epoll_create1(0); /*verifier  si -1*/
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
 		epoll_event event;

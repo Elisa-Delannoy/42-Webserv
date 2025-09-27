@@ -72,7 +72,7 @@ void Location::AddName(std::string line)
 	if (word != "location")
 		return;
 	ss >> word;
-	if (word == "~")
+	if (word == "~") /*check  autre types*/
 		ss >> word;
 	SetName(word);
 }

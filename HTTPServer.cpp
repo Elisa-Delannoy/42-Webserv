@@ -40,7 +40,7 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	}
 }
 
-void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
+void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll en ref ?*/
 {
 	ParseRequest header;
 	ParseBody	body;
@@ -57,17 +57,16 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 		{
 			this->_body_buf = new char[body_len];
 			int r = 0;
-			for (int i = 0; i < 1000; i++) /*i < 10 ?*/
+			while (1)
 			{
 				r += recv(client_fd, this->_body_buf + r, body_len -r, 0);
 				if (r >= body_len)
 					break;
-				std::cout << i << std::endl;
 			}
 			std::cout << "Body_buf : " << this->_body_buf << std::endl;
 			body.ChooseContent(this->_body_buf);
 		}
-		epoll.SetClientEpollout(i, this->_socket_client);
+		epoll.SetClientEpollout(i, this->_socket_client);/*erreur selon le petit chat*/
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
@@ -128,7 +127,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 
 	std::ifstream conf(conf_file.c_str());
 	std::string line;
-	while (std::getline(conf, line))
+	while (std::getline(conf, line)) /*check doucl" {}, mauvais donné, fin ;*/
 	{
 		if (CheckServerStart(line) == true)
 		{
@@ -168,8 +167,8 @@ void HTTPServer::displayServers()
 		std::cout << "Serveur numero : " << r+1 << std::endl;
 		for (size_t i = 0; i < this->servers[r].GetServerName().size() ;i++)
 			std::cout << this->servers[r].GetServerName()[i] << std::endl;
-		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;
-		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;
+		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;/*pourquoi 0 ?*/
+		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;/*pourquoi 0 ?*/
 		std::cout << "ClientBody :" << this->servers[r].GetClientBodySize() << std::endl;
 		std::cout << "Error 404 :" << this->servers[r].GetErrorPath(404) << std::endl;
 		std::cout << "Error 500 :" << this->servers[r].GetErrorPath(500) << std::endl;
@@ -195,6 +194,7 @@ int HTTPServer::runServer()
 	while(true)
 	{
 		size_t a;
+		(void) a;
 		int n = epoll.epollWait();
 		for(int i = 0; i < n; i++)
 		{
@@ -213,11 +213,12 @@ int HTTPServer::runServer()
 					epoll.setClientEpollin(this->_socket_client);
 					event_is_server = true;
 					this->_attached_server = j;
+					/*on peut break?*/
 				}
 			}
 			if(!event_is_server)
 			{
-				handleRequest(epoll, i, this->_attached_server);
+				handleRequest(epoll, i, this->_attached_server); /*set dans if precedent dc tjs obliger detre d abord serveur aant client ?*/
 			}
 			std::cout << std::endl;
 		}
@@ -259,7 +260,7 @@ uint32_t HTTPServer::prepareAddrForHtonl(std::string addr)
 		while(addr[i] && addr[i] != '.')
 			i++;
 	}
-	ret = (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3];
+	ret = (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3]; /*si  erreur et pas v3 ?*/
 	v.clear();
 	return ret;
 }
