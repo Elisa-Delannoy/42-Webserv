@@ -28,7 +28,7 @@ class HTTPServer
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 
 		//Parsing .conf
-		std::vector<ServerConf> ParsingConf(std::string conf_file);
+		bool ParsingConf(std::string conf_file);
 		void displayServers();
 		std::vector<ServerConf> servers;
 
