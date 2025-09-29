@@ -3,7 +3,10 @@
 
 #include <sys/epoll.h>
 #include <iostream>
+#include <unistd.h>
+#include <string.h>
 #include <vector>
+#include <cerrno>
 
 class Epoll
 {
@@ -13,8 +16,9 @@ class Epoll
 		~Epoll();
 
 		int epollWait();
-		void setClientEpollin(int socket_client);
-		void SetClientEpollout(int index, int socket_client);
+		// void setClientEpollin(int socket_client);
+		// void SetClientEpollout(int index, int socket_client);
+		void SetEpoll(int fd, uint32_t flag);
 		void deleteClient(int client_fd);
 
 		epoll_event getEvent(int index);
@@ -22,7 +26,6 @@ class Epoll
 
 	private:
 		epoll_event _events[10];
-		epoll_event _client_event;
 		std::vector<epoll_event> _servers_event;
 		int _epoll_fd;
 };

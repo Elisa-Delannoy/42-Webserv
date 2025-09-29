@@ -39,7 +39,7 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	}
 }
 
-void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll en ref ?*/
+void HTTPServer::handleRequest(Epoll& epoll, int i, int fd, size_t server_index)
 {
 	ParseRequest header;
 	ParseBody	body;
@@ -64,7 +64,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll 
 			}
 			body.ChooseContent(this->_body_buf);
 		}
-		epoll.SetClientEpollout(i, this->_socket_client);/*erreur selon le petit chat*/
+		epoll.SetEpoll(fd, EPOLLOUT);
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
@@ -73,7 +73,8 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll 
 		Response resp(this->servers[server_index].GetErrorPath(), client_fd, body_len);
 		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);
-		epoll.deleteClient(client_fd);
+		epoll.SetEpoll(client_fd, EPOLLIN);
+		// epoll.deleteClient(client_fd);
 		body_len = 0;
 	}
 }
@@ -185,39 +186,52 @@ void HTTPServer::displayServers()
 	}
 }
 
+int	HTTPServer::GetServerIndex(int used_socket)
+{
+	for (size_t j = 0; j < this->servers.size(); j++)
+	{
+		if(used_socket == this->_socket_server[j])
+			return (j);
+	}
+	return (-1);
+}
+
+int	HTTPServer::SocketServer(int used_socket, Epoll& epoll)
+{
+	int j = GetServerIndex(used_socket);
+	if (j >=0)
+	{
+		int socket = accept(this->_socket_server[j], NULL, NULL);
+		if (socket < 0)
+		{
+			std::cerr << "Failed to grab socket_client." << std::endl;
+			return (-2);
+		}
+		this->_socket_client[socket] = j;
+		epoll.SetEpoll(socket, EPOLLIN);
+		return (j);
+	}
+	return (-1);
+}
+
 int HTTPServer::runServer()
 {
 	Epoll epoll(this->_socket_server);
+	int	j;
 
+	(void) j;
 	while(true)
 	{
-		size_t a;
-		(void) a;
 		int n = epoll.epollWait();
-		for(int i = 0; i < n; i++)
+		for (int i = 0; i < n; i++)
 		{
 			bool event_is_server = false;
-			for (size_t j = 0; j < this->servers.size(); j++)
-			{
-				a = j;
-				if(epoll.getEvent(i).data.fd == this->_socket_server[j])
-				{
-					this->_socket_client = accept(this->_socket_server[j], NULL, NULL);
-					if (this->_socket_client < 0)
-					{
-						std::cerr << "Failed to grab socket_client." << std::endl;
-						return 1;
-					}
-					epoll.setClientEpollin(this->_socket_client);
-					event_is_server = true;
-					this->_attached_server = j;
-					/*on peut break?*/
-				}
-			}
+			int	used_socket = epoll.getEvent(i).data.fd;
+			j = SocketServer(used_socket, epoll);
+			if (j >= 0)
+				event_is_server = true;
 			if(!event_is_server)
-			{
-				handleRequest(epoll, i, this->_attached_server);
-			}
+				handleRequest(epoll, i, used_socket, this->_socket_client[used_socket]);
 			std::cout << std::endl;
 		}
 	}

@@ -5,14 +5,21 @@ Epoll::Epoll()
 
 Epoll::Epoll(std::vector<int> socket_servers)
 {
-	this->_epoll_fd = epoll_create1(0); /*verifier  si -1*/
+	this->_epoll_fd = epoll_create1(0);
+	if (this->_epoll_fd == - 1)
+		return; /*voir pour erreur*/
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
 		epoll_event event;
 		event.events = EPOLLIN;
 		event.data.fd = socket_servers[i];
-		this->_servers_event.push_back(event);
-		epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i], &this->_servers_event[i]);
+		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i], &event) == -1)
+		{
+			std::cout << "Error socket" << std::endl;
+			close(socket_servers[i]);
+		}
+		else
+			this->_servers_event.push_back(event);
 	}
 }
 
@@ -36,20 +43,29 @@ int Epoll::getEpollFd()
 	return this->_epoll_fd;
 }
 
-void Epoll::setClientEpollin(int socket_client)
+void Epoll::SetEpoll(int fd, uint32_t flag)
 {
-	this->_client_event.events = EPOLLIN;
-	this->_client_event.data.fd = socket_client;
-	epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_client, &this->_client_event);
+	epoll_event	event;
+	event.events = flag;
+	event.data.fd = fd;
+	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
+	{
+		if (errno == EEXIST)
+		{
+			if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1)
+				std::cerr << "Modification error: " << strerror(errno) << std::endl;
+		}
+		else
+		{
+			std::cerr << "Error : " << strerror(errno) << std::endl;
+			close(fd);
+		}
+	}	
 }
 
-void Epoll::SetClientEpollout(int index, int socket_client)
-{
-	this->_events[index].events = EPOLLOUT;
-	epoll_ctl(this->_epoll_fd, EPOLL_CTL_MOD, socket_client, &this->_client_event);
-}
 
 void Epoll::deleteClient(int client_fd)
 {
-	epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL);
+	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
+		std::cerr << "Delete error" << std::endl;
 }
