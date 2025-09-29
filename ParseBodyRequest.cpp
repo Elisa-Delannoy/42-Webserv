@@ -72,13 +72,24 @@ void  ParseBody::ChooseContent(char* body)
 {
 	std::vector<char>	to_parse(body, body + this->_len);
 
-
 	if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
 		AppForm(body);
 	else if (this->_type.find("application/json") != std::string::npos)
 		AppJson(to_parse);
-	if (this->_type.find("multipart/form-data") != std::string::npos)
+	else if (this->_type.find("multipart/form-data") != std::string::npos)
 		AppMultipart(to_parse);
+
+
+
+// text/plain : Envoyer du texte brut sans mise en forme.
+
+// text/html : Envoyer du contenu HTML (rare en requête, plus en réponse)
+// application/xml: Envoyer des données au format XML
+// application/octet-stream: Envoyer des données binaires (fichiers, blobs).
+// application/pdf, image/png, audio/mpeg, etc.: Envoi de types de fichiers spécifiques.
+// application/ld+json: JSON-LD (Linked Data), souvent en API sémantique.
+// application/graphql: Envoyer des requêtes GraphQL.
+	
 }
 
 void	ParseBody::AppForm(char* body_req) /*voir si return ou si stock map en prive*/

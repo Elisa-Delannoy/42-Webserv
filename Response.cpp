@@ -209,7 +209,7 @@ void Response::sendBody()
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
-			this->_content.size() - data_sent, 0);  /*pourquoi ssize_t ?*/
+			this->_content.size() - data_sent, 0);
 		if (data_read == -1)
 		{
 			std::cerr << "Error while sending content." << std::endl;

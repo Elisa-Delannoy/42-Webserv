@@ -22,10 +22,9 @@ void HTTPServer::readHeaderRequest(int client_fd, ParseRequest& request)
 	{
 		recv(client_fd, &c, 1, 0);
 		line += c;
-		std::cout << c;
 		if (c == '\n')
 		{
-			std::cout << line << std::endl;
+			std::cout << line << std::endl; /*A SUPP*/
 			line.erase(line.size() - 1);
 			if (!line.empty() && line.at(line.size() - 1) == '\r')
 				line.erase(line.size() - 1);
@@ -63,7 +62,6 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll 
 				if (r >= body_len)
 					break;
 			}
-			std::cout << "Body_buf : " << this->_body_buf << std::endl;
 			body.ChooseContent(this->_body_buf);
 		}
 		epoll.SetClientEpollout(i, this->_socket_client);/*erreur selon le petit chat*/
@@ -127,7 +125,7 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 
 	std::ifstream conf(conf_file.c_str());
 	std::string line;
-	while (std::getline(conf, line)) /*check doucl" {}, mauvais donné, fin ;*/
+	while (std::getline(conf, line)) /*check doucle {}, mauvaise donnée, fin ;*/
 	{
 		if (CheckServerStart(line) == true)
 		{
@@ -167,8 +165,8 @@ void HTTPServer::displayServers()
 		std::cout << "Serveur numero : " << r+1 << std::endl;
 		for (size_t i = 0; i < this->servers[r].GetServerName().size() ;i++)
 			std::cout << this->servers[r].GetServerName()[i] << std::endl;
-		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;/*pourquoi 0 ?*/
-		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;/*pourquoi 0 ?*/
+		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;
+		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;
 		std::cout << "ClientBody :" << this->servers[r].GetClientBodySize() << std::endl;
 		std::cout << "Error 404 :" << this->servers[r].GetErrorPath(404) << std::endl;
 		std::cout << "Error 500 :" << this->servers[r].GetErrorPath(500) << std::endl;
@@ -218,7 +216,7 @@ int HTTPServer::runServer()
 			}
 			if(!event_is_server)
 			{
-				handleRequest(epoll, i, this->_attached_server); /*set dans if precedent dc tjs obliger detre d abord serveur aant client ?*/
+				handleRequest(epoll, i, this->_attached_server);
 			}
 			std::cout << std::endl;
 		}
