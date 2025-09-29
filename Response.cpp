@@ -97,19 +97,19 @@ void Response::setHeader(std::string version, std::string path, int code)
 	if (code == 204)
 	{
 		this->_status = setStatus(version, " 204 No Content\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
 	if (code == 404)
 	{
 		this->_status = setStatus(version, " 404 Not Found\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
 	if (code == 500)
 	{
 		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 	}
 	this->_content_type = setContentType(path);
 }
@@ -121,6 +121,8 @@ void Response::sendHeader()
 
 	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
+
+	std::cout << "response : " << this->_response << std::endl;
 }
 
 void Response::sendHeaderAndBody()
@@ -131,14 +133,17 @@ void Response::sendHeaderAndBody()
 
 void Response::sendError(int code)
 {
-	if (this->_errors_path.empty())
+	if (this->_errors_path.find(code)->second.empty())
 	{
 		std::cout << "---------EMPTY---------" << std::endl;
 		if (code == 404)
 			this->_content = ERROR404;
 		if (code == 500)
 			this->_content = ERROR500;
-		// this->_content_length = setContentLength(path);
+		std::ostringstream oss;
+		oss << this->_content.size();
+		this->_content_length = "Content-Length: " + oss.str() + "\r\n";
+		std::cout << "length : " << this->_content_length << std::endl;
 	}
 	else
 	{
@@ -150,6 +155,12 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
+void	printmap(std::map<int, std::string>& map)
+{
+	for (std::map<int, std::string>::iterator it = map.begin(); it != map.end(); it++)
+		std::cout << "key: " << it->first << " | value: " << it->second << std::endl;
+}
+
 void Response::sendResponse(ParseRequest header, char* buf)
 {
 	(void)buf;
@@ -157,12 +168,16 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
+	std::cout << "--------ERROR_PATH----------" << std::endl;
+	printmap(this->_errors_path);
 
 	if (method == "GET")
 	{
+		int check;
 		if (path == "/")
 		{
-			if (checkBody(ROOT) == 0)
+			check = checkBody(ROOT);
+			if (check == 0)
 			{
 				setHeader(version, path, 200);
 				sendHeaderAndBody();
@@ -175,12 +190,13 @@ void Response::sendResponse(ParseRequest header, char* buf)
 		}
 		else if (path.substr(0, 5) == "/img/")
 		{
-			if (checkBody(path.substr(1).c_str()) == 0) //path without first '/'
+			check = checkBody(path.substr(1).c_str());
+			if (check == 0) //path without first '/'
 			{
 				setHeader(version, path, 200);
 				sendHeaderAndBody();
 			}
-			else if (checkBody(path.substr(1).c_str()) == 404) //wrong path
+			else if (check == 404) //wrong path
 			{
 				setHeader(version, path, 404);
 				sendHeader();
@@ -220,7 +236,8 @@ void Response::sendBody()
 }
 
 //Return 0 if ok
-//Return 1 if not
+//Return 1 if reading problem
+//Return 404 if file problem
 int Response::checkBody(const char* path)
 {
 	std::ifstream file(path, std::ios::binary);
@@ -252,7 +269,7 @@ std::string Response::setContentType(std::string path)
 	else
 	{
 		size_t i = path.size() - 1;
-		while (path[i - 1] != '.')
+		while (path[i - 1] && path[i - 1] != '.')
 			i--;
 		std::string type = path.substr(i);
 

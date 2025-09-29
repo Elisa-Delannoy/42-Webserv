@@ -11,7 +11,7 @@
 #include <algorithm>
 #include "ParseRequest.hpp"
 
-#define ROOT "html/ndex.html"
+#define ROOT "html/index.html"
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
 
