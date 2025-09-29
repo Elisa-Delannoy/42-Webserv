@@ -73,7 +73,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
 		cgi.CheckCGI(header, body, servers);
-		Response resp(this->servers[server_index].GetErrorPath(), client_fd, body_len);
+		Response resp(this->servers[server_index], client_fd, body_len);
 		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);
 		epoll.deleteClient(client_fd);

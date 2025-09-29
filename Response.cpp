@@ -1,8 +1,10 @@
 #include "Response.hpp"
 
-Response::Response(std::map<int, std::string> errors_path, int client_fd, int body_len) :
-	_errors_path(errors_path), _client_fd(client_fd), _body_len(body_len)
-{ }
+Response::Response(ServerConf & servers, int client_fd, int body_len) :
+	_server(servers), _client_fd(client_fd), _body_len(body_len)
+{
+	this->_errors_path = this->_server.GetErrorPath();
+}
 
 Response::~Response()
 { }
@@ -116,13 +118,11 @@ void Response::setHeader(std::string version, std::string path, int code)
 
 void Response::sendHeader()
 {
-	this->_response = this->_status + this->_content_type
+	std::string response = this->_status + this->_content_type
 		+ this->_content_length + "\r\n";
 
-	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
+	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
-
-	std::cout << "response : " << this->_response << std::endl;
 }
 
 void Response::sendHeaderAndBody()
@@ -135,7 +135,6 @@ void Response::sendError(int code)
 {
 	if (this->_errors_path.find(code)->second.empty())
 	{
-		std::cout << "---------EMPTY---------" << std::endl;
 		if (code == 404)
 			this->_content = ERROR404;
 		if (code == 500)
@@ -143,11 +142,9 @@ void Response::sendError(int code)
 		std::ostringstream oss;
 		oss << this->_content.size();
 		this->_content_length = "Content-Length: " + oss.str() + "\r\n";
-		std::cout << "length : " << this->_content_length << std::endl;
 	}
 	else
 	{
-		std::cout << "---------FILLED---------" << std::endl;
 		std::string path = GetErrorPath(code).c_str();
 		checkBody(path.c_str()+1);
 		this->_content_length = setContentLength(path);
@@ -155,10 +152,14 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
-void	printmap(std::map<int, std::string>& map)
+std::string Response::getStaticLocation()
 {
-	for (std::map<int, std::string>::iterator it = map.begin(); it != map.end(); it++)
-		std::cout << "key: " << it->first << " | value: " << it->second << std::endl;
+	for (int i = 0; i < this->_server._nb_location; i++)
+	{
+		if (this->_server.GetLocation(i).GetName() == "/static")
+			return this->_server.GetLocation(i).GetRoot();
+	}
+	return "Error";
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -168,15 +169,15 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
-	std::cout << "--------ERROR_PATH----------" << std::endl;
-	printmap(this->_errors_path);
+	std::string static_location = getStaticLocation();
 
 	if (method == "GET")
 	{
 		int check;
 		if (path == "/")
 		{
-			check = checkBody(ROOT);
+			path = static_location + "/index.html";
+			check = checkBody(path.substr(1).c_str());
 			if (check == 0)
 			{
 				setHeader(version, path, 200);
@@ -188,10 +189,10 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendError(500);
 			}
 		}
-		else if (path.substr(0, 5) == "/img/")
+		else if (path.substr(static_location.size(), 5) == "/img/")
 		{
-			check = checkBody(path.substr(1).c_str());
-			if (check == 0) //path without first '/'
+			check = checkBody(path.substr(1).c_str()); //path without first '/'
+			if (check == 0)
 			{
 				setHeader(version, path, 200);
 				sendHeaderAndBody();
@@ -207,7 +208,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendHeader();
 			}
 		}
-		else if (path == "/favicon.ico") //just in case, we ignore it
+		else
 		{
 			setHeader(version, path, 204);
 			sendHeader();
@@ -313,10 +314,6 @@ std::string Response::setContentLength(std::string path)
 	{
 		oss << this->_body_len;
 		size = oss.str();
-	}
-	else if (path == "/")
-	{
-		size = setSize(ROOT);
 	}
 	else
 	{
