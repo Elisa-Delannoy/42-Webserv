@@ -176,21 +176,10 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string version = header.GetVersion();
 	std::string root = getStaticLocation(path);
 	std::cout << "location : " << root << std::endl;
-	/* if (root.empty())
-	{
-		setHeader(version, path, 500);
-		sendError(500);
-		return;
-	} */
-
-/*
-#pour chaque request. on check si on trouve le name de la location
-#si on trouve rien, on va dans / (fallback)
-*/
 
 	if (method == "GET")
 	{
-		if (root != path.substr(0, root.size())) //avoid /html/html/... for example
+		if (root != path.substr(0, root.size())) //avoid root repetition (html/html/...)
 			path = root + path;
 		std::cout << "path : " << path << std::endl;
 		int check;
@@ -300,6 +289,12 @@ std::string Response::setContentType(std::string path)
 			ret += "image/" + type;
 		if (type == "css")
 			ret += "text/css";
+		if (type == "html")
+			ret += "text/html";
+		if (type == "js")
+			ret += "application/javascript";
+		if (type == "pdf" || type == "zip")
+			ret += "application/" + type;
 	}
 	return (ret + "\r\n");
 }

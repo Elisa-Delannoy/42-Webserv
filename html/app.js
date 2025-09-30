@@ -1,0 +1,1 @@
+alert("Tu veux voir mon cookie?");
