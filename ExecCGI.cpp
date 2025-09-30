@@ -35,7 +35,6 @@ void ExecCGI::SetEnvp(ParseRequest header, ParseBody body, Location location)
 void ExecCGI::SetArgv(std::string path, Location location)
 {
 	std::vector<std::string> argv;
-	argv.push_back(location.GetCGIPass());
 	argv.push_back(location.GetRoot() + path);
 	_argv = new char*[argv.size() + 1];
 	for (size_t i = 0; i < argv.size(); i++)

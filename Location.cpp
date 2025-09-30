@@ -4,7 +4,6 @@ Location::Location()
 {
 	_name = "";
 	_root = "";
-	_cgi_pass = "";
 	_autoindex = false;
 	nb_methods = 0;
 }
@@ -26,6 +25,7 @@ void Location::SetRoot(std::string root)
 void Location::SetMethods(std::string methods)
 {
 	_methods.push_back(methods);
+	nb_methods++;
 }
 
 void Location::SetAutoindex(bool autoindex)
@@ -33,9 +33,14 @@ void Location::SetAutoindex(bool autoindex)
 	_autoindex = autoindex; 
 }
 
-void Location::SetCGIPass(std::string cgi)
+void Location::SetCGIPass(std::string ext, std::string path)
 {
-	_cgi_pass = cgi;
+	_cgi[ext] = path;
+}
+
+void Location::SetIndex(std::string index)
+{
+	_index = index;
 }
 
 std::string Location::GetName() const
@@ -58,9 +63,20 @@ bool Location::GetAutoindex() const
 	return _autoindex;
 }
 
-std::string Location::GetCGIPass() const
+std::string Location::GetCGIPass(std::string ext) const
 {
-	return _cgi_pass;
+	std::map<std::string, std::string>::const_iterator it = _cgi.begin();
+	for (; it != _cgi.end(); it++)
+	{
+		if (it->first == ext)
+			return it->second;
+	}
+	return "";
+}
+
+std::string Location::GetIndex() const
+{
+	return _index;
 }
 
 int Location::AddName(std::string line)
@@ -72,8 +88,8 @@ int Location::AddName(std::string line)
 	if (word != "location")
 		return 9;
 	ss >> word;
-	if (word == "~" || word == "=" || word == "^~" || word == "~*") /*check  autre types*/
-		return 9;
+	if (word == "~" || word == "=" || word == "^~" || word == "~*")
+		return 6;
 	SetName(word);
 	return 0;
 }
@@ -83,13 +99,13 @@ int Location::AddRoot(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
-
 	if (word != "root")
 		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
+	word.erase(word.length() - 1);
 	this->SetRoot(word);
 	return 0;
 }
@@ -99,25 +115,21 @@ int Location::AddMethods(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "allow_methods")
 		return 9;
-	while (true)
+	while (ss >> word)
 	{
-		std::string temp = word;
-		ss >> word;
-		if (temp == word)
-			return 9;
-		if (!word.empty() && word[(word.length() - 1)] == ';')
-			word.erase(word.length() - 1);
-		if (word == "GET" || word == "DELETE" || word == "POST")
-		{
-			SetMethods(word);
-			nb_methods++;
-		}
-		else
-			return 9;
+		if (word != "GET" && word != "POST" && word != "DELETE")
+			break;
+		SetMethods(word);
 	}
+	if (word != "GET;" && word != "POST;" && word != "DELETE;")
+		return 7;
+	word.erase(word.length() - 1);
+	SetMethods(word);
 	return 0;
 }
 
@@ -126,12 +138,15 @@ int Location::AddAutoindex(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "autoindex")
 		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
+	if (word != "off;" && word != "on;")
+		return 8;
+	word.erase(word.length() - 1);
 	if (word == "on")
 		SetAutoindex(true);
 	return 0;
@@ -142,25 +157,30 @@ int Location::AddCGIPass(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
-	if (word != "cgi_pass")
+	if (word != "cgi")
 		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] != ';')
-		return 1;
 	word.erase(word.length() - 1);
-	SetCGIPass(word);
 	return 0;
 }
 
-int AddIndex(std::string line)
+int Location::AddIndex(std::string line)
 {
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "index")
 		return 9;
 	ss >> word;
+	if (word.find(".") == std::string::npos)
+		return 9;
+	word.erase(word.length() - 1);
+	SetIndex(word);
 	return 0;
 }

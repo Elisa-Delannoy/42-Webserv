@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <cstdlib>
+#include <map>
 
 class Location
 {
@@ -15,7 +16,7 @@ class Location
 		std::string _root;
 		std::vector<std::string> _methods;
 		bool _autoindex;
-		std::string _cgi_pass;
+		std::map<std::string, std::string> _cgi;
 		std::string _index;
 	public:
 		int nb_methods;
@@ -27,14 +28,14 @@ class Location
 		void SetRoot(std::string root);
 		void SetMethods(std::string methods);
 		void SetAutoindex(bool autoindex);
-		void SetCGIPass(std::string cgi);
+		void SetCGIPass(std::string ext, std::string path);
 		void SetIndex(std::string index);
 
 		std::string GetName() const;
 		std::string GetRoot() const;
 		std::string GetMethods(int nb) const;
 		bool GetAutoindex() const;
-		std::string GetCGIPass() const;
+		std::string GetCGIPass(std::string ext) const;
 		std::string GetIndex() const;
 
 		int AddName(std::string line);

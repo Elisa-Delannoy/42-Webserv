@@ -134,6 +134,8 @@ bool HTTPServer::ParsingConf(std::string conf_file)
 				std::getline(conf, line);
 				if (line.find("}") != std::string::npos)
 					break;
+				else if (temp.isComment(line) == true)
+					continue;
 				else if (line.find("server_name") != std::string::npos)
 					error = temp.AddServerName(temp.removeInlineComment(line));
 				else if (line.find("client_max_body_size") != std::string::npos)
@@ -144,8 +146,6 @@ bool HTTPServer::ParsingConf(std::string conf_file)
 					error = temp.AddErrorPage(temp.removeInlineComment(line));
 				else if (CheckLocationStart(line) == true)
 					error = temp.AddLocation(conf, temp.removeInlineComment(line));
-				else if (temp.isComment(line) == true)
-					continue;
 				else
 					error = 9;
 				if (error != 0)
@@ -178,7 +178,8 @@ void HTTPServer::displayServers()
 			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
 				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
 			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
-			std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			// std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
+			std::cout << "Index : " << servers[r].GetLocation(f).GetIndex() << std::endl;
 			std::cout << "\n";
 		}
 		std::cout << "\n";
