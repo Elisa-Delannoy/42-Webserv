@@ -190,7 +190,8 @@ void Response::sendResponse(ParseRequest header, char* buf)
 
 	if (method == "GET")
 	{
-		path = root + path;
+		if (root != path.substr(0, root.size())) //avoid /html/html/... for example
+			path = root + path;
 		std::cout << "path : " << path << std::endl;
 		int check;
 		if (path.substr(root.size()) == "/")
@@ -242,6 +243,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 void Response::sendBody()
 {
 	size_t data_sent = 0;
+	// std::cout << "body : " << this->_content << std::endl;
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
@@ -293,22 +295,11 @@ std::string Response::setContentType(std::string path)
 			i--;
 		std::string type = path.substr(i);
 
-		if (type == "jpg")
-			ret += "image/jpg";
-		if (type == "jpeg")
-			ret += "image/jpeg";
-		if (type == "png")
-			ret += "image/png";
-		if (type == "gif")
-			ret += "image/gif";
-		if (type == "svg")
-			ret += "image/svg+xml";
-		if (type == "webp")
-			ret += "image/webp";
-		if (type == "ico")
-			ret += "image/x-icon";
-		if (type == "avif")
-			ret += "image/avif";
+		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
+			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
+			ret += "image/" + type;
+		if (type == "css")
+			ret += "text/css";
 	}
 	return (ret + "\r\n");
 }
