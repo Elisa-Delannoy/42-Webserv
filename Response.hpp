@@ -34,7 +34,7 @@ class Response
 		int checkBody(const char* path);
 
 		std::string GetErrorPath(int type_error);
-		std::string getStaticLocation(std::string path);
+		void setRootLocation(std::string & path);
 
 		std::string setSize(const char* path_image);
 

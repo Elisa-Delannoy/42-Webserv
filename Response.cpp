@@ -152,19 +152,34 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
-std::string Response::getStaticLocation(std::string path)
+void Response::setRootLocation(std::string & path)
 {
 	std::string name;
-	std::string fallback;
+	std::string root;
+	int fallback_index;
+
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
 		name = this->_server.GetLocation(i).GetName();
-		if (path.compare(0, name.size(), name) == 0)
-			return this->_server.GetLocation(i).GetRoot();
+		std::cout << "location : " << name << std::endl;
 		if (name == "/")
-			fallback = name;
+			fallback_index = i;
+		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
+		{
+			root = this->_server.GetLocation(i).GetRoot() + "/";
+			path.replace(0, name.size(), root);
+			path.erase(path.begin(), path.begin()+1);
+			std::cout << "path : " << path << std::endl;
+			return;
+		}
 	}
-	return fallback;
+	if (root.empty())
+	{
+		root = this->_server.GetLocation(fallback_index).GetRoot();
+		path.replace(0, name.size() - 1, root);
+		path.erase(path.begin(), path.begin()+1);
+		std::cout << "path : " << path << std::endl;
+	}
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -174,19 +189,17 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
-	std::string root = getStaticLocation(path);
-	std::cout << "location : " << root << std::endl;
+	setRootLocation(path);
 
 	if (method == "GET")
 	{
-		if (root != path.substr(0, root.size())) //avoid root repetition (html/html/...)
-			path = root + path;
-		std::cout << "path : " << path << std::endl;
 		int check;
-		if (path.substr(root.size()) == "/")
+		if (path[path.size() - 1] == '/')
 		{
-			path = root + "/index.html";
-			check = checkBody(path.substr(1).c_str());
+			//CHECK AUTOINDEX HERE
+			path += "index.html";
+			std::cout << "path : " << path << std::endl;
+			check = checkBody(path.c_str());
 			if (check == 0)
 			{
 				setHeader(version, path, 200);
@@ -200,7 +213,8 @@ void Response::sendResponse(ParseRequest header, char* buf)
 		}
 		else
 		{
-			check = checkBody(path.substr(1).c_str()); //path without first '/'
+			std::cout << "path : " << path << std::endl;
+			check = checkBody(path.c_str()); //path without first '/'
 			if (check == 0)
 			{
 				setHeader(version, path, 200);
@@ -323,7 +337,7 @@ std::string Response::setContentLength(std::string path)
 	}
 	else
 	{
-		size = setSize(path.c_str() + 1);
+		size = setSize(path.c_str());
 	}
 	return "Content-Length: " + size + "\r\n";
 }
