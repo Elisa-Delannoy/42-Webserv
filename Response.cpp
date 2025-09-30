@@ -176,21 +176,11 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string version = header.GetVersion();
 	std::string root = getStaticLocation(path);
 	std::cout << "location : " << root << std::endl;
-	/* if (root.empty())
-	{
-		setHeader(version, path, 500);
-		sendError(500);
-		return;
-	} */
-
-/*
-#pour chaque request. on check si on trouve le name de la location
-#si on trouve rien, on va dans / (fallback)
-*/
 
 	if (method == "GET")
 	{
-		path = root + path;
+		if (root != path.substr(0, root.size())) //avoid root repetition (html/html/...)
+			path = root + path;
 		std::cout << "path : " << path << std::endl;
 		int check;
 		if (path.substr(root.size()) == "/")
@@ -242,6 +232,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 void Response::sendBody()
 {
 	size_t data_sent = 0;
+	// std::cout << "body : " << this->_content << std::endl;
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
@@ -293,22 +284,17 @@ std::string Response::setContentType(std::string path)
 			i--;
 		std::string type = path.substr(i);
 
-		if (type == "jpg")
-			ret += "image/jpg";
-		if (type == "jpeg")
-			ret += "image/jpeg";
-		if (type == "png")
-			ret += "image/png";
-		if (type == "gif")
-			ret += "image/gif";
-		if (type == "svg")
-			ret += "image/svg+xml";
-		if (type == "webp")
-			ret += "image/webp";
-		if (type == "ico")
-			ret += "image/x-icon";
-		if (type == "avif")
-			ret += "image/avif";
+		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
+			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
+			ret += "image/" + type;
+		if (type == "css")
+			ret += "text/css";
+		if (type == "html")
+			ret += "text/html";
+		if (type == "js")
+			ret += "application/javascript";
+		if (type == "pdf" || type == "zip")
+			ret += "application/" + type;
 	}
 	return (ret + "\r\n");
 }

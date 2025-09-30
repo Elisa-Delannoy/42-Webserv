@@ -7,9 +7,10 @@
     <meta charset="UTF-8">
     <title>Webserv</title>
     <link rel="icon" href="../html/img/favicon.svg" type="image/svg">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
 </head>
-<body>
-    <h1>Formulaire d'envoi</h1>
+<body id="body">
+    <h1 id="title">Formulaire d'envoi</h1>
     <form action="/upload" method="POST" enctype="multipart/form-data">
         <label for="na;me">Nom :</label>
         <input type="text" id="na;me" name="na;me"><br><br>
@@ -31,5 +32,6 @@
 		<label>Nom : <input type="text" name="name"></label>
 		<input type="submit" value="Envoyer">
 	</form>
+    <script src="./app.js"></script>
 </body>
 </html>
