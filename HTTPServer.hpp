@@ -14,6 +14,10 @@
 #include "Response.hpp"
 #include "ExecCGI.hpp"
 #include "ParseRequest.hpp"
+#include "Clients.hpp"
+
+
+
 
 class HTTPServer
 {
@@ -26,7 +30,7 @@ class HTTPServer
 		void closeServer();
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
-		int	SocketServer(int used_socket, Epoll& epoll);
+		int	AcceptRequest(int used_socket, Epoll& epoll, int j);
 		int	GetServerIndex(int used_socket);
 
 		//Parsing .conf
@@ -37,16 +41,22 @@ class HTTPServer
 		// const char* GetRequest(void) const;
 
 		void readHeaderRequest(int client_fd, ParseRequest& request);
-		void handleRequest(Epoll& epoll, int i, int fd, size_t server_index);
+		void handleRequest(Epoll& epoll, int i, size_t server_index, Clients* client);
 
 		uint32_t prepareAddrForHtonl(std::string addr);
 		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
+		Clients*	HTTPServer::FindClient(int fd);
+		void 		ReadAllRequest(Clients* client, int fd);
 
 	private:
-		std::vector<int> 	_socket_server;
-		std::map<int, size_t>	_socket_client;
+
+		std::vector<int> 		_socket_server;
+		std::map<int, Clients*> _socket_client;
 		std::map<int, size_t> 	_attached_server;
-		char* _body_buf;
+		char*					 _body_buf;
+
+
+
 };
 
 #endif

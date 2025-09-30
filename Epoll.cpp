@@ -43,24 +43,20 @@ int Epoll::getEpollFd()
 	return this->_epoll_fd;
 }
 
-void Epoll::SetEpoll(int fd, uint32_t flag)
+void Epoll::SetEpoll(int fd)
 {
 	epoll_event	event;
-	event.events = flag;
+	event.events = EPOLLIN | EPOLLOUT | EPOLLET;
 	event.data.fd = fd;
-	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1) 
 	{
-		if (errno == EEXIST)
-		{
-			if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_MOD, fd, &event) == -1)
-				std::cerr << "Modification error: " << strerror(errno) << std::endl;
-		}
-		else
-		{
-			std::cerr << "Error : " << strerror(errno) << std::endl;
-			close(fd);
-		}
-	}	
+    	close(fd);
+		return;
+	}
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
+		close (fd);
 }
 
 

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <vector>
 #include <cerrno>
+#include <fcntl.h>
 
 class Epoll
 {
@@ -18,7 +19,7 @@ class Epoll
 		int epollWait();
 		// void setClientEpollin(int socket_client);
 		// void SetClientEpollout(int index, int socket_client);
-		void SetEpoll(int fd, uint32_t flag);
+		void SetEpoll(int fd);
 		void deleteClient(int client_fd);
 
 		epoll_event getEvent(int index);
@@ -29,5 +30,6 @@ class Epoll
 		std::vector<epoll_event> _servers_event;
 		int _epoll_fd;
 };
+
 
 #endif
