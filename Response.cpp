@@ -152,14 +152,19 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
-std::string Response::getStaticLocation()
+std::string Response::getStaticLocation(std::string path)
 {
+	std::string name;
+	std::string fallback;
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
-		if (this->_server.GetLocation(i).GetName() == "/static")
+		name = this->_server.GetLocation(i).GetName();
+		if (path.compare(0, name.size(), name) == 0)
 			return this->_server.GetLocation(i).GetRoot();
+		if (name == "/")
+			fallback = name;
 	}
-	return "";
+	return fallback;
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -169,21 +174,28 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
-	std::string static_root = getStaticLocation();
-	if (static_root.empty())
+	std::string root = getStaticLocation(path);
+	std::cout << "location : " << root << std::endl;
+	/* if (root.empty())
 	{
-		std::cout << "static location error " << static_root << std::endl;
 		setHeader(version, path, 500);
 		sendError(500);
 		return;
-	}
+	} */
+
+/*
+#pour chaque request. on check si on trouve le name de la location
+#si on trouve rien, on va dans / (fallback)
+*/
 
 	if (method == "GET")
 	{
+		path = root + path;
+		std::cout << "path : " << path << std::endl;
 		int check;
-		if (path == "/")
+		if (path.substr(root.size()) == "/")
 		{
-			path = static_root + "/index.html";
+			path = root + "/index.html";
 			check = checkBody(path.substr(1).c_str());
 			if (check == 0)
 			{
@@ -196,7 +208,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendError(500);
 			}
 		}
-		else if (path.substr(static_root.size(), 5) == "/img/")
+		else
 		{
 			check = checkBody(path.substr(1).c_str()); //path without first '/'
 			if (check == 0)
@@ -215,11 +227,11 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendHeader();
 			}
 		}
-		else
+		/* else
 		{
 			setHeader(version, path, 204);
 			sendHeader();
-		}
+		} */
 	}
 	else if (method == "POST")
 	{

@@ -64,7 +64,6 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index)
 					break;
 				std::cout << i << std::endl;
 			}
-			std::cout << "Body_buf : " << this->_body_buf << std::endl;
 			body.ChooseContent(this->_body_buf);
 		}
 		epoll.SetClientEpollout(i, this->_socket_client);
