@@ -159,7 +159,7 @@ std::string Response::getStaticLocation()
 		if (this->_server.GetLocation(i).GetName() == "/static")
 			return this->_server.GetLocation(i).GetRoot();
 	}
-	return "Error";
+	return "";
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -169,14 +169,21 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
-	std::string static_location = getStaticLocation();
+	std::string static_root = getStaticLocation();
+	if (static_root.empty())
+	{
+		std::cout << "static location error " << static_root << std::endl;
+		setHeader(version, path, 500);
+		sendError(500);
+		return;
+	}
 
 	if (method == "GET")
 	{
 		int check;
 		if (path == "/")
 		{
-			path = static_location + "/index.html";
+			path = static_root + "/index.html";
 			check = checkBody(path.substr(1).c_str());
 			if (check == 0)
 			{
@@ -189,7 +196,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendError(500);
 			}
 		}
-		else if (path.substr(static_location.size(), 5) == "/img/")
+		else if (path.substr(static_root.size(), 5) == "/img/")
 		{
 			check = checkBody(path.substr(1).c_str()); //path without first '/'
 			if (check == 0)
@@ -294,6 +301,7 @@ std::string Response::setContentType(std::string path)
 	return (ret + "\r\n");
 }
 
+//get file size with stat function and return it in a string
 std::string Response::setSize(const char* path_image)
 {
 	std::ostringstream oss;

@@ -194,14 +194,12 @@ int HTTPServer::runServer()
 
 	while(true)
 	{
-		size_t a;
 		int n = epoll.epollWait();
 		for(int i = 0; i < n; i++)
 		{
 			bool event_is_server = false;
 			for (size_t j = 0; j < this->servers.size(); j++)
 			{
-				a = j;
 				if(epoll.getEvent(i).data.fd == this->_socket_server[j])
 				{
 					this->_socket_client = accept(this->_socket_server[j], NULL, NULL);
