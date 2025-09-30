@@ -75,24 +75,34 @@ size_t ServerConf::GetHostPortSize() const
 	return this->_host_port.size();
 }
 
-void ServerConf::AddServerName(std::string& line)
+int ServerConf::AddServerName(std::string line)
 {
 	std::istringstream ss(line);
 	std::string word;
 
 	ss >> word;
 	if (word != "server_name")
-		return ;
+		return 9;
 	while (ss >> word)
 	{
-		if (!word.empty() && word[(word.length() - 1)] == ';')
+		std::string temp = word;
+		if (!temp.empty() && temp[(temp.length() - 1)] == ';')
 		{
-			word.erase(word.length() - 1);
-			this->SetServerName(word);
+			temp.erase(temp.length() - 1);
+			this->SetServerName(temp);
 			break;
 		}
-		this->SetServerName(word);
+		this->SetServerName(temp);
 	}
+	if (word[(word.length() - 1)] != ';')
+		return 1;
+	return 0;
+}
+
+bool CheckHost(std::string host)
+{
+	struct in_addr addr;
+	return inet_pton(AF_INET, host.c_str(), &addr) == 1;
 }
 
 int CheckValue(std::string port)
@@ -105,22 +115,28 @@ int CheckValue(std::string port)
 	return intport;
 }
 
-void ServerConf::AddHostPort(std::string& line)
+int ServerConf::AddHostPort(std::string line)
 {
 	std::istringstream ss(line);
 	std::string word;
 
 	ss >> word;
 	if (word != "listen")
-		return ;
+		return 9;
 	ss >> word;
+	std::string temp = word;
 	if (!word.empty() && word[(word.length() - 1)] == ';')
 		word.erase(word.length() - 1);
 	int sep = word.find(':');
+	if (CheckHost(word.substr(0, sep)) == false)
+		return 3;
 	int port = CheckValue(word.substr(sep + 1, word.length()).c_str());
 	if (port == -1)
-		return;
+		return 2;
+	if (temp[(temp.length() - 1)] != ';')
+		return 1;
 	this->SetHostPort(word.substr(0, sep), port);
+	return 0;
 }
 
 int ClientBodyValue(int value, int multiplier)
@@ -137,63 +153,79 @@ int ClientBodyValue(int value, int multiplier)
 		value = value * 1000000000;
 		break;
 	default:
+		value = -1;
 		break;
 	}
 	return value;
 }
 
-void ServerConf::AddClientBody(std::string& line)
+int ServerConf::AddClientBody(std::string line)
 {
 	std::istringstream ss(line);
 	std::string word;
 
 	ss >> word;
-	if (word != "client_max_body_size")
-		return ;
+	if (word.compare("client_max_body_size") != 0)
+		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
-	int value = atoi(word.substr(0, word.length() - 1).c_str());
+	if (!word.empty() && word[(word.length() - 1)] != ';')
+		return 1;
+	word.erase(word.length() - 1);
+	if (word.length() <= 0)
+		return 4;
+	int temp = atoi(word.substr(0, word.length() - 1).c_str());
 	char multiplier = word.substr(word.length() - 1).c_str()[0];
-	this->SetClientBodySize(ClientBodyValue(value, multiplier));
+	int value = ClientBodyValue(temp, multiplier);
+	if (value == -1)
+		return 4;
+	this->SetClientBodySize(value);
+	return 0;
 }
 
-void ServerConf::AddErrorPage(std::string& line)
+int ServerConf::AddErrorPage(std::string line)
 {
 	std::istringstream ss(line);
 	std::string word;
 
 	ss >> word;
 	if (word != "error_page")
-		return ;
+		return 9;
 	ss >> word;
 	int type_error = CheckValue(word);
 	if (type_error == -1)
-		return;
+		return 5;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
+	if (word[(word.length() - 1)] != ';')
+		return 1;
+	word.erase(word.length() - 1);
 	this->SetErrorPage(type_error, word);
+	return 0;
 }
 
-void ServerConf::AddLocation(std::ifstream& conf, std::string& line)
+int ServerConf::AddLocation(std::ifstream& conf, std::string line)
 {
 	Location location;
 	location.AddName(line);
 	while (line.find("}") == std::string::npos)
 	{
+		int error = 0;
 		std::getline(conf, line);
 		if (line.find("root") != std::string::npos)
 			location.AddRoot(line);
-		if (line.find("allow_methods") != std::string::npos)
+		else if (line.find("allow_methods") != std::string::npos)
 			location.AddMethods(line);
-		if (line.find("autoindex") != std::string::npos)
+		else if (line.find("autoindex") != std::string::npos)
 			location.AddAutoindex(line);
-		if (line.find("cgi_pass") != std::string::npos)
+		else if (line.find("cgi_pass") != std::string::npos)
 			location.AddCGIPass(line);
+		else if (isComment(line) == true)
+			continue;
+		else
+			error = 9;
 	}
 	this->SetLocation(location);
 	_nb_location++;
+	return 0;
 }
 
 bool ServerConf::checkMethods(std::string method, int nb)
@@ -214,4 +246,44 @@ int ServerConf::checkLocation(std::string name)
 			return i;
 	}
 	return -1;
+}
+
+std::string ServerConf::removeInlineComment(std::string &line)
+{
+	size_t pos = line.find('#');
+	if (pos != std::string::npos)
+		return line.substr(0, pos);
+	return line;
+}
+
+std::string trimLeft(const std::string &s)
+{
+	size_t start = 0;
+	while (start < s.size() && std::isspace(s[start]))
+		start++;
+	return s.substr(start);
+}
+
+bool ServerConf::isComment(const std::string &line)
+{
+	std::string trimmed = trimLeft(line);
+	return trimmed.empty() || trimmed[0] == '#';
+}
+
+void ServerConf::Error(int error)
+{
+	if (error == 1)
+		std::cerr << "Don't have ';' at the end of the line." << std::endl;
+	if (error == 2)
+		std::cerr << "Invalid Port." << std::endl;
+	if (error == 3)
+		std::cerr << "Invalid Host." << std::endl;
+	if (error == 4)
+		std::cerr << "Client body size value invalid." << std::endl;
+	if (error == 5)
+		std::cerr << "Invalid Error Page." << std::endl;
+	if (error == 6)
+		std::cerr << "Invalid line." << std::endl;
+	if (error == 9)
+		std::cerr << "Error Input." << std::endl;
 }

@@ -34,11 +34,11 @@ class Location
 		bool GetAutoindex() const;
 		std::string GetCGIPass() const;
 
-		void AddName(std::string line);
-		void AddRoot(std::string line);
-		void AddMethods(std::string line);
-		void AddAutoindex(std::string line);
-		void AddCGIPass(std::string line);
+		int AddName(std::string line);
+		int AddRoot(std::string line);
+		int AddMethods(std::string line);
+		int AddAutoindex(std::string line);
+		int AddCGIPass(std::string line);
 };
 
 

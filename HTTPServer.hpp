@@ -30,7 +30,7 @@ class HTTPServer
 		int	GetServerIndex(int used_socket);
 
 		//Parsing .conf
-		std::vector<ServerConf> ParsingConf(std::string conf_file);
+		bool ParsingConf(std::string conf_file);
 		void displayServers();
 		std::vector<ServerConf> servers;
 

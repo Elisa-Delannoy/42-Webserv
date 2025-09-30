@@ -120,10 +120,8 @@ bool CheckLocationStart(std::string line)
 }
 
 //PARSING CONF
-std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
+bool HTTPServer::ParsingConf(std::string conf_file)
 {
-	std::vector<ServerConf> servers;
-
 	std::ifstream conf(conf_file.c_str());
 	std::string line;
 	while (std::getline(conf, line)) /*check doucle {}, mauvaise donnée, fin ;*/
@@ -133,29 +131,31 @@ std::vector<ServerConf> HTTPServer::ParsingConf(std::string conf_file)
 			ServerConf temp;
 			while (true)
 			{	
+				int error = 0;
 				std::getline(conf, line);
 				if (line.find("}") != std::string::npos)
 					break;
-				if (line.find("server_name") != std::string::npos)
-					temp.AddServerName(line);
-				if (line.find("client_max_body_size") != std::string::npos)
-					temp.AddClientBody(line);
-				if (line.find("listen") != std::string::npos)
-					temp.AddHostPort(line);
-				if (line.find("error_page") != std::string::npos)
-					temp.AddErrorPage(line);
-				if (CheckLocationStart(line) == true)
-					temp.AddLocation(conf, line);
+				else if (line.find("server_name") != std::string::npos)
+					error = temp.AddServerName(temp.removeInlineComment(line));
+				else if (line.find("client_max_body_size") != std::string::npos)
+					error = temp.AddClientBody(temp.removeInlineComment(line));
+				else if (line.find("listen") != std::string::npos)
+					error = temp.AddHostPort(temp.removeInlineComment(line));
+				else if (line.find("error_page") != std::string::npos)
+					error = temp.AddErrorPage(temp.removeInlineComment(line));
+				else if (CheckLocationStart(line) == true)
+					error = temp.AddLocation(conf, temp.removeInlineComment(line));
+				else if (temp.isComment(line) == true)
+					continue;
+				else
+					error = 9;
+				if (error != 0)
+					return (temp.Error(error), false);
 			}
-			/* if (temp.GetErrorPath().empty())
-			{
-				temp.SetErrorPage(404, "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>");
-				temp.SetErrorPage(500, "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>");
-			} */
-			servers.push_back(temp);
+			this->servers.push_back(temp);
 		}
 	}
-	return servers;
+	return true;
 }
 
 void HTTPServer::displayServers()
@@ -241,7 +241,8 @@ int HTTPServer::runServer()
 
 int HTTPServer::startServer(std::string conf_file)
 {
-	this->servers = ParsingConf(conf_file);
+	if (ParsingConf(conf_file) == false)
+		return 1;
 
 	displayServers();
 
