@@ -72,8 +72,8 @@ int Location::AddName(std::string line)
 	if (word != "location")
 		return 9;
 	ss >> word;
-	if (word == "~") /*check  autre types*/
-		ss >> word;
+	if (word == "~" || word == "=" || word == "^~" || word == "~*") /*check  autre types*/
+		return 9;
 	SetName(word);
 	return 0;
 }
@@ -84,6 +84,7 @@ int Location::AddRoot(std::string line)
 	std::string word;
 
 	ss >> word;
+
 	if (word != "root")
 		return 9;
 	ss >> word;
@@ -145,8 +146,21 @@ int Location::AddCGIPass(std::string line)
 	if (word != "cgi_pass")
 		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] == ';')
-		word.erase(word.length() - 1);
+	if (!word.empty() && word[(word.length() - 1)] != ';')
+		return 1;
+	word.erase(word.length() - 1);
 	SetCGIPass(word);
+	return 0;
+}
+
+int AddIndex(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	ss >> word;
+	if (word != "index")
+		return 9;
+	ss >> word;
 	return 0;
 }

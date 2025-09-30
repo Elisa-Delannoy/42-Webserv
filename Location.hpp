@@ -16,6 +16,7 @@ class Location
 		std::vector<std::string> _methods;
 		bool _autoindex;
 		std::string _cgi_pass;
+		std::string _index;
 	public:
 		int nb_methods;
 
@@ -27,18 +28,21 @@ class Location
 		void SetMethods(std::string methods);
 		void SetAutoindex(bool autoindex);
 		void SetCGIPass(std::string cgi);
+		void SetIndex(std::string index);
 
 		std::string GetName() const;
 		std::string GetRoot() const;
 		std::string GetMethods(int nb) const;
 		bool GetAutoindex() const;
 		std::string GetCGIPass() const;
+		std::string GetIndex() const;
 
 		int AddName(std::string line);
 		int AddRoot(std::string line);
 		int AddMethods(std::string line);
 		int AddAutoindex(std::string line);
 		int AddCGIPass(std::string line);
+		int AddIndex(std::string line);
 };
 
 
