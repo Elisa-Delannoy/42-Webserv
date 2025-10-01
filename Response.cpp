@@ -190,7 +190,7 @@ void Response::displayAutoindex(std::string path, std::string version)
 	dir = opendir(path.c_str());
 	if (dir == NULL)
 	{
-		std::cout << "path opendir : " << path << std::endl;
+		std::cout << "path opendir error : " << path << std::endl;
 		setHeader(version, path, 404);
 		sendError(404);
 	}
@@ -201,7 +201,6 @@ void Response::displayAutoindex(std::string path, std::string version)
 		dirp = readdir(dir);
 		while (dirp != NULL)
 		{
-			std::cout << "d_name : " << dirp->d_name << std::endl;
 			std::string name = dirp->d_name;
 			size_t found = name.find(".");
 			if (found == std::string::npos)
@@ -210,7 +209,6 @@ void Response::displayAutoindex(std::string path, std::string version)
 			dirp = readdir(dir);
 		}
 		this->_content += "</ul></body></html>";
-		std::cout << "content : " << this->_content << std::endl;
 		this->_body_len = this->_content.size();
 		this->_content_length = setContentLength(path);
 		setHeader(version, path, 200);
@@ -235,18 +233,17 @@ void Response::sendResponse(ParseRequest header, char* buf)
 	if (method == "GET")
 	{
 		int check;
-		if (path[path.size() - 1] == '/')
+		if (opendir(path.c_str()) != NULL)
 		{
 			std::string index = getIndex();
 			if (index.empty())
 			{
 				std::cout << "index is empty" << std::endl;
-				//CHECK AUTOINDEX HERE
+
 				bool autoindex = getAutoindex();
 				if (autoindex)
 				{
 					displayAutoindex(path, version);
-					//open root folder, add every file in it in <a> and display html
 				}
 				else
 				{
@@ -274,7 +271,7 @@ void Response::sendResponse(ParseRequest header, char* buf)
 		else
 		{
 			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str()); //path without first '/'
+			check = checkBody(path.c_str());
 			if (check == 0)
 			{
 				setHeader(version, path, 200);
@@ -301,7 +298,6 @@ void Response::sendResponse(ParseRequest header, char* buf)
 void Response::sendBody()
 {
 	size_t data_sent = 0;
-	// std::cout << "body : " << this->_content << std::endl;
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
