@@ -8,6 +8,7 @@
 #include <map>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <algorithm>
 #include "ParseRequest.hpp"
 #include <vector>
@@ -31,23 +32,28 @@ class Response
 		void sendBody();
 		void sendError(int code);
 		void sendHeaderAndBody();
-		void sendResponse(Clients* client, std::vector<char>  buf);
+		void sendResponse(Clients* client, std::vector<char> buf);
 
 		int checkBody(const char* path);
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
+		void displayAutoindex(std::string path, std::string version);
+		std::string getIndex();
+		bool getAutoindex();
 
 		std::string setSize(const char* path_image);
 
 	private:
 		ServerConf _server;
 		std::map<int, std::string> _errors_path;
+		std::string _root;
 		std::string _content;
 		std::string _status;
 		std::string _content_type;
 		std::string _content_length;
 		struct stat _info;
+		int _index_location;
 		int _client_fd;
 		int _body_len;
 };

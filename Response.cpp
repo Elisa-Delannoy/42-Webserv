@@ -83,19 +83,14 @@ Comparaison avec les autres codes possibles
 
 303 See Other : meilleure pratique pour un site avec formulaire ou upload → évite les re-POST accidentels.
 
-
-ETAPES A SUIVRE :
-1. verifier si le body est bon et pret a envoyer (si body il y a)
-2. envoyer header adequat
-3. envoyer body. Si erreur avec send => on stop send et osef
-
 */
 void Response::setHeader(std::string version, std::string path, int code)
 {
 	if (code == 200)
 	{
 		this->_status = setStatus(version, " 200 OK\r\n");
-		this->_content_length = setContentLength(path);
+		if (this->_content_length.empty())
+			this->_content_length = setContentLength(path);
 	}
 	if (code == 204)
 	{
@@ -153,34 +148,78 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
+//Loop through locations from conf file to find correct root
 void Response::setRootLocation(std::string & path)
 {
 	std::string name;
-	std::string root;
-	int fallback_index;
 
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
 		name = this->_server.GetLocation(i).GetName();
+		std::cout << "index : " <<  this->_server.GetLocation(i).GetIndex() << std::endl;
 		std::cout << "location : " << name << std::endl;
 		if (name == "/")
-			fallback_index = i;
+			this->_index_location = i;
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
 		{
-			root = this->_server.GetLocation(i).GetRoot() + "/";
-			path.replace(0, name.size(), root);
-			path.erase(path.begin(), path.begin()+1);
+			this->_index_location = i;
+			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
+			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+			path.replace(0, name.size(), this->_root);
 			std::cout << "path : " << path << std::endl;
 			return;
 		}
 	}
-	if (root.empty())
+	if (this->_root.empty())
 	{
-		root = this->_server.GetLocation(fallback_index).GetRoot();
-		path.replace(0, name.size() - 1, root);
-		path.erase(path.begin(), path.begin()+1);
+		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
+		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+		path.replace(0, name.size() - 1, this->_root);
 		std::cout << "path : " << path << std::endl;
 	}
+}
+
+//Return index from conf file
+std::string Response::getIndex()
+{
+	return this->_server.GetLocation(this->_index_location).GetIndex();
+}
+
+void Response::displayAutoindex(std::string path, std::string version)
+{
+	DIR *dir;
+	dir = opendir(path.c_str());
+	if (dir == NULL)
+	{
+		std::cout << "path opendir error : " << path << std::endl;
+		setHeader(version, path, 404);
+		sendError(404);
+	}
+	else
+	{
+		struct dirent* dirp;
+		this->_content = "<html><body><h1>OH BOY IT WORKS</h1><ul>";
+		dirp = readdir(dir);
+		while (dirp != NULL)
+		{
+			std::string name = dirp->d_name;
+			size_t found = name.find(".");
+			if (found == std::string::npos)
+				name += "/";
+			this->_content += "<li><a href=\"" + name + "\">" + name + "</a></li>";
+			dirp = readdir(dir);
+		}
+		this->_content += "</ul></body></html>";
+		this->_body_len = this->_content.size();
+		this->_content_length = setContentLength(path);
+		setHeader(version, path, 200);
+		sendHeaderAndBody();
+	}
+}
+
+bool Response::getAutoindex()
+{
+	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
 void Response::sendResponse(Clients* client, std::vector<char>  buf)
@@ -196,29 +235,45 @@ void Response::sendResponse(Clients* client, std::vector<char>  buf)
 	if (method == "GET")
 	{
 		int check;
-		if (path[path.size() - 1] == '/')
+		if (opendir(path.c_str()) != NULL)
 		{
-			//CHECK AUTOINDEX HERE
-			path += "index.html";
-			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str());
-			if (check == 0)
+			std::string index = getIndex();
+			if (index.empty())
 			{
-				std::cout << "ici" << std::endl;
-				setHeader(version, path, 200);
-				std::cout << "after setheader" << std::endl;
-				sendHeaderAndBody();
+				std::cout << "index is empty" << std::endl;
+
+				bool autoindex = getAutoindex();
+				if (autoindex)
+				{
+					displayAutoindex(path, version);
+				}
+				else
+				{
+					setHeader(version, path, 404);
+					sendError(404);
+				}
 			}
 			else
 			{
-				setHeader(version, path, 500);
-				sendError(500);
+				path += index;
+				std::cout << "path : " << path << std::endl;
+				check = checkBody(path.c_str());
+				if (check == 0)
+				{
+					setHeader(version, path, 200);
+					sendHeaderAndBody();
+				}
+				else
+				{
+					setHeader(version, path, 500);
+					sendError(500);
+				}
 			}
 		}
 		else
 		{
 			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str()); //path without first '/'
+			check = checkBody(path.c_str());
 			if (check == 0)
 			{
 				setHeader(version, path, 200);
@@ -235,11 +290,6 @@ void Response::sendResponse(Clients* client, std::vector<char>  buf)
 				sendHeader();
 			}
 		}
-		/* else
-		{
-			setHeader(version, path, 204);
-			sendHeader();
-		} */
 	}
 	else if (method == "POST")
 	{
@@ -250,7 +300,6 @@ void Response::sendResponse(Clients* client, std::vector<char>  buf)
 void Response::sendBody()
 {
 	size_t data_sent = 0;
-	// std::cout << "body : " << this->_content << std::endl;
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
