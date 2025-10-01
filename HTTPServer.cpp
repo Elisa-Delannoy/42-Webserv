@@ -21,44 +21,6 @@ void	printvec(std::vector<char>::iterator begin, std::vector<char> vec)
 	}
 }
 
-void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll en ref ?*/
-{
-	ParseRequest header;
-	ParseBody	body;
-	ExecCGI cgi;
-	int client_fd = epoll.getEvent(i).data.fd;
-	int body_len = 0;
-
-	if (epoll.getEvent(i).events & EPOLLIN)	//RECEIVE DATAS
-	{
-		std::cout << "------------REQUEST------------" << std::endl;
-		readHeaderRequest(client_fd, header);
-		body_len = body.FindBodyLen(header);
-		if (body_len != 0)
-		{
-			this->_body_buf = new char[body_len];
-			int r = 0;
-			while (1)
-			{
-				r += recv(client_fd, this->_body_buf + r, body_len -r, 0);
-				if (r >= body_len)
-					break;
-			}
-			body.ChooseContent(this->_body_buf);
-		}
-		epoll.SetClientEpollout(i, this->_socket_client);/*erreur selon le petit chat*/
-	}
-
-	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
-	{
-		cgi.CheckCGI(header, body, servers[server_index]);
-		Response resp(this->servers[server_index], client_fd, body_len);
-		resp.sendResponse(header, this->_body_buf);
-		close(client_fd);
-		epoll.deleteClient(client_fd);
-		body_len = 0;
-	}
-}
 
 //PARSING CONF
 bool CheckServerStart(std::string line)
