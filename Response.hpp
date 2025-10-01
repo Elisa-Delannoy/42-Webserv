@@ -8,6 +8,7 @@
 #include <map>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <algorithm>
 #include "ParseRequest.hpp"
 #include "ServerConf.hpp"
@@ -35,13 +36,16 @@ class Response
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
+		void displayAutoindex(std::string path, std::string version);
 		std::string getIndex();
+		bool getAutoindex();
 
 		std::string setSize(const char* path_image);
 
 	private:
 		ServerConf _server;
 		std::map<int, std::string> _errors_path;
+		std::string _root;
 		std::string _content;
 		std::string _status;
 		std::string _content_type;

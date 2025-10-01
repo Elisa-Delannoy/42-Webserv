@@ -82,19 +82,14 @@ Comparaison avec les autres codes possibles
 
 303 See Other : meilleure pratique pour un site avec formulaire ou upload → évite les re-POST accidentels.
 
-
-ETAPES A SUIVRE :
-1. verifier si le body est bon et pret a envoyer (si body il y a)
-2. envoyer header adequat
-3. envoyer body. Si erreur avec send => on stop send et osef
-
 */
 void Response::setHeader(std::string version, std::string path, int code)
 {
 	if (code == 200)
 	{
 		this->_status = setStatus(version, " 200 OK\r\n");
-		this->_content_length = setContentLength(path);
+		if (this->_content_length.empty())
+			this->_content_length = setContentLength(path);
 	}
 	if (code == 204)
 	{
@@ -152,10 +147,10 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
+//Loop through locations from conf file to find correct root
 void Response::setRootLocation(std::string & path)
 {
 	std::string name;
-	std::string root;
 
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
@@ -167,26 +162,65 @@ void Response::setRootLocation(std::string & path)
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
 		{
 			this->_index_location = i;
-			root = this->_server.GetLocation(i).GetRoot() + "/";
-			path.replace(0, name.size(), root);
-			path.erase(path.begin(), path.begin()+1);
+			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
+			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+			path.replace(0, name.size(), this->_root);
 			std::cout << "path : " << path << std::endl;
 			return;
 		}
 	}
-	if (root.empty())
+	if (this->_root.empty())
 	{
-		root = this->_server.GetLocation(this->_index_location).GetRoot();
-		path.replace(0, name.size() - 1, root);
-		path.erase(path.begin(), path.begin()+1);
+		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
+		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+		path.replace(0, name.size() - 1, this->_root);
 		std::cout << "path : " << path << std::endl;
-		std::cout << "index : " <<  this->_server.GetLocation(this->_index_location).GetIndex() << std::endl;
 	}
 }
 
+//Return index from conf file
 std::string Response::getIndex()
 {
 	return this->_server.GetLocation(this->_index_location).GetIndex();
+}
+
+void Response::displayAutoindex(std::string path, std::string version)
+{
+	DIR *dir;
+	dir = opendir(path.c_str());
+	if (dir == NULL)
+	{
+		std::cout << "path opendir : " << path << std::endl;
+		setHeader(version, path, 404);
+		sendError(404);
+	}
+	else
+	{
+		struct dirent* dirp;
+		this->_content = "<html><body><h1>OH BOY IT WORKS</h1><ul>";
+		dirp = readdir(dir);
+		while (dirp != NULL)
+		{
+			std::cout << "d_name : " << dirp->d_name << std::endl;
+			std::string name = dirp->d_name;
+			size_t found = name.find(".");
+			if (found == std::string::npos)
+				name += "/";
+			this->_content += "<li><a href=\"" + name + "\">" + name + "</a></li>";
+			dirp = readdir(dir);
+		}
+		this->_content += "</ul></body></html>";
+		std::cout << "content : " << this->_content << std::endl;
+		this->_body_len = this->_content.size();
+		this->_content_length = setContentLength(path);
+		setHeader(version, path, 200);
+		sendHeaderAndBody();
+	}
+}
+
+bool Response::getAutoindex()
+{
+	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -206,24 +240,35 @@ void Response::sendResponse(ParseRequest header, char* buf)
 			std::string index = getIndex();
 			if (index.empty())
 			{
-				//CHECK AUTOINDEX HERE
 				std::cout << "index is empty" << std::endl;
+				//CHECK AUTOINDEX HERE
+				bool autoindex = getAutoindex();
+				if (autoindex)
+				{
+					displayAutoindex(path, version);
+					//open root folder, add every file in it in <a> and display html
+				}
+				else
+				{
+					setHeader(version, path, 404);
+					sendError(404);
+				}
 			}
 			else
 			{
 				path += index;
-			}
-			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str());
-			if (check == 0)
-			{
-				setHeader(version, path, 200);
-				sendHeaderAndBody();
-			}
-			else
-			{
-				setHeader(version, path, 500);
-				sendError(500);
+				std::cout << "path : " << path << std::endl;
+				check = checkBody(path.c_str());
+				if (check == 0)
+				{
+					setHeader(version, path, 200);
+					sendHeaderAndBody();
+				}
+				else
+				{
+					setHeader(version, path, 500);
+					sendError(500);
+				}
 			}
 		}
 		else
@@ -246,11 +291,6 @@ void Response::sendResponse(ParseRequest header, char* buf)
 				sendHeader();
 			}
 		}
-		/* else
-		{
-			setHeader(version, path, 204);
-			sendHeader();
-		} */
 	}
 	else if (method == "POST")
 	{
