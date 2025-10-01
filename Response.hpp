@@ -11,15 +11,16 @@
 #include <algorithm>
 #include "ParseRequest.hpp"
 #include <vector>
+#include "ServerConf.hpp"
+#include "Clients.hpp"
 
-#define ROOT "html/index.html"
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
 
 class Response
 {
 	public:
-		Response(std::map<int, std::string> errors_path, int client_fd, int body_len);
+		Response(ServerConf & servers, int client_fd, int body_len);
 		~Response();
 
 		std::string setStatus(std::string version, std::string code);
@@ -30,28 +31,24 @@ class Response
 		void sendBody();
 		void sendError(int code);
 		void sendHeaderAndBody();
-		void sendResponse(ParseRequest header, std::vector<char> buf);
+		void Response::sendResponse(Clients* client, std::vector<char>  buf);
 
 		int checkBody(const char* path);
-		void sendImage(std::string path_image);
 
 		std::string GetErrorPath(int type_error);
-		
+		void setRootLocation(std::string & path);
 
 		std::string setSize(const char* path_image);
 
 	private:
-		std::string _response;
+		ServerConf _server;
+		std::map<int, std::string> _errors_path;
 		std::string _content;
 		std::string _status;
 		std::string _content_type;
 		std::string _content_length;
-		std::string _connection;
-		std::map<int, std::string> _errors_path;
-		std::string _404_path;
-		std::string _500_path;
-		int _client_fd;
 		struct stat _info;
+		int _client_fd;
 		int _body_len;
 };
 

@@ -80,6 +80,8 @@ int ServerConf::AddServerName(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "server_name")
 		return 9;
@@ -94,8 +96,6 @@ int ServerConf::AddServerName(std::string line)
 		}
 		this->SetServerName(temp);
 	}
-	if (word[(word.length() - 1)] != ';')
-		return 1;
 	return 0;
 }
 
@@ -120,21 +120,20 @@ int ServerConf::AddHostPort(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "listen")
 		return 9;
 	ss >> word;
-	std::string temp = word;
 	if (!word.empty() && word[(word.length() - 1)] == ';')
 		word.erase(word.length() - 1);
 	int sep = word.find(':');
 	if (CheckHost(word.substr(0, sep)) == false)
 		return 3;
 	int port = CheckValue(word.substr(sep + 1, word.length()).c_str());
-	if (port == -1)
+	if (port <= 0 || port > 65535)
 		return 2;
-	if (temp[(temp.length() - 1)] != ';')
-		return 1;
 	this->SetHostPort(word.substr(0, sep), port);
 	return 0;
 }
@@ -164,12 +163,12 @@ int ServerConf::AddClientBody(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word.compare("client_max_body_size") != 0)
 		return 9;
 	ss >> word;
-	if (!word.empty() && word[(word.length() - 1)] != ';')
-		return 1;
 	word.erase(word.length() - 1);
 	if (word.length() <= 0)
 		return 4;
@@ -187,6 +186,8 @@ int ServerConf::AddErrorPage(std::string line)
 	std::istringstream ss(line);
 	std::string word;
 
+	if (line[line.length() - 1] != ';')
+		return 1;
 	ss >> word;
 	if (word != "error_page")
 		return 9;
@@ -195,8 +196,6 @@ int ServerConf::AddErrorPage(std::string line)
 	if (type_error == -1)
 		return 5;
 	ss >> word;
-	if (word[(word.length() - 1)] != ';')
-		return 1;
 	word.erase(word.length() - 1);
 	this->SetErrorPage(type_error, word);
 	return 0;
@@ -206,22 +205,28 @@ int ServerConf::AddLocation(std::ifstream& conf, std::string line)
 {
 	Location location;
 	location.AddName(line);
-	while (line.find("}") == std::string::npos)
+	while (true)
 	{
 		int error = 0;
 		std::getline(conf, line);
-		if (line.find("root") != std::string::npos)
-			location.AddRoot(line);
-		else if (line.find("allow_methods") != std::string::npos)
-			location.AddMethods(line);
-		else if (line.find("autoindex") != std::string::npos)
-			location.AddAutoindex(line);
-		else if (line.find("cgi_pass") != std::string::npos)
-			location.AddCGIPass(line);
+		if (line.find("}") != std::string::npos)
+			break;
 		else if (isComment(line) == true)
 			continue;
+		else if (line.find("root") != std::string::npos)
+			error = location.AddRoot(removeInlineComment(line));
+		else if (line.find("allow_methods") != std::string::npos)
+			error = location.AddMethods(removeInlineComment(line));
+		else if (line.find("autoindex") != std::string::npos)
+			error = location.AddAutoindex(removeInlineComment(line));
+		else if (line.find("cgi") != std::string::npos)
+			error = location.AddCGIPass(removeInlineComment(line));
+		else if (line.find("index") != std::string::npos)
+			error = location.AddIndex(removeInlineComment(line));
 		else
 			error = 9;
+		if (error != 0)
+			return (error);
 	}
 	this->SetLocation(location);
 	_nb_location++;
@@ -283,7 +288,11 @@ void ServerConf::Error(int error)
 	if (error == 5)
 		std::cerr << "Invalid Error Page." << std::endl;
 	if (error == 6)
-		std::cerr << "Invalid line." << std::endl;
+		std::cerr << "Invalid entry before location name." << std::endl;
+	if (error == 7)
+		std::cerr << "Invalid entry in allow_methods." << std::endl;
+	if (error == 8)
+		std::cerr << "Autoindex need to be 'on' or 'off'." << std::endl;
 	if (error == 9)
 		std::cerr << "Error Input." << std::endl;
 }

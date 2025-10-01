@@ -1,8 +1,10 @@
 #include "Response.hpp"
 
-Response::Response(std::map<int, std::string> errors_path, int client_fd, int body_len) :
-	_errors_path(errors_path), _client_fd(client_fd), _body_len(body_len)
-{ }
+Response::Response(ServerConf & servers, int client_fd, int body_len) :
+	_server(servers), _client_fd(client_fd), _body_len(body_len)
+{
+	this->_errors_path = this->_server.GetErrorPath();
+}
 
 Response::~Response()
 { }
@@ -97,29 +99,29 @@ void Response::setHeader(std::string version, std::string path, int code)
 	if (code == 204)
 	{
 		this->_status = setStatus(version, " 204 No Content\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
 	if (code == 404)
 	{
 		this->_status = setStatus(version, " 404 Not Found\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
 	if (code == 500)
 	{
 		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
-		this->_content_length = "0";
+		this->_content_length = "Content-Length: 0\r\n";
 	}
 	this->_content_type = setContentType(path);
 }
 
 void Response::sendHeader()
 {
-	this->_response = this->_status + this->_content_type
+	std::string response = this->_status + this->_content_type
 		+ this->_content_length + "\r\n";
 
-	if(send(this->_client_fd, this->_response.c_str(), this->_response.size(), 0) == -1)
+	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
 }
 
@@ -131,18 +133,18 @@ void Response::sendHeaderAndBody()
 
 void Response::sendError(int code)
 {
-	if (this->_errors_path.empty())
+	if (this->_errors_path.find(code)->second.empty())
 	{
-		std::cout << "---------EMPTY---------" << std::endl;
 		if (code == 404)
 			this->_content = ERROR404;
 		if (code == 500)
 			this->_content = ERROR500;
-		// this->_content_length = setContentLength(path);
+		std::ostringstream oss;
+		oss << this->_content.size();
+		this->_content_length = "Content-Length: " + oss.str() + "\r\n";
 	}
 	else
 	{
-		std::cout << "---------FILLED---------" << std::endl;
 		std::string path = GetErrorPath(code).c_str();
 		checkBody(path.c_str()+1);
 		this->_content_length = setContentLength(path);
@@ -150,20 +152,56 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
-void Response::sendResponse(ParseRequest header, std::vector<char> buf)
+void Response::setRootLocation(std::string & path)
+{
+	std::string name;
+	std::string root;
+	int fallback_index;
+
+	for (int i = 0; i < this->_server._nb_location; i++)
+	{
+		name = this->_server.GetLocation(i).GetName();
+		std::cout << "location : " << name << std::endl;
+		if (name == "/")
+			fallback_index = i;
+		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
+		{
+			root = this->_server.GetLocation(i).GetRoot() + "/";
+			path.replace(0, name.size(), root);
+			path.erase(path.begin(), path.begin()+1);
+			std::cout << "path : " << path << std::endl;
+			return;
+		}
+	}
+	if (root.empty())
+	{
+		root = this->_server.GetLocation(fallback_index).GetRoot();
+		path.replace(0, name.size() - 1, root);
+		path.erase(path.begin(), path.begin()+1);
+		std::cout << "path : " << path << std::endl;
+	}
+}
+
+void Response::sendResponse(Clients* client, std::vector<char>  buf)
 {
 	(void) buf;
 
-	std::string path = header.GetPath();
-	std::string method = header.GetMethod();
-	std::string version = header.GetVersion();
+	std::string path = client->_head.GetPath();
+	std::string method = client->_head.GetMethod();
+	std::string version = client->_head.GetVersion();
+	setRootLocation(path);
 
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	if (method == "GET")
 	{
-		if (path == "/")
+		int check;
+		if (path[path.size() - 1] == '/')
 		{
-			if (checkBody(ROOT) == 0)
+			//CHECK AUTOINDEX HERE
+			path += "index.html";
+			std::cout << "path : " << path << std::endl;
+			check = checkBody(path.c_str());
+			if (check == 0)
 			{
 				std::cout << "ici" << std::endl;
 				setHeader(version, path, 200);
@@ -176,14 +214,16 @@ void Response::sendResponse(ParseRequest header, std::vector<char> buf)
 				sendError(500);
 			}
 		}
-		else if (path.substr(0, 5) == "/img/")
+		else
 		{
-			if (checkBody(path.substr(1).c_str()) == 0) //path without first '/'
+			std::cout << "path : " << path << std::endl;
+			check = checkBody(path.c_str()); //path without first '/'
+			if (check == 0)
 			{
 				setHeader(version, path, 200);
 				sendHeaderAndBody();
 			}
-			else if (checkBody(path.substr(1).c_str()) == 404) //wrong path
+			else if (check == 404) //wrong path
 			{
 				setHeader(version, path, 404);
 				sendHeader();
@@ -194,11 +234,11 @@ void Response::sendResponse(ParseRequest header, std::vector<char> buf)
 				sendHeader();
 			}
 		}
-		else if (path == "/favicon.ico") //just in case, we ignore it
+		/* else
 		{
 			setHeader(version, path, 204);
 			sendHeader();
-		}
+		} */
 	}
 	else if (method == "POST")
 	{
@@ -209,6 +249,7 @@ void Response::sendResponse(ParseRequest header, std::vector<char> buf)
 void Response::sendBody()
 {
 	size_t data_sent = 0;
+	// std::cout << "body : " << this->_content << std::endl;
 	while(data_sent < this->_content.size())
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
@@ -223,8 +264,9 @@ void Response::sendBody()
 }
 
 //Return 0 if ok
-//Return 1 if not
-int Response::checkBody(const char* path) 
+//Return 1 if reading problem
+//Return 404 if file problem
+int Response::checkBody(const char* path)
 {
 	std::ifstream file(path, std::ios::binary);
 	if (!file.is_open()) //wrong path, invalid rights, inexisting file
@@ -255,30 +297,26 @@ std::string Response::setContentType(std::string path)
 	else
 	{
 		size_t i = path.size() - 1;
-		while (path[i - 1] != '.')
+		while (path[i - 1] && path[i - 1] != '.')
 			i--;
 		std::string type = path.substr(i);
 
-		if (type == "jpg")
-			ret += "image/jpg";
-		if (type == "jpeg")
-			ret += "image/jpeg";
-		if (type == "png")
-			ret += "image/png";
-		if (type == "gif")
-			ret += "image/gif";
-		if (type == "svg")
-			ret += "image/svg+xml";
-		if (type == "webp")
-			ret += "image/webp";
-		if (type == "ico")
-			ret += "image/x-icon";
-		if (type == "avif")
-			ret += "image/avif";
+		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
+			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
+			ret += "image/" + type;
+		if (type == "css")
+			ret += "text/css";
+		if (type == "html")
+			ret += "text/html";
+		if (type == "js")
+			ret += "application/javascript";
+		if (type == "pdf" || type == "zip")
+			ret += "application/" + type;
 	}
 	return (ret + "\r\n");
 }
 
+//get file size with stat function and return it in a string
 std::string Response::setSize(const char* path_image)
 {
 	std::ostringstream oss;
@@ -300,13 +338,9 @@ std::string Response::setContentLength(std::string path)
 		oss << this->_body_len;
 		size = oss.str();
 	}
-	else if (path == "/")
-	{
-		size = setSize(ROOT);
-	}
 	else
 	{
-		size = setSize(path.c_str() + 1);
+		size = setSize(path.c_str());
 	}
 	return "Content-Length: " + size + "\r\n";
 }
