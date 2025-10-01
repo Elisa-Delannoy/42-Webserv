@@ -100,6 +100,7 @@ class ParseRequest
 		std::string							_path;
 		std::string							_version;
 		std::map<std::string, std::string>	_header;
+		std::string							_name_location;
 	
 	public:
 		ParseRequest();
@@ -109,6 +110,7 @@ class ParseRequest
 		const std::string&	GetMethod() const;
 		const std::string&	GetPath() const;
 		const std::string&	GetVersion() const;
+		const std::string&	GetNameLocation() const;
 		const std::map<std::string, std::string>&	GetHeader() const;
 };
 

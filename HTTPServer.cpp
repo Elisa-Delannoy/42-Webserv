@@ -69,7 +69,7 @@ void HTTPServer::handleRequest(Epoll epoll, int i, size_t server_index) /*epoll 
 
 	if (epoll.getEvent(i).events & EPOLLOUT)	//SEND DATAS
 	{
-		cgi.CheckCGI(header, body, servers);
+		cgi.CheckCGI(header, body, servers[server_index]);
 		Response resp(this->servers[server_index], client_fd, body_len);
 		resp.sendResponse(header, this->_body_buf);
 		close(client_fd);

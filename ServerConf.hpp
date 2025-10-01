@@ -39,6 +39,7 @@ class ServerConf
 		std::string GetErrorPath(int type_error);
 		std::map<int, std::string> GetErrorPath();
 		Location& GetLocation(int nb);
+		std::vector<Location>& GetLocation();
 		size_t GetHostPortSize() const;
 
 		int AddServerName(std::string line);
@@ -51,6 +52,7 @@ class ServerConf
 		int checkLocation(std::string name);
 		std::string removeInlineComment(std::string &line);
 		bool isComment(const std::string &line);
+		bool HasLocationForExtension(const std::string& name, const std::string ext, Location& okloc);
 
 		void Error(int error);
 };
