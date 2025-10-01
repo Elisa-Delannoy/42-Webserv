@@ -100,6 +100,8 @@ class ParseRequest
 		std::string							_path;
 		std::string							_version;
 		std::map<std::string, std::string>	_header;
+
+		int									_end_header;
 	
 	public:
 		ParseRequest();
@@ -110,6 +112,9 @@ class ParseRequest
 		const std::string&	GetPath() const;
 		const std::string&	GetVersion() const;
 		const std::map<std::string, std::string>&	GetHeader() const;
+
+		int			GetIndexEndHeader() const;
+		void		SetIndexEndHeader(int index);
 };
 
 #endif

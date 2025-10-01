@@ -63,3 +63,13 @@ void ParseRequest::DivideHeader(std::string& line)
 		this->_header[name]=content;
 	}
 }
+
+int	ParseRequest::GetIndexEndHeader() const
+{
+	return (this->_end_header);
+}
+
+void	ParseRequest::SetIndexEndHeader(int index)
+{
+	this->_end_header = index;
+}

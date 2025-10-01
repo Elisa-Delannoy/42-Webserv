@@ -156,7 +156,7 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 			line.erase(line.size() - 1);
 			if (!line.empty() && line.at(line.size() - 1) == '\r')
 				line.erase(line.size() - 1);
-			std::cout << "line = " << line << " end|" << std::endl; /*A SUPP*/
+			std::cout << line << std::endl; /*A SUPP*/
 			if (first == false && client->_head.DivideFirstLine(line) == 0)
 				return (-1);
 			first = true;
@@ -170,18 +170,48 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 	return (0);
 }
 
+int	HTTPServer::CheckEndRead(Clients* client, bool r_head)
+{
+	const char* endheader = "\r\n\r\n";
 
-void HTTPServer::ReadAllRequest(Clients* client, int fd)
+	if (r_head == false)
+	{
+		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
+			endheader, endheader + 4);
+		if (it == client->GetReadBuffer().end())
+			return (-1);
+		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
+		r_head = true;
+		if (i >= 0)
+			client->_head.SetIndexEndHeader(i);
+		else 
+			return (-1);
+	}
+	int body_len = client->_body.FindBodyLen(client->_head);
+	if (body_len == 0)
+		return (1);
+	else if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(body_len))
+		return (1);
+	return (0);
+}
+
+
+void HTTPServer::ReadAllRequest(Clients* client, int fd, bool r_head)
 {
 	char	buffer[4096];
 	int		bytes = recv(fd, buffer, sizeof(buffer), 0);
 
 	if (bytes > 0)
-		client->SetReadBuff(buffer, bytes);
-	else if (bytes == 0)
 	{
-		client->SetStatus(Clients::PARSING_REQUEST);
+		client->SetReadBuff(buffer, bytes);
+		if (CheckEndRead(client, r_head) > 0)
+			client->SetStatus(Clients::PARSING_REQUEST);
 	}
+	// if (bytes == 0)
+	// {
+	// 	// close fd serveur 
+		
+	// }
 	// else if (bytes == -1)
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 
@@ -194,6 +224,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	ParseBody		body;
 	ExecCGI 		cgi;
 	std::vector<char> request;
+	bool			r_head = false;
 
 
 	int client_fd = epoll.getEvent(i).data.fd;
@@ -203,18 +234,16 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	{
 		std::cout << "------------REQUEST------------" << client_fd << std::endl;
 
-		ReadAllRequest(client, client_fd);
+		ReadAllRequest(client, client_fd, r_head);
 	}
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 	{
 		request = client->GetReadBuffer();
-		int i = readHeaderRequest(client_fd, client, request);
-
 		body_len = client->_body.FindBodyLen(client->_head);
 		std::cout << body_len << std::endl;
 		if (body_len != 0)
 		{
-			request.erase(request.begin(), request.begin() + i);
+			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader());
 			client->_body.ChooseContent(request);
 			std::vector<char>::iterator it = request.begin();
 			printvec(it, request);
@@ -226,12 +255,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
 		// cgi.CheckCGI(client->_head, client->_body, servers);
-		std::cout << "server index|" << client->GetServerIndex() << std::endl;
-		Response resp(this->servers[client->GetServerIndex()], client_fd, body_len);
+		Response resp(this->servers[client->GetServerIndex()], client->GetSocket(), body_len);
 		resp.sendResponse(client, request);
-		std::cout << "after" << std::endl;
 		// close(client_fd);
-		client->SetStatus(Clients::CLOSED);
+		client->SetStatus(Clients::WAITING_REQUEST);
 		// epoll.deleteClient(client_fd);
 		body_len = 0;
 	}

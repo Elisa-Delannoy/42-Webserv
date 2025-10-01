@@ -1,4 +1,5 @@
 #include "Response.hpp"
+#include <cerrno>
 
 Response::Response(ServerConf & servers, int client_fd, int body_len) :
 	_server(servers), _client_fd(client_fd), _body_len(body_len)
@@ -254,6 +255,12 @@ void Response::sendBody()
 	{
 		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
 			this->_content.size() - data_sent, 0);
+	// 	if (errno == EPIPE) {
+    //     std::cerr << "Client closed connection (EPIPE)." << std::endl;
+    // } else {
+    //     std::cerr << "Send error: " << strerror(errno) << std::endl;
+    // }
+	// 	std::cout << "data read" << data_read << std::endl;
 		if (data_read == -1)
 		{
 			std::cerr << "Error while sending content." << std::endl;

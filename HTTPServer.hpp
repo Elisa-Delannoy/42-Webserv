@@ -42,10 +42,11 @@ class HTTPServer
 		int readHeaderRequest(int client_fd, Clients* client, std::vector<char> request);
 		void handleRequest(Epoll& epoll, int i, Clients* client);
 
-		uint32_t prepareAddrForHtonl(std::string addr);
-		bool checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
+		uint32_t 	prepareAddrForHtonl(std::string addr);
+		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
 		Clients*	FindClient(int fd);
-		void 		ReadAllRequest(Clients* client, int fd);
+		void 		ReadAllRequest(Clients* client, int fd, bool r_head);
+		int			CheckEndRead(Clients* client, bool r_head);
 
 	private:
 

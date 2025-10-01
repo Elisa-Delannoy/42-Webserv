@@ -2,7 +2,7 @@
 # define RESPONSE_HPP
 
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <sstream>
 #include <fstream>
 #include <map>
@@ -31,7 +31,7 @@ class Response
 		void sendBody();
 		void sendError(int code);
 		void sendHeaderAndBody();
-		void Response::sendResponse(Clients* client, std::vector<char>  buf);
+		void sendResponse(Clients* client, std::vector<char>  buf);
 
 		int checkBody(const char* path);
 
