@@ -35,6 +35,7 @@ class Response
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
+		std::string getIndex();
 
 		std::string setSize(const char* path_image);
 
@@ -46,6 +47,7 @@ class Response
 		std::string _content_type;
 		std::string _content_length;
 		struct stat _info;
+		int _index_location;
 		int _client_fd;
 		int _body_len;
 };

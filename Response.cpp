@@ -156,16 +156,17 @@ void Response::setRootLocation(std::string & path)
 {
 	std::string name;
 	std::string root;
-	int fallback_index;
 
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
 		name = this->_server.GetLocation(i).GetName();
+		std::cout << "index : " <<  this->_server.GetLocation(i).GetIndex() << std::endl;
 		std::cout << "location : " << name << std::endl;
 		if (name == "/")
-			fallback_index = i;
+			this->_index_location = i;
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
 		{
+			this->_index_location = i;
 			root = this->_server.GetLocation(i).GetRoot() + "/";
 			path.replace(0, name.size(), root);
 			path.erase(path.begin(), path.begin()+1);
@@ -175,11 +176,17 @@ void Response::setRootLocation(std::string & path)
 	}
 	if (root.empty())
 	{
-		root = this->_server.GetLocation(fallback_index).GetRoot();
+		root = this->_server.GetLocation(this->_index_location).GetRoot();
 		path.replace(0, name.size() - 1, root);
 		path.erase(path.begin(), path.begin()+1);
 		std::cout << "path : " << path << std::endl;
+		std::cout << "index : " <<  this->_server.GetLocation(this->_index_location).GetIndex() << std::endl;
 	}
+}
+
+std::string Response::getIndex()
+{
+	return this->_server.GetLocation(this->_index_location).GetIndex();
 }
 
 void Response::sendResponse(ParseRequest header, char* buf)
@@ -196,8 +203,16 @@ void Response::sendResponse(ParseRequest header, char* buf)
 		int check;
 		if (path[path.size() - 1] == '/')
 		{
-			//CHECK AUTOINDEX HERE
-			path += "index.html";
+			std::string index = getIndex();
+			if (index.empty())
+			{
+				//CHECK AUTOINDEX HERE
+				std::cout << "index is empty" << std::endl;
+			}
+			else
+			{
+				path += index;
+			}
 			std::cout << "path : " << path << std::endl;
 			check = checkBody(path.c_str());
 			if (check == 0)
