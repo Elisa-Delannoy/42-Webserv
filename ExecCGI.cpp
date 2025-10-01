@@ -6,13 +6,33 @@ ExecCGI::ExecCGI()
 ExecCGI::~ExecCGI()
 {}
 
-void ExecCGI::SetEnvp(ParseRequest header, ParseBody body, Location location)
+char** ExecCGI::GetEnvp() const
+{
+	return _envp;
+}
+
+char** ExecCGI::GetArgv() const
+{
+	return _argv;
+}
+
+std::string replace_substring(std::string str, const std::string& to_replace, const std::string& replacement) 
+{
+	std::string::size_type pos = str.find(to_replace);
+	if (pos != std::string::npos)
+	{
+		str.replace(pos, to_replace.length(), replacement);
+	}
+	return str;
+}
+
+void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, Location &location)
 {
 	std::vector<std::string> env;
 
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	env.push_back("REQUEST_METHOD=" + header.GetMethod());
-	env.push_back("SCRIPT_FILENAME=" + location.GetRoot() + header.GetPath());
+	env.push_back("SCRIPT_FILENAME=" + replace_substring(header.GetPath(), location.GetName(), location.GetRoot()));
 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
 	env.push_back("REDIRECT_STATUS=200");
 	if (header.GetMethod() == "POST")
@@ -32,10 +52,12 @@ void ExecCGI::SetEnvp(ParseRequest header, ParseBody body, Location location)
 	_envp[env.size()] = NULL;
 }
 
-void ExecCGI::SetArgv(std::string path, Location location)
+
+void ExecCGI::SetArgv(std::string &path, Location &location, std::string &ext)
 {
 	std::vector<std::string> argv;
-	argv.push_back(location.GetRoot() + path);
+	argv.push_back(location.GetCGIPass(ext));
+	argv.push_back(path);
 	_argv = new char*[argv.size() + 1];
 	for (size_t i = 0; i < argv.size(); i++)
 	{
@@ -45,30 +67,58 @@ void ExecCGI::SetArgv(std::string path, Location location)
 	_argv[argv.size()] = NULL;
 }
 
-bool ExecCGI::CheckCGI(ParseRequest header, ParseBody body, std::vector<ServerConf> servers) /*reference ?*/
+bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
 {
-	if (header.GetPath().find(".php") != std::string::npos)
+	(void)body;
+	(void)servers;
+	size_t pos = header.GetPath().find(".");
+	if (pos != std::string::npos)
 	{
-		for (size_t i = 0; i < servers.size(); i++)
-		{
-			int nb = servers[i].checkLocation(".php");
-			if (nb >= 0 && servers[i].checkMethods(header.GetMethod(), nb) == true)
-			{
-				Execution(header, body, servers[i].GetLocation(nb));
-				return true;	
-			}	
-		}
-		return false;
+		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
+		size_t sep = ext.find("?");
+		if (sep != std::string::npos)
+			ext = ext.substr(0, sep);
+		Location loc;
+		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
+			Execution(header, body, loc, ext);
+		return true;
 	}
 	return false;
 }
 
-void ExecCGI::Execution(ParseRequest header, ParseBody body, Location location)
+
+void ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &location, std::string &ext)
 {
-	SetArgv(header.GetPath(), location);
+	std::string path = replace_substring(header.GetPath(), location.GetName(), location.GetRoot());
+	path = path.substr(1);
+	SetArgv(path, location, ext);
 	SetEnvp(header, body, location);
-	for (int i = 0; _envp[i] != NULL; i++)
+	int pipefd[2];
+	if (pipe(pipefd) == -1)
+		std::cerr << "Error creation pipe." << std::endl;
+	pid_t pid = fork();
+	if (pid == -1)
+		std::cerr << "Error creation child." << std::endl;
+	if (pid == 0)
 	{
-		std::cout << _envp[i] << std::endl;
+		close(pipefd[0]);
+		dup2(pipefd[1], STDIN_FILENO);
+		close(pipefd[1]);
+		execve(path.c_str(), GetArgv(), GetEnvp());
+		std::cerr << "Error Execve" << std::endl;
+		return;
+	}
+	else 
+	{
+		close(pipefd[1]);
+		char buffer[1024];
+		ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1);
+		if (bytesRead > 0)
+		{
+			buffer[bytesRead] = '\0';
+			std::cout << buffer << std::endl;
+		}
+		close(pipefd[0]);
+		wait(NULL);
 	}
 }

@@ -70,6 +70,11 @@ Location& ServerConf::GetLocation(int nb)
 	return (_location[nb]);
 }
 
+std::vector<Location>& ServerConf::GetLocation()
+{
+	return _location;
+}
+
 size_t ServerConf::GetHostPortSize() const
 {
 	return this->_host_port.size();
@@ -293,6 +298,27 @@ void ServerConf::Error(int error)
 		std::cerr << "Invalid entry in allow_methods." << std::endl;
 	if (error == 8)
 		std::cerr << "Autoindex need to be 'on' or 'off'." << std::endl;
+	if (error == 10)
+		std::cerr << "Error CGI input." << std::endl;
 	if (error == 9)
 		std::cerr << "Error Input." << std::endl;
+}
+
+bool ServerConf::HasLocationForExtension(const std::string& name, const std::string ext, Location& okloc)
+{
+	std::vector<Location> location = GetLocation();
+	for (size_t i = 0; i < location.size(); i++)
+	{
+		Location loc = location[i];
+		if (loc.GetName() == name)
+		{
+			std::string checkcgi = loc.GetCGIPass(ext);
+			if (!checkcgi.empty())
+			{
+				okloc = loc;
+				return true;
+			}	
+		}
+	}
+	return false;
 }

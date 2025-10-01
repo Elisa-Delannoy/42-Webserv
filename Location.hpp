@@ -36,6 +36,7 @@ class Location
 		std::string GetMethods(int nb) const;
 		bool GetAutoindex() const;
 		std::string GetCGIPass(std::string ext) const;
+		std::map<std::string, std::string> GetCgi() const;
 		std::string GetIndex() const;
 
 		int AddName(std::string line);

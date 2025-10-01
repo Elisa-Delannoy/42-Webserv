@@ -6,7 +6,7 @@
 
 ParseRequest::ParseRequest()
 {
-
+	this->_name_location = "/";
 }
 
 ParseRequest::~ParseRequest()
@@ -29,6 +29,11 @@ const std::string&	ParseRequest::GetVersion() const
 	return (this->_version);
 }
 
+const std::string&	ParseRequest::GetNameLocation() const
+{
+	return (this->_name_location);
+}
+
 const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
 {
 	return (this->_header);
@@ -41,7 +46,9 @@ int ParseRequest::DivideFirstLine(std::string& first_line)
 	std::istringstream	ss_first_line(first_line);
 	ss_first_line >> this->_method >> this->_path >> this->_version;
 	int len_w = this->_method.length() + this->_path.length() + this->_version.length();
-
+	size_t sep = this->_path.substr(1).find('/');
+	if (sep != std::string::npos)
+		this->_name_location = this->_path.substr(0, sep + 1);
 	// std::cout << "methode = " << this->_method << " path = " << this->_path <<" verison = " << this->_version << std::endl;
 	// std::cout << "methode = " << this->_method.length() << " path = " << this->_path.length() <<" verison = " << this->_version.length() << std::endl;
 	// std::cout << len << " | " << len_w << std::endl;
