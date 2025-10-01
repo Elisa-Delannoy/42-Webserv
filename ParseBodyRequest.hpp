@@ -23,7 +23,7 @@ class ParseBody
 		~ParseBody();
 		
 		int		FindBodyLen(ParseRequest& request);
-		void	ChooseContent(char* body);
+		void	ChooseContent(std::vector<char> body);
 		void	AppForm(char* body_req);
 		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);

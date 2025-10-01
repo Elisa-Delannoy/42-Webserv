@@ -7,7 +7,7 @@ void	printmap(std::map<std::string, std::string>& map)
 		std::cout << "key: " << it->first << " | value: " << it->second << std::endl;
 }
 
-void	printvec(std::vector<char>::iterator begin, std::vector<char> vec)
+void	printvec1(std::vector<char>::iterator begin, std::vector<char> vec)
 {
 	for (std::vector<char>::const_iterator test = begin; test != vec.end(); test++)
 	{
@@ -68,13 +68,13 @@ int	ParseBody::FindBodyLen(ParseRequest& request) /*revoir car pas forcément co
 	return (0);
 }
 
-void  ParseBody::ChooseContent(char* body)
+void  ParseBody::ChooseContent(std::vector<char> to_parse)
 {
-	std::vector<char>	to_parse(body, body + this->_len);
+	// std::vector<char>	to_parse(body, body + this->_len);
 
-	if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
-		AppForm(body);
-	else if (this->_type.find("application/json") != std::string::npos)
+	// if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
+	// 	AppForm(body);
+	if (this->_type.find("application/json") != std::string::npos)
 		AppJson(to_parse);
 	else if (this->_type.find("multipart/form-data") != std::string::npos)
 		AppMultipart(to_parse);

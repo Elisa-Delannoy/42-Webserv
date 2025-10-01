@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <algorithm>
 #include "ParseRequest.hpp"
+#include <vector>
 
 #define ROOT "html/index.html"
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
@@ -29,7 +30,7 @@ class Response
 		void sendBody();
 		void sendError(int code);
 		void sendHeaderAndBody();
-		void sendResponse(ParseRequest header, char* buf);
+		void sendResponse(ParseRequest header, std::vector<char> buf);
 
 		int checkBody(const char* path);
 		void sendImage(std::string path_image);

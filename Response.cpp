@@ -150,21 +150,24 @@ void Response::sendError(int code)
 	sendHeaderAndBody();
 }
 
-void Response::sendResponse(ParseRequest header, char* buf)
+void Response::sendResponse(ParseRequest header, std::vector<char> buf)
 {
-	(void)buf;
+	(void) buf;
 
 	std::string path = header.GetPath();
 	std::string method = header.GetMethod();
 	std::string version = header.GetVersion();
 
+	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	if (method == "GET")
 	{
 		if (path == "/")
 		{
 			if (checkBody(ROOT) == 0)
 			{
+				std::cout << "ici" << std::endl;
 				setHeader(version, path, 200);
+				std::cout << "after setheader" << std::endl;
 				sendHeaderAndBody();
 			}
 			else

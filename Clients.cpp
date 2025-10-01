@@ -1,6 +1,6 @@
 #include "Clients.hpp"
 
-Clients::Clients(int fd) : _socket_fd(fd), _index_buff(0), _status(WAITING_REQUEST)
+Clients::Clients(int fd, int server_index) : _socket_fd(fd), _server_index(server_index), _status(WAITING_REQUEST)
 {
 	this->_read_buff.clear();
 	this->_write_buff.clear();
@@ -26,7 +26,18 @@ std::vector<char> Clients::GetReadBuffer()
 	return (this->_read_buff);
 }
 
-void Clients::SetReadBUff(char c)
+void Clients::SetReadBuff(char* buff, size_t len)
 {
-	this->_read_buff.push_back(c);
+	this->_read_buff.insert(this->_read_buff.end(), buff, buff + len);
+}
+
+void Clients::ClearBuff()
+{
+	this->_read_buff.clear();
+	this->_write_buff.clear();
+}
+
+int Clients::GetServerIndex() const
+{
+	return (this->_server_index);
 }
