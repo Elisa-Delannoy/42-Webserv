@@ -176,6 +176,7 @@ int	HTTPServer::CheckEndRead(Clients* client)
 	std::cout << "dans check" << std::endl;
 	if (client->GetReadHeader() == false)
 	{
+		std::cout << "IN R_HEAD" << std::endl;
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
 			endheader, endheader + 4);
 		if (it == client->GetReadBuffer().end())
@@ -183,9 +184,15 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
 		client->SetReadHeader(true);
 		if (i >= 0)
+		{
+			std::cout << "I >= 0" << std::endl;
 			client->_head.SetIndexEndHeader(i);
-		else 
+		}
+		else
+		{
+			std::cout << "-1 NO BODY" << std::endl;
 			return (-1);
+		}
 	}
 	int body_len = client->_body.FindBodyLen(client->_head);
 	std::cout << "len = " << body_len <<std::endl;
@@ -215,6 +222,7 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	std::cout << "lecture : " << bytes << std::endl;
 	while (bytes > 0)
 	{
+		std::cout << "ENTER LOOP READ" << std::endl;
 		client->SetReadBuff(buffer, bytes);
 		if (CheckEndRead(client) > 0)
 		{
@@ -232,11 +240,12 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 			break;
 		}
 	}
-	// if (bytes == 0)
-	// {
-	// 	// close fd serveur 
-		
-	// }
+	if (bytes == 0)
+	{
+		client->SetStatus(Clients::PARSING_REQUEST);
+	}
+	std::cout << "END LOOP READ" << std::endl;
+	std::cout << "bytes read : " << bytes << std::endl;
 	// else if (bytes == -1)
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 
@@ -261,9 +270,11 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	}
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 	{
+		std::cout << "BEFORE READ BUFFER" << std::endl;
 		request = client->GetReadBuffer();
 		body_len = client->_body.FindBodyLen(client->_head);
 		std::cout << body_len << std::endl;
+		std::cout << "BEFORE CHOOSE CONTENT" << std::endl;
 		if (body_len != 0)
 		{
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader());
@@ -273,12 +284,15 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		}
 		client->ClearBuff();
 		client->SetStatus(Clients::SENDING_RESPONSE);
+		std::cout << "BEFORE EPOLLOUT" << std::endl;
 	}
 
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
+		std::cout << "BEFORE CGI" << std::endl;
 		cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
 		Response resp(this->servers[client->GetServerIndex()], client->GetSocket(), body_len);
+		std::cout << "BEFORE RESPONSE" << std::endl;
 		resp.sendResponse(client, request);
 		// close(client_fd);
 		client->SetStatus(Clients::WAITING_REQUEST);
