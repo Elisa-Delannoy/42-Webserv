@@ -17,12 +17,14 @@ class ParseBody
 	private:
 		std::string	_type;
 		int			_len;
+		bool		_content_len;
+		bool		_content_chunk;
 
 	public:
 		ParseBody();
 		~ParseBody();
 		
-		int		FindBodyLen(ParseRequest& request);
+		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
 		void	ChooseContent(std::vector<char> body);
 		void	AppForm(char* body_req);
 		void	AppJson(std::vector<char> body);

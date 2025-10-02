@@ -170,7 +170,7 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 	return (0);
 }
 
-int	HTTPServer::CheckEndRead(Clients* client, bool r_head)
+int	HTTPServer::CheckEndRead(Clients* client, bool& r_head)
 {
 	const char* endheader = "\r\n\r\n";
 
@@ -239,7 +239,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 	{
 		request = client->GetReadBuffer();
-		body_len = client->_body.FindBodyLen(client->_head);
+		body_len = client->_body.GetContentLen();
 		std::cout << body_len << std::endl;
 		if (body_len != 0)
 		{

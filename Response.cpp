@@ -224,7 +224,7 @@ bool Response::getAutoindex()
 
 void Response::sendResponse(Clients* client, std::vector<char>  buf)
 {
-	(void) buf;
+	// (void) buf;
 
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
@@ -293,7 +293,7 @@ void Response::sendResponse(Clients* client, std::vector<char>  buf)
 	}
 	else if (method == "POST")
 	{
-
+		std::cout << "DANS POST" << std::endl;
 	}
 }
 

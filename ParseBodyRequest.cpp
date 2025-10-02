@@ -27,7 +27,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody()
+ParseBody::ParseBody() : _content_len(false), _content_chunk(false)
 {
 	Part	parts;
 	parts.name = "";
@@ -51,21 +51,45 @@ std::string ParseBody::GetContentType() const
 }
 
 
-int	ParseBody::FindBodyLen(ParseRequest& request) /*revoir car pas forcément content lenght mais aussi Transfer-Encoding: chunked*/
+taille en hexa \r\n 
+morceau \r\n 
+fin : taille 0\r\n
+
+
+int	HexaToDec(std::string)
+{
+	std::string	hexa
+}
+
+void	ParseBody::CheckBodyType()
+{
+	std::map<std::string, std::string>::iterator it = 
+
+	it = head.find("Content-Length");
+	if (it != head.end())
+		FindBodyLen(it);
+	it = head.begin();
+	it = head.find("Transfer-Encoding");
+}
+
+bool	ParseBody::IsBody(ParseRequest& request)
 {
 	std::map<std::string, std::string> head = request.GetHeader();
 	std::map<std::string, std::string>::iterator it = head.find("Content-Type");
-	if (it != head.end())
-		this->_type = it->second;
-	it = head.find("Content-Length");
-	if (it != head.end())
-	{
-		std::istringstream	ss_body_len(it->second);
-		if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
-			return (-1);
-		return (this->_len);
-	}
-	return (0);
+	if (it == head.end())
+		return (false);
+	this->_type = it->second;
+	it = head.begin();
+	
+}
+
+void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it) /*revoir car pas forcément content lenght mais aussi Transfer-Encoding: chunked*/
+{
+	std::istringstream	ss_body_len(it->second);
+	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
+		return; /*voir pour send erreur*/
+	this->_content_len = true;
+	std::cout << "len = " << his->_len << " true or false " << this->_content_len << std::endl;
 }
 
 void  ParseBody::ChooseContent(std::vector<char> to_parse)
@@ -89,6 +113,11 @@ void  ParseBody::ChooseContent(std::vector<char> to_parse)
 // application/pdf, image/png, audio/mpeg, etc.: Envoi de types de fichiers spécifiques.
 // application/ld+json: JSON-LD (Linked Data), souvent en API sémantique.
 // application/graphql: Envoyer des requêtes GraphQL.
+
+
+// erreur ;
+// erreur 400 Bad Request (si la taille ne correspond pas ou est mal formée) 
+// 500 Internal Server Error (si le serveur rencontre une erreur de traitement).
 	
 }
 
