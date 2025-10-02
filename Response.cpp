@@ -228,7 +228,7 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	std::vector<char>::iterator it = buf.begin();
 	for(; it != buf.end(); it++)
 		std::cout << *it;
-	std::cout << "--------BUF END--------\n" << std::endl;
+	std::cout << "--------BUF END-------\n" << std::endl;
 
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
