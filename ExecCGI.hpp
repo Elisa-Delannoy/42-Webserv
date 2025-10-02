@@ -24,7 +24,7 @@ class ExecCGI
 		std::string CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
 
 		void SetArgv(std::string &path, Location &location, std::string &ext);
-		void SetEnvp(ParseRequest &header, ParseBody &body, Location &location);
+		void SetEnvp(ParseRequest &header, ParseBody &body, std::string path);
 
 		char** GetEnvp() const;
 		char** GetArgv() const;
