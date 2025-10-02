@@ -67,30 +67,24 @@ void ExecCGI::SetArgv(std::string &path, Location &location, std::string &ext)
 	_argv[argv.size()] = NULL;
 }
 
-bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
+std::string SetupPath(std::string path, const std::string& LocName, const std::string& LocRoot)
 {
-	(void)body;
-	(void)servers;
-	size_t pos = header.GetPath().find(".");
+	std::string newpath = path;
+	size_t pos = newpath.find('/');
 	if (pos != std::string::npos)
 	{
-		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
-		size_t sep = ext.find("?");
-		if (sep != std::string::npos)
-			ext = ext.substr(0, sep);
-		Location loc;
-		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
-			Execution(header, body, loc, ext);
-		return true;
+		if (LocName == "/")
+		newpath.replace(pos, LocName.length() - 1, LocRoot);
+		else 
+			newpath.replace(pos, LocName.length(), LocRoot);
+		}
+		newpath = newpath.substr(1);
+		return newpath;
 	}
-	return false;
-}
 
-
-void ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &location, std::string &ext)
+std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &location, std::string &ext)
 {
-	std::string path = replace_substring(header.GetPath(), location.GetName(), location.GetRoot());
-	path = path.substr(1);
+	std::string path = SetupPath(header.GetPath(), location.GetName(), location.GetRoot());
 	SetArgv(path, location, ext);
 	SetEnvp(header, body, location);
 	int pipefd[2];
@@ -105,20 +99,42 @@ void ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &locatio
 		dup2(pipefd[1], STDIN_FILENO);
 		close(pipefd[1]);
 		execve(path.c_str(), GetArgv(), GetEnvp());
-		std::cerr << "Error Execve" << std::endl;
-		return;
+		return "";
 	}
 	else 
 	{
 		close(pipefd[1]);
-		char buffer[1024];
+		char buffer[4096];
 		ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1);
 		if (bytesRead > 0)
-		{
 			buffer[bytesRead] = '\0';
-			std::cout << buffer << std::endl;
-		}
+		std::string cgihtml = buffer;
 		close(pipefd[0]);
 		wait(NULL);
+		if (cgihtml.empty())
+			return "";
+		return cgihtml;
 	}
+}
+
+std::string ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
+{
+	(void)body;
+	(void)servers;
+	size_t pos = header.GetPath().find(".");
+	if (pos != std::string::npos)
+	{
+		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
+		size_t sep = ext.find("?");
+		if (sep != std::string::npos)
+			ext = ext.substr(0, sep);
+		Location loc;
+		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
+		{
+			std::string result;
+			result = Execution(header, body, loc, ext).empty();
+			return result;
+		}
+	}
+	return "";
 }
