@@ -310,6 +310,7 @@ bool ServerConf::HasLocationForExtension(const std::string& name, const std::str
 	for (size_t i = 0; i < location.size(); i++)
 	{
 		Location loc = location[i];
+		std::cout << name << "////" << loc.GetName() << std::endl;
 		if (loc.GetName() == name)
 		{
 			std::string checkcgi = loc.GetCGIPass(ext);

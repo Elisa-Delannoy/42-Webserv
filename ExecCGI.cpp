@@ -26,13 +26,13 @@ std::string replace_substring(std::string str, const std::string& to_replace, co
 	return str;
 }
 
-void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, Location &location)
+void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 {
 	std::vector<std::string> env;
 
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	env.push_back("REQUEST_METHOD=" + header.GetMethod());
-	env.push_back("SCRIPT_FILENAME=" + replace_substring(header.GetPath(), location.GetName(), location.GetRoot()));
+	env.push_back("SCRIPT_FILENAME=" + path);
 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
 	env.push_back("REDIRECT_STATUS=200");
 	if (header.GetMethod() == "POST")
@@ -86,7 +86,11 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 {
 	std::string path = SetupPath(header.GetPath(), location.GetName(), location.GetRoot());
 	SetArgv(path, location, ext);
-	SetEnvp(header, body, location);
+	for (int i = 0; _argv[i] != NULL; i++)
+	{
+		std::cout << _argv[i] << std::endl;
+	}
+	SetEnvp(header, body, path);
 	int pipefd[2];
 	if (pipe(pipefd) == -1)
 		std::cerr << "Error creation pipe." << std::endl;
@@ -98,7 +102,8 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 		close(pipefd[0]);
 		dup2(pipefd[1], STDIN_FILENO);
 		close(pipefd[1]);
-		execve(path.c_str(), GetArgv(), GetEnvp());
+		execve(location.GetCGIPass(ext).c_str(), GetArgv(), GetEnvp());
+		std::cerr << "Error execve." << std::endl;
 		return "";
 	}
 	else 
@@ -110,7 +115,7 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 			buffer[bytesRead] = '\0';
 		std::string cgihtml = buffer;
 		close(pipefd[0]);
-		wait(NULL);
+		waitpid(pid, NULL, 0);
 		if (cgihtml.empty())
 			return "";
 		return cgihtml;
@@ -125,12 +130,14 @@ std::string ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf 
 	if (pos != std::string::npos)
 	{
 		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
+		std::cout << ext << std::endl;
 		size_t sep = ext.find("?");
 		if (sep != std::string::npos)
 			ext = ext.substr(0, sep);
 		Location loc;
 		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
 		{
+			std::cout << loc.GetName() << std::endl;
 			std::string result;
 			result = Execution(header, body, loc, ext).empty();
 			return result;
