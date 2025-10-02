@@ -209,7 +209,7 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		std::cout << "dans if" <<std::endl;
 		return (1);
 	}
-	std::cout << "retunr 0 "<< std::endl;
+	std::cout << "return 0 "<< std::endl;
 	return (0);
 }
 
