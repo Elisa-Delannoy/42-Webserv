@@ -47,6 +47,8 @@ class HTTPServer
 		Clients*	FindClient(int fd);
 		void 		ReadAllRequest(Clients* client, int fd);
 		int			CheckEndRead(Clients* client);
+		int			CheckEndWithChunk(Clients* client);
+		int			CheckEndWithLen(Clients* client);
 
 	private:
 

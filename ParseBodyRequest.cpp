@@ -27,7 +27,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody() : _content_len(false), _content_chunk(false)
+ParseBody::ParseBody() : _content_chunk(false)
 {
 	Part	parts;
 	parts.name = "";
@@ -42,34 +42,57 @@ ParseBody::~ParseBody()
 
 int ParseBody::GetContentLen() const
 {
-	return _len;
+	return this->_len;
 }
 
 std::string ParseBody::GetContentType() const
 {
-	return _type;
+	return this->_type;
 }
 
-
-taille en hexa \r\n 
-morceau \r\n 
-fin : taille 0\r\n
-
-
-int	HexaToDec(std::string)
+bool ParseBody::GetChunk() const
 {
-	std::string	hexa
+	return this->_content_chunk;
 }
 
-void	ParseBody::CheckBodyType()
+void	ParseBody::SetChunk(bool status)
 {
-	std::map<std::string, std::string>::iterator it = 
+	this->_content_chunk = status;
+}
+
+// taille en hexa \r\n 
+// morceau \r\n 
+// fin : taille 0\r\n
+
+
+// int	HexaToDec(std::string)
+// {
+// 	std::string	hexa
+// }
+
+void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
+{
+	std::map<std::string, std::string>::iterator it;
 
 	it = head.find("Content-Length");
 	if (it != head.end())
 		FindBodyLen(it);
-	it = head.begin();
-	it = head.find("Transfer-Encoding");
+	else
+	{
+		it = head.begin();
+		it = head.find("Transfer-Encoding");
+		if (it != head.end())
+			this->_content_chunk = true;
+	}
+}
+
+void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
+{
+	std::istringstream	ss_body_len(it->second);
+	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
+		return; /*voir pour send erreur*/
+	// this->_content_len = true;
+	std::cout << "len = " << this->_len << std::endl;
 }
 
 bool	ParseBody::IsBody(ParseRequest& request)
@@ -79,17 +102,8 @@ bool	ParseBody::IsBody(ParseRequest& request)
 	if (it == head.end())
 		return (false);
 	this->_type = it->second;
-	it = head.begin();
-	
-}
-
-void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it) /*revoir car pas forcément content lenght mais aussi Transfer-Encoding: chunked*/
-{
-	std::istringstream	ss_body_len(it->second);
-	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
-		return; /*voir pour send erreur*/
-	this->_content_len = true;
-	std::cout << "len = " << his->_len << " true or false " << this->_content_len << std::endl;
+	CheckBodyType(head);
+	return (true);	
 }
 
 void  ParseBody::ChooseContent(std::vector<char> to_parse)

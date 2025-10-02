@@ -15,9 +15,8 @@ class Clients
 		int					_socket_fd;
 		int					_server_index;
 		std::vector<char>	_read_buff;
-		std::vector<char>	_write_buff;
+		// std::vector<char>	_write_buff;
 		bool				_r_header;
-		// size_t				_index_buff;
 
 	public:
 		enum status

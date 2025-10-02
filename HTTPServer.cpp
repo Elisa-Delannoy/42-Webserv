@@ -170,46 +170,61 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 	return (0);
 }
 
+int	HTTPServer::CheckEndWithChunk(Clients* client)
+{
+	if (!client->_body.GetChunk())
+		return (0);
+	return (1);
+}
+
+int	HTTPServer::CheckEndWithLen(Clients* client)
+{
+	int	len = client->_body.GetContentLen();
+	if (len == 0)
+		return (0);
+	if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(len)) /*verifier si -1 a jouter ou autre*/
+		return (1);
+	return (0);
+}
+
 int	HTTPServer::CheckEndRead(Clients* client)
 {
 	const char* endheader = "\r\n\r\n";
-	std::cout << "dans check" << std::endl;
+	// std::cout << "dans check" << std::endl;
 	if (client->GetReadHeader() == false)
 	{
-		std::cout << "IN R_HEAD" << std::endl;
+		// std::cout << "IN R_HEAD" << std::endl;
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
 			endheader, endheader + 4);
 		if (it == client->GetReadBuffer().end())
 			return (-1);
 		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
-		client->SetReadHeader(true);
 		if (i >= 0)
 		{
-			std::cout << "I >= 0" << std::endl;
+			// std::cout << "I >= 0" << std::endl;
 			client->_head.SetIndexEndHeader(i);
 		}
 		else
 		{
-			std::cout << "-1 NO BODY" << std::endl;
+			// std::cout << "-1 NO BODY" << std::endl;
 			return (-1);
 		}
+		client->SetReadHeader(true);
 	}
-	int body_len = client->_body.FindBodyLen(client->_head);
-	std::cout << "len = " << body_len <<std::endl;
-	std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
-	std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
-	if (body_len == 0)
+	if (!client->_body.IsBody(client->_head))
 	{
 		client->_head.SetIndexEndHeader(0);
 		client->SetReadHeader(false);
 		return (1);
 	}
-	else if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(body_len))
-	{
-		std::cout << "dans if" <<std::endl;
+	if (CheckEndWithChunk(client) == 1|| CheckEndWithLen(client) == 1)
 		return (1);
-	}
-	std::cout << "return 0 "<< std::endl;
+	// std::cout << "len = " << body_len <<std::endl;
+	// std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
+	// std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
+
+	// else if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(body_len))
+	// 	return (1);
 	return (0);
 }
 
@@ -240,12 +255,12 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 			break;
 		}
 	}
-	if (bytes == 0)
-	{
-		client->SetStatus(Clients::PARSING_REQUEST);
-	}
-	std::cout << "END LOOP READ" << std::endl;
-	std::cout << "bytes read : " << bytes << std::endl;
+	// if (bytes == 0)
+	// {
+	// 	client->SetStatus(Clients::PARSING_REQUEST);
+	// }
+	// std::cout << "END LOOP READ" << std::endl;
+	// std::cout << "bytes read : " << bytes << std::endl;
 	// else if (bytes == -1)
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 

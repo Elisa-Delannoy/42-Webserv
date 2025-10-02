@@ -4,7 +4,7 @@ Clients::Clients(int fd, int server_index) : _socket_fd(fd), _server_index(serve
 	 _r_header(false), _status(WAITING_REQUEST)
 {
 	this->_read_buff.clear();
-	this->_write_buff.clear();
+	// this->_write_buff.clear();
 }
 
 Clients::~Clients()
@@ -35,7 +35,8 @@ void Clients::SetReadBuff(char* buff, size_t len)
 void Clients::ClearBuff()
 {
 	this->_read_buff.clear();
-	this->_write_buff.clear();
+	// this->_write_buff.clear();
+	this->_r_header = false;
 }
 
 int Clients::GetServerIndex() const

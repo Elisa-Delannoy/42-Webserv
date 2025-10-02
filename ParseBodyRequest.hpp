@@ -17,18 +17,20 @@ class ParseBody
 	private:
 		std::string	_type;
 		int			_len;
-		bool		_content_len;
+		// bool		_content_len;
 		bool		_content_chunk;
 
 	public:
 		ParseBody();
 		~ParseBody();
-		
-		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
+
 		void	ChooseContent(std::vector<char> body);
 		void	AppForm(char* body_req);
 		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);
+		bool	IsBody(ParseRequest& request);
+		void	CheckBodyType(std::map<std::string, std::string>& head);
+		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
 		
 		
 		struct Part
@@ -58,6 +60,8 @@ class ParseBody
 
 		int GetContentLen() const;
 		std::string GetContentType() const;
+		bool	GetChunk() const;
+		void	SetChunk(bool chunk);
 };
 
 
