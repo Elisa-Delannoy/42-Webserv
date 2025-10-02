@@ -15,8 +15,8 @@ class Clients
 		int					_socket_fd;
 		int					_server_index;
 		std::vector<char>	_read_buff;
-		size_t					_count_loop_read;
 		std::vector<char>	_write_buff;
+		bool				_r_header;
 		// size_t				_index_buff;
 
 	public:
@@ -37,8 +37,8 @@ class Clients
 		void	ClearBuff();
 		int		GetServerIndex() const;
 		int		GetSocket() const;
-		size_t	GetLoopRead() const;
-
+		bool	GetReadHeader() const;
+		void	SetReadHeader(bool r_header);
 
 		ParseRequest		_head;
 		ParseBody			_body;
