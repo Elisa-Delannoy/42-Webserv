@@ -28,7 +28,6 @@ class ParseBody
 		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);
 		
-		
 		struct Part
 		{
 			std::string	type;
@@ -51,11 +50,10 @@ class ParseBody
 				return (out);
 			}
 		};
-		
-
 
 		int GetContentLen() const;
 		std::string GetContentType() const;
+		std::vector<ParseBody::Part> _multipart;
 };
 
 

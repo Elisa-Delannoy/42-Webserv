@@ -195,9 +195,9 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		}
 	}
 	int body_len = client->_body.FindBodyLen(client->_head);
-	std::cout << "len = " << body_len <<std::endl;
-	std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
-	std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
+	// std::cout << "len = " << body_len <<std::endl;
+	// std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
+	// std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
 	if (body_len == 0)
 	{
 		client->_head.SetIndexEndHeader(0);
