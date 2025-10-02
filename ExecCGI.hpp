@@ -20,8 +20,8 @@ class ExecCGI
 		ExecCGI();
 		~ExecCGI();
 
-		void Execution(ParseRequest &header, ParseBody &body, Location &location, std::string &ext);
-		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
+		std::string Execution(ParseRequest &header, ParseBody &body, Location &location, std::string &ext);
+		std::string CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
 
 		void SetArgv(std::string &path, Location &location, std::string &ext);
 		void SetEnvp(ParseRequest &header, ParseBody &body, Location &location);

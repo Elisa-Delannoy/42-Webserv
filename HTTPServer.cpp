@@ -254,7 +254,8 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
+		std::string cgihtml = cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
+		std::cout << cgihtml << std::endl;
 		Response resp(this->servers[client->GetServerIndex()], client->GetSocket(), body_len);
 		resp.sendResponse(client, request);
 		// close(client_fd);
