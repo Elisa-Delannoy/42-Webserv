@@ -89,7 +89,7 @@ void  ParseBody::ChooseContent(std::vector<char> to_parse)
 // application/pdf, image/png, audio/mpeg, etc.: Envoi de types de fichiers spécifiques.
 // application/ld+json: JSON-LD (Linked Data), souvent en API sémantique.
 // application/graphql: Envoyer des requêtes GraphQL.
-	
+
 }
 
 void	ParseBody::AppForm(char* body_req) /*voir si return ou si stock map en prive*/
@@ -120,6 +120,7 @@ void	ParseBody::AppForm(char* body_req) /*voir si return ou si stock map en priv
 			content = "";
 		}
 		body_form[name] = content;
+		//HERE RETURN MAP
 	}
 }
 
@@ -178,6 +179,7 @@ void	ParseBody::AppJson(std::vector<char> body) /*voir si return ou si stock map
 		}
 	}
 	printmap(body_json);
+	//RETURN MAP
 }
 
 std::string	SelectValue(std::string to_find, std::string sep, std::string body)
@@ -264,7 +266,7 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 			body_request.push_back(parts);
 		}
 	}
-	printvecpart(body_request);
+	// printvecpart(body_request);
 	// std::ofstream out("uploads/fichier.png", std::ios::binary);
 	// out.write(parts.content.data(), parts.content.size());
 	// out.close();

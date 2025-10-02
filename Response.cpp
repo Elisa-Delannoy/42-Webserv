@@ -222,16 +222,20 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::sendResponse(Clients* client, std::vector<char>  buf)
+void Response::sendResponse(Clients* client, std::vector<char> buf)
 {
-	(void) buf;
+	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::vector<char>::iterator it = buf.begin();
+	for(; it != buf.end(); it++)
+		std::cout << *it;
+	std::cout << "--------BUF END-------\n" << std::endl;
 
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
-	setRootLocation(path);
-
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
+	
+	setRootLocation(path);
 	if (method == "GET")
 	{
 		int check;
@@ -293,7 +297,9 @@ void Response::sendResponse(Clients* client, std::vector<char>  buf)
 	}
 	else if (method == "POST")
 	{
-
+		std::cout << "ENTERING POST PROCESSING" << std::endl;
+		setHeader(version, path, 404);
+		sendHeader();
 	}
 }
 
