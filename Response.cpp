@@ -217,6 +217,15 @@ void Response::displayAutoindex(std::string path, std::string version)
 	}
 }
 
+void Response::displayUploadSuccessfull(std::string path, std::string version)
+{
+	this->_content = "<html><body><h1>Upload Successfull!</h1></body></html>";
+	this->_body_len = this->_content.size();
+	this->_content_length = setContentLength(path);
+	setHeader(version, path, 200);
+	sendHeaderAndBody();
+}
+
 bool Response::getAutoindex()
 {
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
@@ -230,11 +239,11 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	
-	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = buf.begin();
 	for(; it != buf.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl;
+	std::cout << "\n--------BUF END-------\n" << std::endl; */
 
 	setRootLocation(path);
 	if (method == "GET")
@@ -299,29 +308,19 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	else if (method == "POST")
 	{
 		std::cout << "ENTERING POST PROCESSING" << std::endl;
-		setHeader(version, path, 404);
-		sendHeader();
 		// client->_body._multipart;
 		std::string filename = "uploads/" + client->_body._multipart[0].filename;
 		std::cout << "filename : " << filename << std::endl;
 		std::ofstream out(filename.c_str(), std::ios::binary);
 		
-		/* size_t i = 0;
-		for (; i < client->_body._multipart[0].content.size(); i++)
-		{
-			if (client->_body._multipart[0].content[i] == 'P' && client->_body._multipart[0].content[i+1] == 'O'
-				&& client->_body._multipart[0].content[i+2] == 'S' && client->_body._multipart[0].content[i+3] == 'T')
-				{
-					std::cout << "i : " << i << std::endl;
-					break;
-				}
-		} */
+
 		for(size_t i = 0; i < client->_body._multipart.size(); i++)
 		{
 			out.write(client->_body._multipart[i].content.data(),
 				client->_body._multipart[i].content.size());
 		}
 		out.close();
+		displayUploadSuccessfull(path, version);
 	}
 }
 

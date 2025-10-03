@@ -35,14 +35,15 @@ class Response
 		void sendResponse(Clients* client, std::vector<char> buf);
 
 		int checkBody(const char* path);
+		std::string setSize(const char* path_image);
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
-		void displayAutoindex(std::string path, std::string version);
 		std::string getIndex();
 		bool getAutoindex();
+		void displayAutoindex(std::string path, std::string version);
+		void displayUploadSuccessfull(std::string path, std::string version);
 
-		std::string setSize(const char* path_image);
 
 	private:
 		ServerConf _server;

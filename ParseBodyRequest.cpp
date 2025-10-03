@@ -75,9 +75,15 @@ void  ParseBody::ChooseContent(std::vector<char> to_parse)
 	// if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
 	// 	AppForm(body);
 	if (this->_type.find("application/json") != std::string::npos)
+	{
+		std::cout << "Appjson" << std::endl;
 		AppJson(to_parse);
+	}
 	else if (this->_type.find("multipart/form-data") != std::string::npos)
+	{
+		std::cout << "AppMultipart" << std::endl;
 		AppMultipart(to_parse);
+	}
 
 
 
