@@ -198,7 +198,7 @@ void Response::displayAutoindex(std::string path, std::string version)
 	else
 	{
 		struct dirent* dirp;
-		this->_content = "<html><body><h1>OH BOY IT WORKS</h1><ul>";
+		this->_content = "<html><body><h1>AUTOINDEX</h1><ul>";
 		dirp = readdir(dir);
 		while (dirp != NULL)
 		{
@@ -230,11 +230,11 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	
-/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = buf.begin();
 	for(; it != buf.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl; */
+	std::cout << "\n--------BUF END-------\n" << std::endl;
 
 	setRootLocation(path);
 	if (method == "GET")

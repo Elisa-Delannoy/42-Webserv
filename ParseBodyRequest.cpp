@@ -266,7 +266,7 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 			this->_multipart.push_back(parts);
 		}
 	}
-	printvecpart(this->_multipart);
+	// printvecpart(this->_multipart);
 	// std::ofstream out("uploads/fichier.png", std::ios::binary);
 	// out.write(parts.content.data(), parts.content.size());
 	// out.close();

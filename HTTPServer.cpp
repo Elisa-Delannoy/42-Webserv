@@ -239,6 +239,9 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 			client->SetStatus(Clients::CLOSED);
 			break;
 		}
+		//recv again because otherwise we're not reading the rest?
+		//with this it works
+		bytes = recv(fd, buffer, sizeof(buffer), 0);
 	}
 	if (bytes == 0)
 	{
