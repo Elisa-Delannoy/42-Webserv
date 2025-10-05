@@ -11,6 +11,8 @@ SRC = main.cpp \
 	ParseBodyRequest.cpp \
 	ServerConf.cpp \
 	Response.cpp \
+	HeaderResponse.cpp \
+	BodyResponse.cpp \
 	ExecCGI.cpp \
 	Clients.cpp
 

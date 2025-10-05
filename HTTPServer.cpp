@@ -276,7 +276,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		std::cout << "BEFORE READ BUFFER" << std::endl;
 		request = client->GetReadBuffer();
 		body_len = client->_body.FindBodyLen(client->_head);
-		std::cout << body_len << std::endl;
+		std::cout << "body_len : " << body_len << std::endl;
 		std::cout << "BEFORE CHOOSE CONTENT" << std::endl;
 		if (body_len != 0)
 		{
@@ -295,9 +295,9 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		std::string cgihtml = cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
 		std::cout << cgihtml << std::endl;
 		// cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
-		Response resp(this->servers[client->GetServerIndex()], client->GetSocket(), body_len);
+		Response resp(this->servers[client->GetServerIndex()], client);
 		std::cout << "BEFORE RESPONSE" << std::endl;
-		resp.sendResponse(client, request);
+		resp.sendResponse(this->servers[client->GetServerIndex()], client, request);
 		// close(client_fd);
 		client->SetStatus(Clients::WAITING_REQUEST);
 		// epoll.deleteClient(client_fd);
