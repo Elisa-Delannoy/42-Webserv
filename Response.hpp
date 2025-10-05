@@ -34,7 +34,6 @@ class Response
 		void handlePathDir(HeaderResponse & header, std::string & path);
 
 		int checkBody(const char* path);
-		std::string setSize(const char* path_image);
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
