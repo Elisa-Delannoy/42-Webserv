@@ -33,6 +33,8 @@ class Response
 		void sendError(int code);
 		void sendHeaderAndBody();
 		void sendResponse(Clients* client, std::vector<char> buf);
+		void handleGet(std::string & path, std::string & version);
+		void handlePathDir(std::string & path, std::string & version);
 
 		int checkBody(const char* path);
 		std::string setSize(const char* path_image);

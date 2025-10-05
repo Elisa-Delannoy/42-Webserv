@@ -84,48 +84,6 @@ Comparaison avec les autres codes possibles
 303 See Other : meilleure pratique pour un site avec formulaire ou upload → évite les re-POST accidentels.
 
 */
-void Response::setHeader(std::string version, std::string path, int code)
-{
-	if (code == 200)
-	{
-		this->_status = setStatus(version, " 200 OK\r\n");
-		if (this->_content_length.empty())
-			this->_content_length = setContentLength(path);
-	}
-	if (code == 204)
-	{
-		this->_status = setStatus(version, " 204 No Content\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-		return ;
-	}
-	if (code == 404)
-	{
-		this->_status = setStatus(version, " 404 Not Found\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-		return ;
-	}
-	if (code == 500)
-	{
-		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-	}
-	this->_content_type = setContentType(path);
-}
-
-void Response::sendHeader()
-{
-	std::string response = this->_status + this->_content_type
-		+ this->_content_length + "\r\n";
-
-	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
-		std::cerr << "Error while sending headers." << std::endl;
-}
-
-void Response::sendHeaderAndBody()
-{
-	sendHeader();
-	sendBody();
-}
 
 void Response::sendError(int code)
 {
@@ -248,62 +206,7 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	setRootLocation(path);
 	if (method == "GET")
 	{
-		int check;
-		if (opendir(path.c_str()) != NULL)
-		{
-			std::string index = getIndex();
-			if (index.empty())
-			{
-				std::cout << "index is empty" << std::endl;
-
-				bool autoindex = getAutoindex();
-				if (autoindex)
-				{
-					displayAutoindex(path, version);
-				}
-				else
-				{
-					setHeader(version, path, 404);
-					sendError(404);
-				}
-			}
-			else
-			{
-				path += index;
-				std::cout << "path : " << path << std::endl;
-				check = checkBody(path.c_str());
-				if (check == 0)
-				{
-					setHeader(version, path, 200);
-					sendHeaderAndBody();
-				}
-				else
-				{
-					setHeader(version, path, 500);
-					sendError(500);
-				}
-			}
-		}
-		else
-		{
-			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str());
-			if (check == 0)
-			{
-				setHeader(version, path, 200);
-				sendHeaderAndBody();
-			}
-			else if (check == 404) //wrong path
-			{
-				setHeader(version, path, 404);
-				sendHeader();
-			}
-			else
-			{
-				setHeader(version, path, 500);
-				sendHeader();
-			}
-		}
+		handleGet(path, version);
 	}
 	else if (method == "POST")
 	{
@@ -324,45 +227,110 @@ void Response::sendResponse(Clients* client, std::vector<char> buf)
 	}
 }
 
-void Response::sendBody()
+void Response::handleGet(std::string & path, std::string & version)
 {
-	size_t data_sent = 0;
-	while(data_sent < this->_content.size())
+	int check;
+	if (opendir(path.c_str()) != NULL) //path is a dir
 	{
-		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
-			this->_content.size() - data_sent, 0);
-	// 	if (errno == EPIPE) {
-    //     std::cerr << "Client closed connection (EPIPE)." << std::endl;
-    // } else {
-    //     std::cerr << "Send error: " << strerror(errno) << std::endl;
-    // }
-	// 	std::cout << "data read" << data_read << std::endl;
-		if (data_read == -1)
+		handlePathDir(path, version);
+	}
+	else //path is a file
+	{
+		std::cout << "path : " << path << std::endl;
+		check = checkBody(path.c_str());
+		if (check == 0)
 		{
-			std::cerr << "Error while sending content." << std::endl;
-			break;
+			setHeader(version, path, 200);
+			sendHeaderAndBody();
 		}
-		data_sent += data_read;
+		else if (check == 404) //wrong path
+		{
+			setHeader(version, path, 404);
+			sendHeader();
+		}
+		else
+		{
+			setHeader(version, path, 500);
+			sendHeader();
+		}
 	}
 }
 
-//Return 0 if ok
-//Return 1 if reading problem
-//Return 404 if file problem
-int Response::checkBody(const char* path)
+void Response::handlePathDir(std::string & path, std::string & version)
 {
-	std::ifstream file(path, std::ios::binary);
-	if (!file.is_open()) //wrong path, invalid rights, inexisting file
-		return 404;
+	int check;
+	std::string index = getIndex();
 
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	if (file.fail()) //reading problem
-		return 1;
+	if (index.empty())
+	{
+		std::cout << "index is empty" << std::endl;
 
-	file.close();
-	this->_content = buffer.str();
-	return 0;
+		bool autoindex = getAutoindex();
+		if (autoindex)
+		{
+			displayAutoindex(path, version);
+		}
+		else
+		{
+			setHeader(version, path, 404);
+			sendError(404);
+		}
+	}
+	else
+	{
+		path += index;
+		std::cout << "path : " << path << std::endl;
+		check = checkBody(path.c_str());
+		if (check == 0)
+		{
+			setHeader(version, path, 200);
+			sendHeaderAndBody();
+		}
+		else
+		{
+			setHeader(version, path, 500);
+			sendError(500);
+		}
+	}
+}
+
+//---------------------------HEADER---------------------------
+
+void Response::setHeader(std::string version, std::string path, int code)
+{
+	if (code == 200)
+	{
+		this->_status = setStatus(version, " 200 OK\r\n");
+		if (this->_content_length.empty())
+			this->_content_length = setContentLength(path);
+	}
+	if (code == 204)
+	{
+		this->_status = setStatus(version, " 204 No Content\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		return ;
+	}
+	if (code == 404)
+	{
+		this->_status = setStatus(version, " 404 Not Found\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		return ;
+	}
+	if (code == 500)
+	{
+		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+	}
+	this->_content_type = setContentType(path);
+}
+
+void Response::sendHeader()
+{
+	std::string response = this->_status + this->_content_type
+		+ this->_content_length + "\r\n";
+
+	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
+		std::cerr << "Error while sending headers." << std::endl;
 }
 
 std::string Response::setStatus(std::string version, std::string code)
@@ -434,38 +402,51 @@ std::string Response::GetErrorPath(int code)
 	return (this->_errors_path[code]);
 }
 
-/* void Response::sendBody(ParseRequest request, char* buf)
+//---------------------------BODY---------------------------
+
+void Response::sendBody()
 {
-	else if (path == "/upload")
+	size_t data_sent = 0;
+	while(data_sent < this->_content.size())
 	{
-		std::string boundary;
-		for(int i = 0; buf[i] != '\r'; i++)
-			boundary += buf[i];
-
-		int i = 0;
-		for(; i < this->_body_len; i++)
+		ssize_t data_read = send(this->_client_fd, this->_content.data() + data_sent,
+			this->_content.size() - data_sent, 0);
+	// 	if (errno == EPIPE) {
+    //     std::cerr << "Client closed connection (EPIPE)." << std::endl;
+    // } else {
+    //     std::cerr << "Send error: " << strerror(errno) << std::endl;
+    // }
+	// 	std::cout << "data read" << data_read << std::endl;
+		if (data_read == -1)
 		{
-			if (buf[i] == 'R' && buf[i+1] == 'I' && buf[i+2] == 'F' && buf[i+3] == 'F')
-				break;
+			std::cerr << "Error while sending content." << std::endl;
+			break;
 		}
-
-		std::cout << std::endl;
-		std::cout << "BODY : " << buf+i << std::endl;
-
-		int j = i;
-		for(; j < this->_body_len; j++)
-		{
-			if (buf[j] == '-' && buf[j + 1] == '-' && buf[j + 2] == '-'
-				&& buf[j+3] == '-' && buf[j + 4] == '-' && buf[j + 5] == '-'
-				&& buf[j+6] == 'g')
-				break;
-		}
-		int endfile = j;
-		if (buf[j-2] == '\r' && buf[j-1] == '\n')
-			endfile = j - 2;
-	
-		// std::ofstream out("uploads/fichier.png", std::ios::binary);
-		// out.write(buf + i, endfile - i);
-		// out.close();
+		data_sent += data_read;
 	}
-} */
+}
+
+//Return 0 if ok
+//Return 1 if reading problem
+//Return 404 if file problem
+int Response::checkBody(const char* path)
+{
+	std::ifstream file(path, std::ios::binary);
+	if (!file.is_open()) //wrong path, invalid rights, inexisting file
+		return 404;
+
+	std::stringstream buffer;
+	buffer << file.rdbuf();
+	if (file.fail()) //reading problem
+		return 1;
+
+	file.close();
+	this->_content = buffer.str();
+	return 0;
+}
+
+void Response::sendHeaderAndBody()
+{
+	sendHeader();
+	sendBody();
+}
