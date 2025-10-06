@@ -47,7 +47,6 @@ class Response
 		std::map<int, std::string> _errors_path;
 		std::string _root;
 		std::string _content;
-		struct stat _info;
 		int _index_location;
 
 	protected:
