@@ -192,9 +192,9 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body)
+void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::string str)
 {
-	std::string filename = "uploads/" + temp_filename;
+	std::string filename = "uploads/" + str;
 	std::ofstream out(filename.c_str(), std::ios::binary);
 
 	for(size_t i = 0; i < client->_body._multipart.size(); i++)
@@ -251,12 +251,16 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 				}
 				else //create file on server
 				{
-					createFileOnServer(client, header, body);
+					createFileOnServer(client, header, body, temp_filename);
 				}
 			}
-			else
+			else //try to upload an empty file
 			{
-				std::cout << "img sans selection" << std::endl;
+				body._body = "<html><body><h1>Empty Upload</h1></body></html>";
+				header._body_len = body._body.size();
+				header._content_length = header.setContentLength();
+				header.setHeader(200);
+				sendHeaderAndBody(header, body);
 			}
 		}
 	}
