@@ -249,6 +249,10 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	}
 	std::cout << "END LOOP READ" << std::endl;
 	std::cout << "bytes read : " << bytes << std::endl;
+	if (bytes == -1)
+	{
+		client->SetStatus(Clients::CLOSED);
+	}
 	// else if (bytes == -1)
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 
@@ -280,12 +284,20 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		std::cout << "BEFORE CHOOSE CONTENT" << std::endl;
 		if (body_len != 0)
 		{
+			/* std::cout << "\n\n--------request BEGIN--------" << std::endl;
+			std::vector<char>::iterator it = request.begin();
+			for(; it != request.end(); it++)
+				std::cout << *it;
+			std::cout << "\n--------request END-------\n" << std::endl; */
+			std::cout << "request size : " << request.size() << std::endl;
+			std::cout << "client->_head.GetIndexEndHeader() : " << client->_head.GetIndexEndHeader() << std::endl;
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader());
 			client->_body.ChooseContent(request);
 			// std::vector<char>::iterator it = request.begin();
 			// printvec(it, request);
 		}
 		client->ClearBuff();
+		client->_head.SetIndexEndHeader(0);
 		client->SetStatus(Clients::SENDING_RESPONSE);
 		std::cout << "BEFORE EPOLLOUT" << std::endl;
 	}

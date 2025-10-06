@@ -17,7 +17,6 @@ class HeaderResponse : public Response
 		std::string setContentType();
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
-		void prepareUploadSuccessfull(int len);
 
 	private:
 		std::string _header;
