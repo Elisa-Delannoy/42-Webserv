@@ -250,15 +250,16 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 		}
 		//recv again because otherwise we're not reading the rest?
 		//with this it works
-		// bytes = recv(fd, buffer, sizeof(buffer), 0);
+		bytes = recv(fd, buffer, sizeof(buffer), 0);
 	}
-	// if (bytes == 0)
-	// {
-	// 	client->SetStatus(Clients::PARSING_REQUEST);
-	// }
-	// std::cout << "END LOOP READ" << std::endl;
-	// std::cout << "bytes read : " << bytes << std::endl;
-	// else if (bytes == -1)
+	if (bytes == 0)
+	{
+		client->SetStatus(Clients::PARSING_REQUEST);
+	}
+	std::cout << "END LOOP READ" << std::endl;
+	std::cout << "bytes read : " << bytes << std::endl;
+	if (bytes == -1)
+		client->SetStatus(Clients::CLOSED);
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 }
 
