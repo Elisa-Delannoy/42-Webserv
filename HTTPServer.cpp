@@ -289,6 +289,13 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		std::cout << "BEFORE CHOOSE CONTENT" << std::endl;
 		if (body_len != 0)
 		{
+			/* std::cout << "\n\n--------request BEGIN--------" << std::endl;
+			std::vector<char>::iterator it = request.begin();
+			for(; it != request.end(); it++)
+				std::cout << *it;
+			std::cout << "\n--------request END-------\n" << std::endl; */
+			std::cout << "request size : " << request.size() << std::endl;
+			std::cout << "client->_head.GetIndexEndHeader() : " << client->_head.GetIndexEndHeader() << std::endl;
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader());
 			client->_body.ChooseContent(request);
 			// std::vector<char>::iterator it = request.begin();
