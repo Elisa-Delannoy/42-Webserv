@@ -17,11 +17,16 @@ class HeaderResponse : public Response
 		std::string setContentType();
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
+		std::string setConnection(Clients* client);
+
+		int getCloseAlive();
 
 	private:
 		std::string _header;
 		std::string & _path;
 		std::string _version;
+		std::string _connection;
+		int 		_close_alive;
 };
 
 #endif

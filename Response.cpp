@@ -192,7 +192,7 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf)
+int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf)
 {
 	(void)buf;
 	std::string path = client->_head.GetPath();
@@ -231,6 +231,7 @@ void Response::sendResponse(ServerConf & servers, Clients* client, std::vector<c
 		std::cout << "upload write file done" << std::endl;
 		displayUploadSuccessfull(header, body);
 	}
+	return (header.getCloseAlive());
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)

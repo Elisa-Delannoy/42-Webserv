@@ -260,6 +260,7 @@ std::vector<char>::iterator	FindPart(std::string& boundary, std::vector<char>& b
 
 int	CheckIndex(size_t& index, std::string& boundary, std::vector<char>& r_body, std::vector<char>::iterator& it_head)
 {
+	
 	if (index >= r_body.size() - 4 - boundary.size())
 		return (0);
 	it_head = FindPart(boundary, r_body, it_head);

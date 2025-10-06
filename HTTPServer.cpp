@@ -258,8 +258,8 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	}
 	std::cout << "END LOOP READ" << std::endl;
 	std::cout << "bytes read : " << bytes << std::endl;
-	if (bytes == -1)
-		client->SetStatus(Clients::CLOSED);
+	/* if (bytes == -1)
+		client->SetStatus(Clients::CLOSED); */
 		// errno impossible, considerer comme a essayer plus trd ou fermer le socket ? 
 }
 
@@ -314,7 +314,8 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		// cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]);
 		Response resp(this->servers[client->GetServerIndex()], client);
 		std::cout << "BEFORE RESPONSE" << std::endl;
-		resp.sendResponse(this->servers[client->GetServerIndex()], client, request);
+		if (!request.empty())
+			resp.sendResponse(this->servers[client->GetServerIndex()], client, request);
 		// close(client_fd);
 		client->SetStatus(Clients::WAITING_REQUEST);
 		// epoll.deleteClient(client_fd);
