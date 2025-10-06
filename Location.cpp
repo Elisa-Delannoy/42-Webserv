@@ -68,6 +68,7 @@ std::string Location::GetCGIPass(std::string ext) const
 	std::map<std::string, std::string>::const_iterator it = _cgi.begin();
 	for (; it != _cgi.end(); it++)
 	{
+		std::cout << it->first << std::endl;
 		if (it->first == ext)
 			return it->second;
 	}
@@ -168,8 +169,12 @@ int Location::AddCGIPass(std::string line)
 	if (word != "cgi")
 		return 9;
 	ss >> word;
-	if (word != ".php" && word != ".py")
-		return 9;
+	size_t pos = word.find('.');
+	if (pos != std::string::npos)
+	{
+		if (pos >= 1)
+			return 10;
+	}
 	std::string ext = word;
 	ss >> word;
 	if (word[word.length() - 1] != ';')

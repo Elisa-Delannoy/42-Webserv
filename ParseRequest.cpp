@@ -6,7 +6,6 @@
 
 ParseRequest::ParseRequest()
 {
-	this->_name_location = "/";
 }
 
 ParseRequest::~ParseRequest()
@@ -45,6 +44,7 @@ int ParseRequest::DivideFirstLine(std::string& first_line)
 	int len = first_line.length();
 	std::istringstream	ss_first_line(first_line);
 	ss_first_line >> this->_method >> this->_path >> this->_version;
+	this->_name_location = "/";
 	int len_w = this->_method.length() + this->_path.length() + this->_version.length();
 	size_t sep = this->_path.substr(1).find('/');
 	if (sep != std::string::npos)
