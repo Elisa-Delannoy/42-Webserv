@@ -15,47 +15,47 @@
 #include "ServerConf.hpp"
 #include "Clients.hpp"
 
+class HeaderResponse;
+
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
 
 class Response
 {
 	public:
-		Response(ServerConf & servers, int client_fd, int body_len);
+		Response(ServerConf & servers, Clients* client);
 		~Response();
 
-		std::string setStatus(std::string version, std::string code);
-		std::string setContentType(std::string path);
-		std::string setContentLength(std::string path);
-		void setHeader(std::string version, std::string path, int code);
-		void sendHeader();
 		void sendBody();
-		void sendError(int code);
-		void sendHeaderAndBody();
-		void sendResponse(Clients* client, std::vector<char> buf);
+		void sendError(HeaderResponse & header, int code);
+		void sendHeaderAndBody(HeaderResponse & header);
+		void sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf);
+		void handleGet(HeaderResponse & header, std::string & path);
+		void handlePathDir(HeaderResponse & header, std::string & path);
 
 		int checkBody(const char* path);
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
-		void displayAutoindex(std::string path, std::string version);
 		std::string getIndex();
 		bool getAutoindex();
-
-		std::string setSize(const char* path_image);
+		void displayAutoindex(HeaderResponse & header, std::string path);
+		void displayUploadSuccessfull(HeaderResponse & header);
 
 	private:
 		ServerConf _server;
 		std::map<int, std::string> _errors_path;
 		std::string _root;
 		std::string _content;
+		struct stat _info;
+		int _index_location;
+
+	protected:
 		std::string _status;
 		std::string _content_type;
 		std::string _content_length;
-		struct stat _info;
-		int _index_location;
-		int _client_fd;
 		int _body_len;
+		int _client_fd;
 };
 
 #endif

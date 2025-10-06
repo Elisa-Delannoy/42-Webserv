@@ -1,10 +1,12 @@
 #include "Response.hpp"
+#include "HeaderResponse.hpp"
 #include <cerrno>
 
-Response::Response(ServerConf & servers, int client_fd, int body_len) :
-	_server(servers), _client_fd(client_fd), _body_len(body_len)
+Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 {
 	this->_errors_path = this->_server.GetErrorPath();
+	this->_body_len = client->_body.FindBodyLen(client->_head);
+	this->_client_fd = client->GetSocket();
 }
 
 Response::~Response()
@@ -84,50 +86,8 @@ Comparaison avec les autres codes possibles
 303 See Other : meilleure pratique pour un site avec formulaire ou upload → évite les re-POST accidentels.
 
 */
-void Response::setHeader(std::string version, std::string path, int code)
-{
-	if (code == 200)
-	{
-		this->_status = setStatus(version, " 200 OK\r\n");
-		if (this->_content_length.empty())
-			this->_content_length = setContentLength(path);
-	}
-	if (code == 204)
-	{
-		this->_status = setStatus(version, " 204 No Content\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-		return ;
-	}
-	if (code == 404)
-	{
-		this->_status = setStatus(version, " 404 Not Found\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-		return ;
-	}
-	if (code == 500)
-	{
-		this->_status = setStatus(version, " 500 Internal Server Error\r\n");
-		this->_content_length = "Content-Length: 0\r\n";
-	}
-	this->_content_type = setContentType(path);
-}
 
-void Response::sendHeader()
-{
-	std::string response = this->_status + this->_content_type
-		+ this->_content_length + "\r\n";
-
-	if(send(this->_client_fd, response.c_str(), response.size(), 0) == -1)
-		std::cerr << "Error while sending headers." << std::endl;
-}
-
-void Response::sendHeaderAndBody()
-{
-	sendHeader();
-	sendBody();
-}
-
-void Response::sendError(int code)
+void Response::sendError(HeaderResponse & header, int code)
 {
 	if (this->_errors_path.find(code)->second.empty())
 	{
@@ -143,9 +103,9 @@ void Response::sendError(int code)
 	{
 		std::string path = GetErrorPath(code).c_str();
 		checkBody(path.c_str()+1);
-		this->_content_length = setContentLength(path);
+		this->_content_length = header.setContentLength();
 	}
-	sendHeaderAndBody();
+	sendHeaderAndBody(header);
 }
 
 //Loop through locations from conf file to find correct root
@@ -185,20 +145,20 @@ std::string Response::getIndex()
 	return this->_server.GetLocation(this->_index_location).GetIndex();
 }
 
-void Response::displayAutoindex(std::string path, std::string version)
+void Response::displayAutoindex(HeaderResponse & header, std::string path)
 {
 	DIR *dir;
 	dir = opendir(path.c_str());
 	if (dir == NULL)
 	{
 		std::cout << "path opendir error : " << path << std::endl;
-		setHeader(version, path, 404);
-		sendError(404);
+		header.setHeader(404);
+		sendError(header, 404);
 	}
 	else
 	{
 		struct dirent* dirp;
-		this->_content = "<html><body><h1>OH BOY IT WORKS</h1><ul>";
+		this->_content = "<html><body><h1>AUTOINDEX</h1><ul>";
 		dirp = readdir(dir);
 		while (dirp != NULL)
 		{
@@ -210,11 +170,20 @@ void Response::displayAutoindex(std::string path, std::string version)
 			dirp = readdir(dir);
 		}
 		this->_content += "</ul></body></html>";
-		this->_body_len = this->_content.size();
-		this->_content_length = setContentLength(path);
-		setHeader(version, path, 200);
-		sendHeaderAndBody();
+		header._body_len = this->_content.size();
+		header._content_length = header.setContentLength();
+		header.setHeader(200);
+		sendHeaderAndBody(header);
 	}
+}
+
+void Response::displayUploadSuccessfull(HeaderResponse & header)
+{
+	this->_content = "<html><body><h1>Upload Successfull!</h1></body></html>";
+	header._body_len = this->_content.size();
+	header._content_length = header.setContentLength();
+	header.setHeader(200);
+	sendHeaderAndBody(header);
 }
 
 bool Response::getAutoindex()
@@ -222,86 +191,121 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::sendResponse(Clients* client, std::vector<char> buf)
+void Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf)
 {
-	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	std::vector<char>::iterator it = buf.begin();
-	for(; it != buf.end(); it++)
-		std::cout << *it;
-	std::cout << "--------BUF END-------\n" << std::endl;
-
+	(void)buf;
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	
+/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::vector<char>::iterator it = buf.begin();
+	for(; it != buf.end(); it++)
+		std::cout << *it;
+	std::cout << "\n--------BUF END-------\n" << std::endl; */
+
 	setRootLocation(path);
+	HeaderResponse header(servers, client, path, version);
+
 	if (method == "GET")
 	{
-		int check;
-		if (opendir(path.c_str()) != NULL)
-		{
-			std::string index = getIndex();
-			if (index.empty())
-			{
-				std::cout << "index is empty" << std::endl;
-
-				bool autoindex = getAutoindex();
-				if (autoindex)
-				{
-					displayAutoindex(path, version);
-				}
-				else
-				{
-					setHeader(version, path, 404);
-					sendError(404);
-				}
-			}
-			else
-			{
-				path += index;
-				std::cout << "path : " << path << std::endl;
-				check = checkBody(path.c_str());
-				if (check == 0)
-				{
-					setHeader(version, path, 200);
-					sendHeaderAndBody();
-				}
-				else
-				{
-					setHeader(version, path, 500);
-					sendError(500);
-				}
-			}
-		}
-		else
-		{
-			std::cout << "path : " << path << std::endl;
-			check = checkBody(path.c_str());
-			if (check == 0)
-			{
-				setHeader(version, path, 200);
-				sendHeaderAndBody();
-			}
-			else if (check == 404) //wrong path
-			{
-				setHeader(version, path, 404);
-				sendHeader();
-			}
-			else
-			{
-				setHeader(version, path, 500);
-				sendHeader();
-			}
-		}
+		handleGet(header, path);
 	}
 	else if (method == "POST")
 	{
 		std::cout << "ENTERING POST PROCESSING" << std::endl;
-		setHeader(version, path, 404);
-		sendHeader();
+		// client->_body._multipart;
+		std::string filename = "uploads/" + client->_body._multipart[0].filename;
+		std::cout << "filename : " << filename << std::endl;
+		std::ofstream out(filename.c_str(), std::ios::binary);
+
+		for(size_t i = 0; i < client->_body._multipart.size(); i++)
+		{
+			out.write(client->_body._multipart[i].content.data(),
+				client->_body._multipart[i].content.size());
+		}
+		out.close();
+		std::cout << "upload write file done" << std::endl;
+		displayUploadSuccessfull(header);
 	}
 }
+
+void Response::handleGet(HeaderResponse & header, std::string & path)
+{
+	int check;
+	if (opendir(path.c_str()) != NULL) //path is a dir
+	{
+		handlePathDir(header, path);
+	}
+	else //path is a file
+	{
+		std::cout << "path : " << path << std::endl;
+		check = checkBody(path.c_str());
+		if (check == 0)
+		{
+			header.setHeader(200);
+			sendHeaderAndBody(header);
+		}
+		else if (check == 404) //wrong path
+		{
+			header.setHeader(404);
+			header.sendHeader();
+		}
+		else
+		{
+			header.setHeader(200);
+			header.sendHeader();
+		}
+	}
+}
+
+void Response::handlePathDir(HeaderResponse & header, std::string & path)
+{
+	int check;
+	std::string index = getIndex();
+
+	if (index.empty())
+	{
+		std::cout << "index is empty" << std::endl;
+
+		bool autoindex = getAutoindex();
+		if (autoindex)
+		{
+			displayAutoindex(header, path);
+		}
+		else
+		{
+			header.setHeader(404);
+			sendError(header, 404);
+		}
+	}
+	else
+	{
+		path += index;
+		std::cout << "path : " << path << std::endl;
+		check = checkBody(path.c_str());
+		if (check == 0)
+		{
+			header.setHeader(200);
+			sendHeaderAndBody(header);
+		}
+		else
+		{
+			header.setHeader(500);
+			sendError(header, 500);
+		}
+	}
+}
+
+//---------------------------HEADER---------------------------
+
+std::string Response::GetErrorPath(int code)
+{
+	return (this->_errors_path[code]);
+}
+
+//---------------------------BODY---------------------------
 
 void Response::sendBody()
 {
@@ -344,107 +348,8 @@ int Response::checkBody(const char* path)
 	return 0;
 }
 
-std::string Response::setStatus(std::string version, std::string code)
+void Response::sendHeaderAndBody(HeaderResponse & header)
 {
-	return (version + code);
+	header.sendHeader();
+	sendBody();
 }
-
-std::string Response::setContentType(std::string path)
-{
-	std::string ret = "Content-Type: ";
-	if (path == "/")
-	{
-		ret += "text/html";
-	}
-	else
-	{
-		size_t i = path.size() - 1;
-		while (path[i - 1] && path[i - 1] != '.')
-			i--;
-		std::string type = path.substr(i);
-
-		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
-			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
-			ret += "image/" + type;
-		if (type == "css")
-			ret += "text/css";
-		if (type == "html")
-			ret += "text/html";
-		if (type == "js")
-			ret += "application/javascript";
-		if (type == "pdf" || type == "zip")
-			ret += "application/" + type;
-	}
-	return (ret + "\r\n");
-}
-
-//get file size with stat function and return it in a string
-std::string Response::setSize(const char* path_image)
-{
-	std::ostringstream oss;
-	if (stat(path_image, &this->_info) < 0)
-	{
-		std::cerr << "Error stat file" << std::endl;
-	}
-	oss << this->_info.st_size;
-	this->_body_len = this->_info.st_size;
-	return oss.str();
-}
-
-std::string Response::setContentLength(std::string path)
-{
-	std::ostringstream oss;
-	std::string size;
-	if (this->_body_len > 0)
-	{
-		oss << this->_body_len;
-		size = oss.str();
-	}
-	else
-	{
-		size = setSize(path.c_str());
-	}
-	return "Content-Length: " + size + "\r\n";
-}
-
-
-std::string Response::GetErrorPath(int code)
-{
-	return (this->_errors_path[code]);
-}
-
-/* void Response::sendBody(ParseRequest request, char* buf)
-{
-	else if (path == "/upload")
-	{
-		std::string boundary;
-		for(int i = 0; buf[i] != '\r'; i++)
-			boundary += buf[i];
-
-		int i = 0;
-		for(; i < this->_body_len; i++)
-		{
-			if (buf[i] == 'R' && buf[i+1] == 'I' && buf[i+2] == 'F' && buf[i+3] == 'F')
-				break;
-		}
-
-		std::cout << std::endl;
-		std::cout << "BODY : " << buf+i << std::endl;
-
-		int j = i;
-		for(; j < this->_body_len; j++)
-		{
-			if (buf[j] == '-' && buf[j + 1] == '-' && buf[j + 2] == '-'
-				&& buf[j+3] == '-' && buf[j + 4] == '-' && buf[j + 5] == '-'
-				&& buf[j+6] == 'g')
-				break;
-		}
-		int endfile = j;
-		if (buf[j-2] == '\r' && buf[j-1] == '\n')
-			endfile = j - 2;
-	
-		// std::ofstream out("uploads/fichier.png", std::ios::binary);
-		// out.write(buf + i, endfile - i);
-		// out.close();
-	}
-} */
