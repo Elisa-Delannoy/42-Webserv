@@ -17,7 +17,6 @@ class ParseBody
 	private:
 		std::string	_type;
 		int			_len;
-		// bool		_content_len;
 		bool		_content_chunk;
 
 	public:

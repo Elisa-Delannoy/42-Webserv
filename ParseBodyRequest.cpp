@@ -27,7 +27,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody() : _content_chunk(false)
+ParseBody::ParseBody() : _len(0), _content_chunk(false)
 {
 	Part	parts;
 	parts.name = "";
@@ -91,7 +91,6 @@ void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
 	std::istringstream	ss_body_len(it->second);
 	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
 		return; /*voir pour send erreur*/
-	// this->_content_len = true;
 	std::cout << "len = " << this->_len << std::endl;
 }
 

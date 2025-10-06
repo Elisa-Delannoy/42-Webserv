@@ -199,7 +199,7 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		if (it == client->GetReadBuffer().end())
 			return (-1);
 		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
-		if (i >= 0)
+		if (i > 0)
 		{
 			// std::cout << "I >= 0" << std::endl;
 			client->_head.SetIndexEndHeader(i);
@@ -211,12 +211,12 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		}
 		client->SetReadHeader(true);
 	}
-	// if (!client->_body.IsBody(client->_head))
-	int body_len = client->_body.FindBodyLen(client->_head);
+	// int body_len = client->_body.FindBodyLen(client->_head);
 	// std::cout << "len = " << body_len <<std::endl;
 	// std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
 	// std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
-	if (body_len == 0)
+	// if (body_len == 0)
+	if (!client->_body.IsBody(client->_head))
 	{
 		client->_head.SetIndexEndHeader(0);
 		client->SetReadHeader(false);

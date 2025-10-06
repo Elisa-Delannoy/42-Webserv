@@ -5,7 +5,7 @@
 Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 {
 	this->_errors_path = this->_server.GetErrorPath();
-	this->_body_len = client->_body.FindBodyLen(client->_head);
+	this->_body_len = client->_body.GetContentLen();
 	this->_client_fd = client->GetSocket();
 }
 
