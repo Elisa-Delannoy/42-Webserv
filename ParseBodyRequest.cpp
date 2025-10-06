@@ -27,7 +27,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody() : _len(0), _content_chunk(false)
+ParseBody::ParseBody() : _len(0), _content_chunk(false), _previous_size(0)
 {
 	Part	parts;
 	parts.name = "";
@@ -60,11 +60,38 @@ void	ParseBody::SetChunk(bool status)
 	this->_content_chunk = status;
 }
 
+void	ParseBody::SetVecChunk(std::vector<char> chunk)
+{
+	this->_chunk.insert(this->_chunk.end(), chunk.begin(), chunk.end());
+}
+
+int ParseBody::GetPreviousSize() const
+{
+	return (this->_previous_size);
+}
+
+void ParseBody::SetPreviousSize(int previous)
+{
+	this->_previous_size += previous;
+}
+
 // taille en hexa \r\n 
 // morceau \r\n 
 // fin : taille 0\r\n
 
+/*
+string s = "DD";
+  int i;
 
+  // Used for breaking words
+  istringstream iss(s);
+
+  // Converting to integer and 
+  // storing it to i
+  iss >> hex >> i;
+
+  cout << i << endl;
+  */
 // int	HexaToDec(std::string)
 // {
 // 	std::string	hexa

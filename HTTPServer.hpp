@@ -13,7 +13,7 @@
 #include "ServerConf.hpp"
 #include "Response.hpp"
 #include "ExecCGI.hpp"
-#include "Clients.hpp"
+// #include "Clients.hpp"
 
 
 
@@ -46,8 +46,8 @@ class HTTPServer
 		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
 		Clients*	FindClient(int fd);
 		void 		ReadAllRequest(Clients* client, int fd);
-		int			CheckEndRead(Clients* client);
-		int			CheckEndWithChunk(Clients* client);
+		int			CheckEndRead(Clients* client, char* buffer);
+		int			CheckEndWithChunk(Clients* client, std::vector<char> buffer);
 		int			CheckEndWithLen(Clients* client);
 
 	private:

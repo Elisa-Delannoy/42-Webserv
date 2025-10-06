@@ -7,7 +7,6 @@
 #include "ParseRequest.hpp"
 
 
-
 class Clients
 {
 	private:

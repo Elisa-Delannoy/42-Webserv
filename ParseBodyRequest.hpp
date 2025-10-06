@@ -15,9 +15,11 @@
 class ParseBody
 {
 	private:
-		std::string	_type;
-		int			_len;
-		bool		_content_chunk;
+		std::string			_type;
+		int					_len;
+		bool				_content_chunk;
+		std::vector<char>	_chunk;
+		int					_previous_size;
 
 	public:
 		ParseBody();
@@ -59,6 +61,10 @@ class ParseBody
 		bool	GetChunk() const;
 		void	SetChunk(bool chunk);
 		std::vector<ParseBody::Part> _multipart;
+		std::vector<char>	GetVecChunk() const;
+		void	SetVecChunk(std::vector<char> chunk);
+		int		GetPreviousSize() const;
+		void	SetPreviousSize(int previous);
 };
 
 
