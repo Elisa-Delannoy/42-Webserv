@@ -9,17 +9,18 @@ class HeaderResponse : public Response
 		HeaderResponse(ServerConf & servers, Clients* client, std::string & path, std::string version);
 		~HeaderResponse();
 
-		void sendHeader();
+		void 		sendHeader();
 		
 		//SETTING HEADER
-		void setHeader(int code);
+		void 		setHeader(int code);
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
 		std::string setConnection(Clients* client);
 
-		int getCloseAlive();
+		int 		getCloseAlive();
+		std::string getValueHeader(Clients* client, std::string key);
 
 	private:
 		std::string _header;

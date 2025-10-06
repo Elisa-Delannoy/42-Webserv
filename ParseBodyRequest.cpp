@@ -234,7 +234,7 @@ std::string	SelectValue(std::string to_find, std::string sep, std::string body)
 {
 	size_t start = body.find(to_find);
 	if (start == std::string::npos)
-		return ("");
+		return (" ");
 	start += to_find.size();
 	if (sep == "\"")
 		start++;

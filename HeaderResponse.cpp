@@ -115,15 +115,11 @@ std::string HeaderResponse::setSize(const char* path_image)
 
 std::string HeaderResponse::setConnection(Clients* client)
 {
-	std::map<std::string, std::string> map_header = client->_head.GetHeader();
-	std::map<std::string, std::string>::iterator it;
 	std::string ret = "Connection:";
 	std::string status;
 
-	it = map_header.find("Connection");
-	if (it != map_header.end())
-		status = it->second;
-	else
+	status = getValueHeader(client, "Connection");
+	if (status.empty())
 		status = " keep-alive\r\n";
 	ret += status;
 	std::cout << "Connection : " << ret << std::endl;
@@ -140,4 +136,17 @@ std::string HeaderResponse::setConnection(Clients* client)
 int HeaderResponse::getCloseAlive()
 {
 	return this->_close_alive;
+}
+
+std::string HeaderResponse::getValueHeader(Clients* client, std::string key)
+{
+	std::map<std::string, std::string> map_header = client->_head.GetHeader();
+	std::map<std::string, std::string>::iterator it;
+	std::string ret;
+
+	it = map_header.find(key);
+	if (it != map_header.end())
+		ret = it->second;
+	std::cout << "value header => " << key << ":" << ret << std::endl;
+	return ret;
 }

@@ -41,6 +41,9 @@ class Response
 		void displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path);
 		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
 
+		//POST
+		void createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body);
+
 	private:
 		ServerConf _server;
 		std::map<int, std::string> _errors_path;

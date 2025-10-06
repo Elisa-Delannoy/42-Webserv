@@ -192,6 +192,21 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
+void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body)
+{
+	std::string filename = "uploads/" + temp_filename;
+	std::ofstream out(filename.c_str(), std::ios::binary);
+
+	for(size_t i = 0; i < client->_body._multipart.size(); i++)
+	{
+		out.write(client->_body._multipart[i].content.data(),
+			client->_body._multipart[i].content.size());
+	}
+	out.close();
+
+	displayUploadSuccessfull(header, body);
+}
+
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf)
 {
 	(void)buf;
@@ -200,11 +215,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	
-/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = buf.begin();
 	for(; it != buf.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl; */
+	std::cout << "\n--------BUF END-------\n" << std::endl;
 
 	setRootLocation(path);
 	HeaderResponse header(servers, client, path, version);
@@ -217,19 +232,33 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	else if (method == "POST")
 	{
 		std::cout << "ENTERING POST PROCESSING" << std::endl;
-		// client->_body._multipart;
-		std::string filename = "uploads/" + client->_body._multipart[0].filename;
-		std::cout << "filename : " << filename << std::endl;
-		std::ofstream out(filename.c_str(), std::ios::binary);
+		std::cout << client->_body._multipart[0].type << std::endl;
+		std::string content_type = header.getValueHeader(client, "Content-Type");
 
-		for(size_t i = 0; i < client->_body._multipart.size(); i++)
+		if (content_type == " application/json")
 		{
-			out.write(client->_body._multipart[i].content.data(),
-				client->_body._multipart[i].content.size());
+			std::cout << "JSON" << std::endl;
 		}
-		out.close();
-		std::cout << "upload write file done" << std::endl;
-		displayUploadSuccessfull(header, body);
+		else if (content_type.substr(0, 20) == " multipart/form-data")
+		{
+			std::string temp_filename = client->_body._multipart[0].filename;
+			std::cout << "temp filename : " << temp_filename << "|" << std::endl;
+			if (!temp_filename.empty())
+			{
+				if (temp_filename == " ") //form (no filename)
+				{
+					std::cout << "form" << std::endl;
+				}
+				else //create file on server
+				{
+					createFileOnServer(client, header, body);
+				}
+			}
+			else
+			{
+				std::cout << "img sans selection" << std::endl;
+			}
+		}
 	}
 	return (header.getCloseAlive());
 }
