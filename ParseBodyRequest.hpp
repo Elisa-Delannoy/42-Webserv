@@ -32,7 +32,6 @@ class ParseBody
 		void	CheckBodyType(std::map<std::string, std::string>& head);
 		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
 		
-		
 		struct Part
 		{
 			std::string	type;
@@ -55,13 +54,12 @@ class ParseBody
 				return (out);
 			}
 		};
-		
-
 
 		int GetContentLen() const;
 		std::string GetContentType() const;
 		bool	GetChunk() const;
 		void	SetChunk(bool chunk);
+		std::vector<ParseBody::Part> _multipart;
 };
 
 

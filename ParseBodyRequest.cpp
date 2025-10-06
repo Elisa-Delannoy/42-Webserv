@@ -113,9 +113,15 @@ void  ParseBody::ChooseContent(std::vector<char> to_parse)
 	// if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
 	// 	AppForm(body);
 	if (this->_type.find("application/json") != std::string::npos)
+	{
+		std::cout << "Appjson" << std::endl;
 		AppJson(to_parse);
+	}
 	else if (this->_type.find("multipart/form-data") != std::string::npos)
+	{
+		std::cout << "AppMultipart" << std::endl;
 		AppMultipart(to_parse);
+	}
 
 
 
@@ -305,11 +311,11 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 			SetPart(parts, head);
 			index = BodyMultipart(end_head, boundary, r_body, parts);
 			if (index == 0)
-				break;			
-			body_request.push_back(parts);
+				break;
+			this->_multipart.push_back(parts);
 		}
 	}
-	// printvecpart(body_request);
+	// printvecpart(this->_multipart);
 	// std::ofstream out("uploads/fichier.png", std::ios::binary);
 	// out.write(parts.content.data(), parts.content.size());
 	// out.close();
