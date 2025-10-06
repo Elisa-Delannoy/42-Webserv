@@ -211,11 +211,6 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		}
 		client->SetReadHeader(true);
 	}
-	// int body_len = client->_body.FindBodyLen(client->_head);
-	// std::cout << "len = " << body_len <<std::endl;
-	// std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
-	// std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
-	// if (body_len == 0)
 	if (!client->_body.IsBody(client->_head))
 	{
 		client->_head.SetIndexEndHeader(0);
@@ -224,12 +219,6 @@ int	HTTPServer::CheckEndRead(Clients* client)
 	}
 	if (CheckEndWithChunk(client) == 1|| CheckEndWithLen(client) == 1)
 		return (1);
-	// std::cout << "len = " << body_len <<std::endl;
-	// std::cout << "client->GetReadBuffer().size() = " << client->GetReadBuffer().size() <<std::endl;
-	// std::cout << "client->_head.GetIndexEndHeader() = " << client->_head.GetIndexEndHeader() <<std::endl;
-
-	// else if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(body_len))
-	// 	return (1);
 	return (0);
 }
 
@@ -240,7 +229,7 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	int		bytes = recv(fd, buffer, sizeof(buffer), 0);
 
 	std::cout << "lecture : " << bytes << std::endl;
-	if (bytes > 0)
+	while (bytes > 0)
 	{
 		std::cout << "ENTER LOOP READ" << std::endl;
 		client->SetReadBuff(buffer, bytes);
