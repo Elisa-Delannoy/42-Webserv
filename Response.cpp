@@ -124,6 +124,13 @@ bool Response::getAutoindex()
 
 void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::string str)
 {
+	DIR *dir;
+	dir = opendir("uploads/");
+	if (dir == NULL)
+	{
+		header.setHeader(404);
+		header.sendHeader();
+	}
 	std::string filename = "uploads/" + str;
 	std::ofstream out(filename.c_str(), std::ios::binary);
 	long long size = 0;
