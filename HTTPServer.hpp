@@ -46,8 +46,8 @@ class HTTPServer
 		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
 		Clients*	FindClient(int fd);
 		void 		ReadAllRequest(Clients* client, int fd);
-		int			CheckEndRead(Clients* client, char* buffer);
-		int			CheckEndWithChunk(Clients* client, std::vector<char> buffer);
+		int			CheckEndRead(Clients* client);
+		int			CheckEndWithChunk(Clients* client);
 		int			CheckEndWithLen(Clients* client);
 
 	private:

@@ -19,7 +19,7 @@ class ParseBody
 		int					_len;
 		bool				_content_chunk;
 		std::vector<char>	_chunk;
-		int					_previous_size;
+		std::vector<char>	_buff;
 
 	public:
 		ParseBody();
@@ -33,12 +33,22 @@ class ParseBody
 		void	CheckBodyType(std::map<std::string, std::string>& head);
 		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
 		
+		
+		enum status
+		{
+			WAITING_REQUEST,
+			PARSING_REQUEST,
+			SENDING_RESPONSE,
+			CLOSED
+		} _status;
+
 		struct Part
 		{
 			std::string	type;
 			std::string	name;
 			std::string	filename;
 			std::vector<char>	content;
+
 
 			friend std::ostream& operator<<(std::ostream& out, const Part& parts)
 			{
@@ -61,10 +71,15 @@ class ParseBody
 		bool	GetChunk() const;
 		void	SetChunk(bool chunk);
 		std::vector<ParseBody::Part> _multipart;
-		std::vector<char>	GetVecChunk() const;
+		// std::vector<char>&	GetVecChunk();
 		void	SetVecChunk(std::vector<char> chunk);
 		int		GetPreviousSize() const;
 		void	SetPreviousSize(int previous);
+		int		GetLine() const;
+		void	SetLine(int previous);
+		std::vector<char>&	GetBuff();
+		void	SetBuff(char* buff, size_t len);
+
 };
 
 

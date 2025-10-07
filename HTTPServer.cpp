@@ -13,17 +13,6 @@ HTTPServer::~HTTPServer()
 //READ REQUEST UNTIL END OF HEADERS
 //GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
 
-void	printvec(std::vector<char>::iterator begin, std::vector<char> vec)
-{
-	std::cout << "beginVEC\n";
-	for (; begin != vec.end(); begin++)
-	{
-		std::cout << *(begin);
-	}
-	std::cout << "\n\n\n\n\nend\n\n\n" << std::endl;
-}
-
-
 //PARSING CONF
 bool CheckServerStart(std::string line)
 {
@@ -172,35 +161,25 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 	return (0);
 }
 
-int	HTTPServer::CheckEndWithChunk(Clients* client, std::vector<char> buffer)
+int	HTTPServer::CheckEndWithChunk(Clients* client)
 {
-	(void) client;
-	// if (!client->_body.GetChunk())
-	// 	return (0);
-	int	line = 1;
-	int	i = 0;
-
-	std::cout << "CHUNK = " << std::endl;
-	std::cout << "buff 0 = " << buffer[0] << std::endl;
-
-	for (std::vector<char>::iterator it = buffer.begin(); it != buffer.end(); it++)
+	if (!client->_body.GetChunk())
+		return (0);
+	const char* endchunk= "\0\r\n";
+	const char* endbody= "\r\n";
+	std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
+		endchunk, endchunk + 3);
+	if (it != client->GetReadBuffer().end())
 	{
-		std::cout << "DANS WHILE BUFFER" << std::endl;
-		int begin = i;
-		if (line % 2 != 0)
-		{	
-			for (; buffer[i] !='\n'; i++)
-				continue;
-			std::string size(buffer + begin, buffer + i + 1);
-			std::cout << "size = " << size << std::endl;
-			// int bytes = 
-			line++;
+		std::vector<char>::iterator it_end = std::search(it, client->GetReadBuffer().end(), 
+		endbody, endbody + 2);
+		if (it_end != client->GetReadBuffer().end())
+		{
+			return (1);
 		}
 		return (0);
-		// if (line)
 	}
-	
-	return (1);
+	return (0);
 }
 
 int	HTTPServer::CheckEndWithLen(Clients* client)
@@ -214,48 +193,30 @@ int	HTTPServer::CheckEndWithLen(Clients* client)
 	return (0);
 }
 
-int	HTTPServer::CheckEndRead(Clients* client, char* buffer)
+int	HTTPServer::CheckEndRead(Clients* client)
 {
 	const char* endheader = "\r\n\r\n";
-	// std::cout << "dans check" << std::endl;
 	if (client->GetReadHeader() == false)
 	{
-		// std::cout << "IN R_HEAD" << std::endl;
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
 			endheader, endheader + 4);
 		if (it == client->GetReadBuffer().end())
 			return (-1);
 		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
 		if (i > 0)
-		{
-			// std::cout << "I >= 0" << std::endl;
 			client->_head.SetIndexEndHeader(i);
-			client->_body.SetPreviousSize(i + 1);
-		}
 		else
-		{
-			std::cout << "-1 NO BODY" << std::endl;
 			return (-1);
-		}
 		// else if (i == 0)
 		client->SetReadHeader(true);
 	}
 	if (!client->_body.IsBody(client->_head))
-	{
-		client->_head.SetIndexEndHeader(0);
-		// client->SetReadHeader(false);
 		return (1);
-	}
 	else
 	{
-		if (client->GetReadBuffer().begin() + client->_body.GetPreviousSize() < client->GetReadBuffer().end())
-		{
-			std::vector<char>	temp(client->GetReadBuffer().begin() + client->_body.GetPreviousSize() , client->GetReadBuffer().end());
-			if (CheckEndWithChunk(client,  temp) == 1 || CheckEndWithLen(client) == 1)
-				return (std::cout << "DANS IF 2" << std::endl, 1);
-		}
+		if (CheckEndWithChunk(client) == 1 || CheckEndWithLen(client) == 1)
+			return (1);
 	}
-	client->_body.SetPreviousSize(client->GetReadBuffer().size());
 	return (0);
 }
 
@@ -274,9 +235,8 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 			std::cout << buffer[i];
 		std::cout << "\n fin buffer \n" << std::endl;
 
-		if (CheckEndRead(client, buffer) > 0)
+		if (CheckEndRead(client) > 0)
 		{
-
 			client->SetStatus(Clients::PARSING_REQUEST);
 			// break;
 		}
