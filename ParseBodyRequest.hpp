@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
+#include <sstream>
 
 class ParseBody
 {
@@ -18,30 +19,14 @@ class ParseBody
 		std::string			_type;
 		int					_len;
 		bool				_content_chunk;
-		std::vector<char>	_chunk;
-		std::vector<char>	_buff;
+
+		std::vector<char>	_body;
 
 	public:
 		ParseBody();
 		~ParseBody();
-
-		void	ChooseContent(std::vector<char> body);
-		void	AppForm(char* body_req);
-		void	AppJson(std::vector<char> body);
-		void	AppMultipart(std::vector<char>& body);
-		bool	IsBody(ParseRequest& request);
-		void	CheckBodyType(std::map<std::string, std::string>& head);
-		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
+		int	line;
 		
-		
-		enum status
-		{
-			WAITING_REQUEST,
-			PARSING_REQUEST,
-			SENDING_RESPONSE,
-			CLOSED
-		} _status;
-
 		struct Part
 		{
 			std::string	type;
@@ -65,21 +50,22 @@ class ParseBody
 				return (out);
 			}
 		};
-
-		int GetContentLen() const;
+		
+		void	ChooseContent(std::vector<char> body);
+		void	AppForm(char* body_req);
+		void	AppJson(std::vector<char> body);
+		void	AppMultipart(std::vector<char>& body);
+		bool	IsBody(ParseRequest& request);
+		void	CheckBodyType(std::map<std::string, std::string>& head);
+		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
+		int		ParseContent(std::vector<char>& content, std::vector<char>::iterator& start,
+					int& size, std::vector<char>::iterator& it);
+		int 	GetContentLen() const;
 		std::string GetContentType() const;
 		bool	GetChunk() const;
 		void	SetChunk(bool chunk);
+		void	ParseChunk(std::vector<char>& content);
 		std::vector<ParseBody::Part> _multipart;
-		// std::vector<char>&	GetVecChunk();
-		void	SetVecChunk(std::vector<char> chunk);
-		int		GetPreviousSize() const;
-		void	SetPreviousSize(int previous);
-		int		GetLine() const;
-		void	SetLine(int previous);
-		std::vector<char>&	GetBuff();
-		void	SetBuff(char* buff, size_t len);
-
 };
 
 

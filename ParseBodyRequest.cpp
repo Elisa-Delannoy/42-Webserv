@@ -9,10 +9,13 @@ void	printmap(std::map<std::string, std::string>& map)
 
 void	printvec1(std::vector<char>::iterator begin, std::vector<char> vec)
 {
+	
+	std::cout << "vector" << std::endl;
 	for (std::vector<char>::const_iterator test = begin; test != vec.end(); test++)
 	{
 		std::cout << *(test);
 	}
+	std::cout << "FIN" << std::endl;
 }
 
 void printvecpart(std::vector<ParseBody::Part>& vec)
@@ -60,21 +63,21 @@ void	ParseBody::SetChunk(bool status)
 	this->_content_chunk = status;
 }
 
-void	ParseBody::SetVecChunk(std::vector<char> chunk)
-{
-	this->_chunk.insert(this->_chunk.end(), chunk.begin(), chunk.end());
-}
+// void	ParseBody::SetVecChunk(std::vector<char> chunk)
+// {
+// 	this->_chunk.insert(this->_chunk.end(), chunk.begin(), chunk.end());
+// }
 
 
-void	ParseBody::SetBuff(char* buff, size_t len)
-{
-	this->_buff.insert(this->_buff.end(), buff, buff + len);
-}
+// void	ParseBody::SetBuff(char* buff, size_t len)
+// {
+// 	this->_buff.insert(this->_buff.end(), buff, buff + len);
+// }
 
-std::vector<char>&	ParseBody::GetBuff()
-{
-	return (this->_buff);
-}
+// std::vector<char>&	ParseBody::GetBuff()
+// {
+// 	return (this->_buff);
+// }
 
 // int ParseBody::GetPreviousSize() const
 // {
@@ -116,6 +119,102 @@ string s = "DD";
 // {
 // 	std::string	hexa
 // }
+
+int	ConvertChunkSize(std::string to_convert)
+{
+	int i;
+	std::istringstream size(to_convert);
+
+	if (!(size >> std::hex >> i))
+		return (-1);
+	return (i);	
+}
+
+
+int	ParseHexa(std::vector<char>& content, std::vector<char>::iterator& start,
+	int& size, std::vector<char>::iterator& it)
+{
+	const char* endhexa = "\r\n";
+
+	std::vector<char>::iterator end = std::search(start, content.end(), 
+		endhexa, endhexa + 2);
+	if (end == content.end())
+		return (-1);
+	std::string	to_convert(start, end);
+	std::cout << "test hexa " << to_convert << std::endl;
+	size = ConvertChunkSize(to_convert);
+	it = end + 1;
+	if (size == -1)
+		return (-1);
+	if (size == 0)
+		return (1);
+	return (0);
+}
+
+int	ParseBody::ParseContent(std::vector<char>& content, std::vector<char>::iterator& start,
+	int& size, std::vector<char>::iterator& it)
+{
+	const char* endcontent= "\r\n";
+
+	std::vector<char>::iterator end = std::search(start, content.end(), 
+		endcontent, endcontent + 2);
+	if (end == content.end())
+		return (-1);
+	it = end + 1;
+	int	len_body = std::distance(start, end);
+	if (len_body != size)
+		return (-1);
+	this->_body.insert(this->_body.end(), start, end);
+	return (1);
+}
+
+void	ParseBody::ParseChunk(std::vector<char>& content)
+{
+	std::cout << "IN PARSE CHUNK " << std::endl;
+	int size = 0;
+
+	for (std::vector<char>::iterator it = content.begin(); it != content.end(); it++)
+	{
+		std::vector<char>::iterator start = it;
+		if (this->line % 2 == 0)
+		{
+			int check = ParseHexa(content, start, size, it);
+			if (check == -1)
+				return ; /*voir pour erreur*/
+			if (check == 1)
+				return ;	
+			this->line++;
+		}
+		else if (this->line % 2 != 0)
+		{
+			int check = ParseContent(content, start, size, it);
+			if (check == -1)
+				return ; /*voir pour erreur*/
+			this->line++;
+		}
+	}
+	printvec1(this->_body.begin(), this->_body);
+	// for (int i = 0; i < content.size(); i++)
+	// {
+	// 	int begin = i;
+	// 	if (line % 2 == 0)
+	// 	{
+	// 		while (i < content.size() && content[i] != '\r')
+	// 			i++;
+	// 		std::string	to_convert(content.begin() + begin, content.begin() + i);
+	// 		size = ConvertChunkSize(to_convert);
+	// 		if (size == -1)
+	// 			return ; /*voir pour erreur*/
+	// 		if (i + 1 < content.size() && content[i] != '\r' && content[i + 1] != '\n')
+	// 			return ; /*voir pour erreur*/
+	// 		i++;
+	// 		line++;
+	// 	}
+	// 	if (line % 2 = 0)
+
+	// }
+	
+}
 
 void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
 {
