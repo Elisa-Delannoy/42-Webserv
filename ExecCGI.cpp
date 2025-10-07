@@ -86,10 +86,6 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 {
 	std::string path = SetupPath(header.GetPath(), location.GetName(), location.GetRoot());
 	SetArgv(path, location, ext);
-	for (int i = 0; _argv[i] != NULL; i++)
-	{
-		std::cout << _argv[i] << std::endl;
-	}
 	SetEnvp(header, body, path);
 	int pipefd[2];
 	if (pipe(pipefd) == -1)
