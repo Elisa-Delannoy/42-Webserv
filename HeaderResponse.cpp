@@ -14,6 +14,7 @@ void HeaderResponse::sendHeader()
 {
 	this->_header = this->_status + this->_content_type
 		+ this->_content_length + this->_connection + "\r\n";
+	std::cout << "header : " << this->_header << std::endl;
 
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
@@ -149,4 +150,9 @@ std::string HeaderResponse::getValueHeader(Clients* client, std::string key)
 		ret = it->second;
 	std::cout << "value header => " << key << ":" << ret << std::endl;
 	return ret;
+}
+
+void HeaderResponse::setPath(std::string path)
+{
+	this->_path = path;
 }
