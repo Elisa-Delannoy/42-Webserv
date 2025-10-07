@@ -9,7 +9,7 @@
 #include <sys/wait.h>
 #include "ServerConf.hpp"
 #include "ParseRequest.hpp"
-#include "ParseBodyRequest.hpp"
+#include "ParseBody.hpp"
 
 class ExecCGI
 {

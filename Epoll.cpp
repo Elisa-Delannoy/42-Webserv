@@ -52,7 +52,7 @@ void Epoll::SetEpoll(int fd)
 	if (flags == -1) 
 	{
     	close(fd);
-		return;
+		return; //to do gestion erreur;
 	}
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)

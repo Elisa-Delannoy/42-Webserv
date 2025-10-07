@@ -1,5 +1,5 @@
-#ifndef PARSEBODYREQUEST_HPP
-# define PARSEBODYREQUEST_HPP
+#ifndef ParseBody_HPP
+# define ParseBody_HPP
 
 # include "ParseRequest.hpp"
 # include <map>
@@ -19,7 +19,6 @@ class ParseBody
 		std::string			_type;
 		int					_len;
 		bool				_content_chunk;
-
 		std::vector<char>	_body;
 
 	public:
@@ -64,6 +63,7 @@ class ParseBody
 		std::string GetContentType() const;
 		bool	GetChunk() const;
 		void	SetChunk(bool chunk);
+		void	SetBody(std::vector<char> body);
 		void	ParseChunk(std::vector<char>& content);
 		std::vector<ParseBody::Part> _multipart;
 };

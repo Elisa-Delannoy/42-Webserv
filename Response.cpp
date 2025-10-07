@@ -43,8 +43,6 @@ void Response::setRootLocation(std::string & path)
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
 		name = this->_server.GetLocation(i).GetName();
-		std::cout << "index : " <<  this->_server.GetLocation(i).GetIndex() << std::endl;
-		std::cout << "location : " << name << std::endl;
 		if (name == "/")
 			this->_index_location = i;
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
@@ -53,7 +51,6 @@ void Response::setRootLocation(std::string & path)
 			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
 			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 			path.replace(0, name.size(), this->_root);
-			std::cout << "path : " << path << std::endl;
 			return;
 		}
 	}
@@ -62,7 +59,6 @@ void Response::setRootLocation(std::string & path)
 		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
 		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 		path.replace(0, name.size() - 1, this->_root);
-		std::cout << "path : " << path << std::endl;
 	}
 }
 
@@ -85,7 +81,6 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 	else
 	{
 		struct dirent* dirp;
-		std::cout << "path autoindex : " << path << std::endl;
 		body._body = "<html><body><h1>AUTOINDEX</h1><ul>";
 		dirp = readdir(dir);
 		while (dirp != NULL)
@@ -156,6 +151,8 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 	}
 }
 
+//Return 0 if connection is closed
+//Return 1 if connection is keep-alive
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
 	(void)request;
@@ -174,15 +171,13 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
 
+	// to do check cgi 
 	if (method == "GET")
 	{
 		handleGet(header, body, path);
 	}
 	else if (method == "POST")
 	{
-		// header._server.GetClientBodySize();
-		std::cout << "ENTERING POST PROCESSING" << std::endl;
-		std::cout << client->_body._multipart[0].type << std::endl;
 		std::string content_type = header.getValueHeader(client, "Content-Type");
 
 		if (content_type.substr(0, 20) == " multipart/form-data")
@@ -215,12 +210,10 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 	int check;
 	if (opendir(path.c_str()) != NULL) //path is a dir
 	{
-		std::cout << "path is a dir" << std::endl;
 		handlePathDir(header, body, path);
 	}
 	else //path is a file
 	{
-		std::cout << "path : " << path << std::endl;
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
@@ -234,7 +227,7 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		}
 		else
 		{
-			header.setHeader(200);
+			header.setHeader(200); // to do check le 200
 			header.sendHeader();
 		}
 	}
@@ -247,8 +240,6 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 
 	if (index.empty())
 	{
-		std::cout << "index is empty" << std::endl;
-
 		bool autoindex = getAutoindex();
 		if (autoindex)
 		{
@@ -256,7 +247,6 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		}
 		else
 		{
-			std::cout << "404 for no autoindex" << std::endl;
 			header.setHeader(404);
 			sendError(header, body, 404);
 		}
@@ -264,7 +254,6 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 	else
 	{
 		path += index;
-		std::cout << "final path : " << path << std::endl;
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{

@@ -1,4 +1,4 @@
-#include "ParseBodyRequest.hpp"
+#include "ParseBody.hpp"
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 void	printmap(std::map<std::string, std::string>& map)
@@ -253,32 +253,13 @@ bool	ParseBody::IsBody(ParseRequest& request)
 
 void  ParseBody::ChooseContent(std::vector<char> to_parse)
 {
-	// std::vector<char>	to_parse(body, body + this->_len);
-
-	// if (this->_type.find("application/x-www-form-urlencoded") != std::string::npos)
-	// 	AppForm(body);
-	if (this->_type.find("application/json") != std::string::npos)
-	{
-		std::cout << "Appjson" << std::endl;
-		AppJson(to_parse);
-	}
-	else if (this->_type.find("multipart/form-data") != std::string::npos)
+	if (this->_type.find("multipart/form-data") != std::string::npos)
 	{
 		std::cout << "AppMultipart" << std::endl;
 		AppMultipart(to_parse);
 	}
-
-
-
 // text/plain : Envoyer du texte brut sans mise en forme.
-
 // text/html : Envoyer du contenu HTML (rare en requête, plus en réponse)
-// application/xml: Envoyer des données au format XML
-// application/octet-stream: Envoyer des données binaires (fichiers, blobs).
-// application/pdf, image/png, audio/mpeg, etc.: Envoi de types de fichiers spécifiques.
-// application/ld+json: JSON-LD (Linked Data), souvent en API sémantique.
-// application/graphql: Envoyer des requêtes GraphQL.
-
 
 // erreur ;
 // erreur 400 Bad Request (si la taille ne correspond pas ou est mal formée) 
@@ -466,4 +447,9 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 	// out.write(parts.content.data(), parts.content.size());
 	// out.close();
 
+}
+
+void	ParseBody::SetBody(std::vector<char> body)
+{
+	_body = body;
 }

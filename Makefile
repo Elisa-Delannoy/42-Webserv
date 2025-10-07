@@ -8,7 +8,7 @@ SRC = main.cpp \
 	Epoll.cpp \
 	ParseRequest.cpp \
 	Location.cpp \
-	ParseBodyRequest.cpp \
+	ParseBody.cpp \
 	ServerConf.cpp \
 	Response.cpp \
 	HeaderResponse.cpp \

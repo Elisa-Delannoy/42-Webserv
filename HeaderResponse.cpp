@@ -3,7 +3,6 @@
 HeaderResponse::HeaderResponse(ServerConf & servers, Clients* client, std::string & path, std::string version) :
 Response(servers, client) , _path(path), _version(version)
 {
-	std::cout << "bodylen : " << this->_body_len << std::endl;
 	this->_connection = setConnection(client);
 }
 
@@ -14,7 +13,6 @@ void HeaderResponse::sendHeader()
 {
 	this->_header = this->_status + this->_content_type
 		+ this->_content_length + this->_connection + "\r\n";
-	std::cout << "header : " << this->_header << std::endl;
 
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
@@ -102,7 +100,6 @@ std::string HeaderResponse::setContentLength()
 std::string HeaderResponse::setSize(const char* path_image)
 {
 	struct stat info;
-	std::cout << "path_image set size : " << path_image << std::endl;
 	std::ostringstream oss;
 	if (stat(path_image, &info) < 0)
 	{
@@ -110,7 +107,6 @@ std::string HeaderResponse::setSize(const char* path_image)
 	}
 	oss << info.st_size;
 	this->_body_len = info.st_size;
-	std::cout << "body len set size : " << this->_body_len << std::endl;
 	return oss.str();
 }
 
@@ -148,7 +144,6 @@ std::string HeaderResponse::getValueHeader(Clients* client, std::string key)
 	it = map_header.find(key);
 	if (it != map_header.end())
 		ret = it->second;
-	std::cout << "value header => " << key << ":" << ret << std::endl;
 	return ret;
 }
 

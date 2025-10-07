@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <unistd.h>
-#include "ParseBodyRequest.hpp"
+#include "ParseBody.hpp"
 #include "ParseRequest.hpp"
 
 
@@ -14,7 +14,6 @@ class Clients
 		int					_socket_fd;
 		int					_server_index;
 		std::vector<char>	_read_buff;
-		// std::vector<char>	_write_buff;
 		bool				_r_header;
 
 	public:

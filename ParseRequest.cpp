@@ -1,5 +1,5 @@
 #include "ParseRequest.hpp"	
-#include "ParseBodyRequest.hpp"	
+#include "ParseBody.hpp"	
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -40,7 +40,6 @@ const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
 
 int ParseRequest::DivideFirstLine(std::string& first_line)
 {
-	// std::cout << "|" << first_line << "|" << std::endl;
 	int len = first_line.length();
 	std::istringstream	ss_first_line(first_line);
 	ss_first_line >> this->_method >> this->_path >> this->_version;
@@ -49,12 +48,8 @@ int ParseRequest::DivideFirstLine(std::string& first_line)
 	size_t sep = this->_path.substr(1).find('/');
 	if (sep != std::string::npos)
 		this->_name_location = this->_path.substr(0, sep + 1);
-	// std::cout << "methode = " << this->_method << " path = " << this->_path <<" verison = " << this->_version << std::endl;
-	// std::cout << "methode = " << this->_method.length() << " path = " << this->_path.length() <<" verison = " << this->_version.length() << std::endl;
-	// std::cout << len << " | " << len_w << std::endl;
-	
 	if (len - len_w != 2)
-		return (0); /* VOIR POUR LES RETOURS ERREUR*/
+		return (0); /* to do VOIR POUR LES RETOURS ERREUR*/
 	return (1);
 }
 
