@@ -4,17 +4,16 @@ HeaderResponse::HeaderResponse(ServerConf & servers, Clients* client, std::strin
 Response(servers, client) , _path(path), _version(version)
 {
 	std::cout << "bodylen : " << this->_body_len << std::endl;
+	this->_connection = setConnection(client);
 }
 
 HeaderResponse::~HeaderResponse()
-{
-
-}
+{ }
 
 void HeaderResponse::sendHeader()
 {
 	this->_header = this->_status + this->_content_type
-		+ this->_content_length + "\r\n";
+		+ this->_content_length + this->_connection + "\r\n";
 
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
@@ -112,4 +111,42 @@ std::string HeaderResponse::setSize(const char* path_image)
 	this->_body_len = info.st_size;
 	std::cout << "body len set size : " << this->_body_len << std::endl;
 	return oss.str();
+}
+
+std::string HeaderResponse::setConnection(Clients* client)
+{
+	std::string ret = "Connection:";
+	std::string status;
+
+	status = getValueHeader(client, "Connection");
+	if (status.empty())
+		status = " keep-alive\r\n";
+	ret += status;
+	std::cout << "Connection : " << ret << std::endl;
+	ret += "\r\n";
+
+	if (status == " keep-alive")
+		this->_close_alive = 1;
+	else
+		this->_close_alive = 0;
+
+	return ret;
+}
+
+int HeaderResponse::getCloseAlive()
+{
+	return this->_close_alive;
+}
+
+std::string HeaderResponse::getValueHeader(Clients* client, std::string key)
+{
+	std::map<std::string, std::string> map_header = client->_head.GetHeader();
+	std::map<std::string, std::string>::iterator it;
+	std::string ret;
+
+	it = map_header.find(key);
+	if (it != map_header.end())
+		ret = it->second;
+	std::cout << "value header => " << key << ":" << ret << std::endl;
+	return ret;
 }

@@ -16,6 +16,7 @@
 #include "Clients.hpp"
 
 class HeaderResponse;
+class BodyResponse;
 
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
@@ -26,21 +27,22 @@ class Response
 		Response(ServerConf & servers, Clients* client);
 		~Response();
 
-		void sendBody();
-		void sendError(HeaderResponse & header, int code);
-		void sendHeaderAndBody(HeaderResponse & header);
-		void sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf);
-		void handleGet(HeaderResponse & header, std::string & path);
-		void handlePathDir(HeaderResponse & header, std::string & path);
+		int sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf);
+		void sendError(HeaderResponse & header, BodyResponse & body, int code);
+		void sendHeaderAndBody(HeaderResponse & header, BodyResponse & body);
+		void handleGet(HeaderResponse & header, BodyResponse & body, std::string & path);
+		void handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path);
 
-		int checkBody(const char* path);
 
 		std::string GetErrorPath(int type_error);
 		void setRootLocation(std::string & path);
 		std::string getIndex();
 		bool getAutoindex();
-		void displayAutoindex(HeaderResponse & header, std::string path);
-		void displayUploadSuccessfull(HeaderResponse & header);
+		void displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path);
+		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
+
+		//POST
+		void createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::string str);
 
 	private:
 		ServerConf _server;
