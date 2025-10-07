@@ -22,6 +22,8 @@ class HeaderResponse : public Response
 		int 		getCloseAlive();
 		std::string getValueHeader(Clients* client, std::string key);
 
+		void setPath(std::string path);
+
 	private:
 		std::string _header;
 		std::string & _path;

@@ -27,7 +27,7 @@ class Response
 		Response(ServerConf & servers, Clients* client);
 		~Response();
 
-		int sendResponse(ServerConf & servers, Clients* client, std::vector<char> buf);
+		int sendResponse(ServerConf & servers, Clients* client, std::vector<char> request);
 		void sendError(HeaderResponse & header, BodyResponse & body, int code);
 		void sendHeaderAndBody(HeaderResponse & header, BodyResponse & body);
 		void handleGet(HeaderResponse & header, BodyResponse & body, std::string & path);
