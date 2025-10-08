@@ -211,6 +211,8 @@ int	HTTPServer::CheckEndWithLen(Clients* client)
 int	HTTPServer::CheckEndRead(Clients* client)
 {
 	const char* endheader = "\r\n\r\n";
+
+	client->SetRecv(0);
 	if (client->GetReadHeader() == false)
 	{
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
@@ -247,30 +249,28 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	if (bytes == 0)
 		client->SetStatus(Clients::CLOSED);
 	if (bytes == -1)
-		client->SetStatus(Clients::CLOSED); // to do se rensiegner sur les flags et voir quoi faire avec -1
+	{
+		if (client->GetRecv() > 10)
+			client->SetStatus(Clients::CLOSED);
+		client->SetRecv(client->GetRecv() + 1);
+	}
 }
 
 void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 {
 	std::vector<char> request;
 	int client_fd = epoll.getEvent(i).data.fd;
-	int body_len = 0;
 
 	if (epoll.getEvent(i).events & EPOLLIN && client->GetStatus() == Clients::WAITING_REQUEST)
 	{
 		std::cout << "------------REQUEST------------" << client_fd << std::endl;
-
 		ReadAllRequest(client, client_fd);
 	}
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 	{
 		request = client->GetReadBuffer();
 		if (request.empty())
-		{
-			client->SetStatus(Clients::WAITING_REQUEST);
-			return;
-		}
-		body_len = client->_body.GetContentLen();
+			return (client->SetStatus(Clients::WAITING_REQUEST));
 		if (client->_body.IsBody(client->_head))
 		{
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader() + 1);
@@ -281,8 +281,6 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 			client->_body.ChooseContent(request);
 		}
 		client->ClearBuff();
-		client->_head.SetIndexEndHeader(0); // to do fonction clean client pour rmettre a 0 mais pas delete 
-		client->SetReadHeader(false);
 		client->SetStatus(Clients::SENDING_RESPONSE);
 	}
 
@@ -292,15 +290,25 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		if (!request.empty())
 		{
 			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-				client->SetStatus(Clients::CLOSED);;
-				// to do FAIRE FONCITON CLOSE TOUT 
+				client->SetStatus(Clients::CLOSED);
 		}
-		// close(client_fd);
 		client->SetStatus(Clients::WAITING_REQUEST);
-		// epoll.deleteClient(client_fd);
-		body_len = 0;
+	}
+	if (client->GetStatus() == Clients::CLOSED)
+		CleanClient(client_fd, epoll);
+}
+
+void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
+{
+	epoll.deleteClient(client_fd);
+	std::map<int, Clients*>::iterator it = this->_socket_client.find(client_fd);
+	if (it != this->_socket_client.end())
+	{
+		close(it->first);
+		delete it->second;
 	}
 }
+
 
 int	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 {

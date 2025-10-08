@@ -15,6 +15,7 @@ class Clients
 		int					_server_index;
 		std::vector<char>	_read_buff;
 		bool				_r_header;
+		int					_recv;
 
 	public:
 		enum status
@@ -30,6 +31,7 @@ class Clients
 
 		int		GetServerIndex() const;
 		int		GetSocket() const;
+		int&	GetRecv();
 		bool	GetReadHeader() const;
 		status	GetStatus() const;
 		std::vector<char>&	GetReadBuffer();
@@ -37,6 +39,7 @@ class Clients
 		void	SetStatus(status new_status);
 		void	SetReadBuff(char* c, size_t len);
 		void	SetReadHeader(bool r_header);
+		void	SetRecv(int count);
 
 		void	ClearBuff();		
 

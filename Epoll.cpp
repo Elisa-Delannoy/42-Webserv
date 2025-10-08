@@ -46,7 +46,7 @@ int Epoll::getEpollFd()
 void Epoll::SetEpoll(int fd)
 {
 	epoll_event	event;
-	event.events = EPOLLIN | EPOLLOUT | EPOLLET;
+	event.events = EPOLLIN | EPOLLOUT;
 	event.data.fd = fd;
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) 
@@ -64,4 +64,5 @@ void Epoll::deleteClient(int client_fd)
 {
 	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
 		std::cerr << "Delete error" << std::endl;
+	close(client_fd);
 }

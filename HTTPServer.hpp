@@ -30,7 +30,8 @@ class HTTPServer
 		int prepareServerSockets();
 		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 		int	AcceptRequest(Epoll& epoll, int j);
-		
+		void	CleanClient(int client_fd, Epoll& epoll);
+
 		int	GetServerIndex(int used_socket);
 
 		//Parsing .conf
