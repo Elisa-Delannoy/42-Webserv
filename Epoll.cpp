@@ -25,7 +25,7 @@ Epoll::Epoll(std::vector<int> socket_servers)
 
 Epoll::~Epoll()
 {
-
+	close(this->_epoll_fd);
 }
 
 int Epoll::epollWait()

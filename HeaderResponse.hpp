@@ -10,7 +10,7 @@ class HeaderResponse : public Response
 		~HeaderResponse();
 
 		void 		sendHeader();
-		
+
 		//SETTING HEADER
 		void 		setHeader(int code);
 		std::string setStatus(std::string code);

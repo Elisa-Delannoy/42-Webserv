@@ -101,6 +101,7 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 		header.setHeader(200);
 		sendHeaderAndBody(header, body);
 	}
+	closedir(dir);
 }
 
 void Response::displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body)
@@ -149,6 +150,7 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 		out.close();
 		displayUploadSuccessfull(header, body);
 	}
+	closedir(dir);
 }
 
 //Return 0 if connection is closed
@@ -208,7 +210,9 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
 {
 	int check;
-	if (opendir(path.c_str()) != NULL) //path is a dir
+	DIR *dir;
+	dir = opendir(path.c_str());
+	if (dir != NULL) //path is a dir
 	{
 		handlePathDir(header, body, path);
 	}
@@ -231,6 +235,7 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 			header.sendHeader();
 		}
 	}
+	closedir(dir);
 }
 
 void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path)

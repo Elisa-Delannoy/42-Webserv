@@ -1,6 +1,9 @@
 #include "HTTPServer.hpp"
 #include "ParseBody.hpp"
 #include <cstring>
+#include <signal.h>
+
+volatile sig_atomic_t g_running = 1;
 
 HTTPServer::HTTPServer()
 {
@@ -8,7 +11,22 @@ HTTPServer::HTTPServer()
 
 HTTPServer::~HTTPServer()
 {
+	std::map<int, Clients*>::iterator it = this->_socket_client.begin();
+	for (; it != this->_socket_client.end(); it++)
+	{
+		close(it->first);
+		delete it->second;
+	}
+	for(size_t i = 0; i < this->_socket_server.size(); i++)
+		close(this->_socket_server[i]);
 }
+
+void handle_sigint(int sig)
+{
+	(void)sig;
+	g_running = 0;
+}
+
 
 //READ REQUEST UNTIL END OF HEADERS
 //GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
@@ -265,7 +283,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	{
 		request = client->GetReadBuffer();
 		if (request.empty())
-			client->GetStatus() == Clients::WAITING_REQUEST; return;
+		{
+			client->SetStatus(Clients::WAITING_REQUEST);
+			return;
+		}
 		body_len = client->_body.GetContentLen();
 		if (client->_body.IsBody(client->_head))
 		{
@@ -289,7 +310,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		if (!request.empty())
 		{
 			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-				client->GetStatus() == Clients::CLOSED;
+				client->SetStatus(Clients::CLOSED);;
 				// to do FAIRE FONCITON CLOSE TOUT 
 		}
 		// close(client_fd);
@@ -310,7 +331,7 @@ int	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 	Clients*	client = new Clients(socket, j); /*voir ou delete*/
 	this->_socket_client[socket] = client;
 	epoll.SetEpoll(socket);
-	return (1);	
+	return (1);
 }
 
 Clients*	HTTPServer::FindClient(int fd)
@@ -327,7 +348,9 @@ int HTTPServer::runServer()
 	Epoll epoll(this->_socket_server);
 	int	server_index;
 
-	while(true)
+	signal(SIGINT, handle_sigint);
+
+	while(g_running)
 	{
 		int n = epoll.epollWait();
 		for (int i = 0; i < n; i++)
@@ -412,6 +435,7 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 		if (socket_server < 0)
 		{
 			std::cerr << "Cannot create socket" << std::endl;
+			close(socket_server);
 			return 1;
 		}
 
@@ -425,12 +449,14 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 		if (bind(socket_server, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
 		{
 			std::cerr << "Failed to bind to port " << port << "." << std::endl;
+			close(socket_server);
 			return 1;
 		}
 
 		if (listen(socket_server, 10))
 		{
 			std::cerr << "Failed to listen on socket." << std::endl;
+			close(socket_server);
 			return 1;
 		}
 		this->_socket_server.push_back(socket_server);
