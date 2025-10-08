@@ -39,6 +39,7 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 void Response::setRootLocation(std::string & path)
 {
 	std::string name;
+	this->_methods.clear();
 
 	for (int i = 0; i < this->_server._nb_location; i++)
 	{
@@ -63,6 +64,7 @@ void Response::setRootLocation(std::string & path)
 		//add allowed methods
 		for (int j = 0; j < this->_server.GetLocation(this->_index_location).nb_methods; j++)
 			this->_methods.push_back(this->_server.GetLocation(this->_index_location).GetMethods(j));
+
 		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
 		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 		path.replace(0, name.size() - 1, this->_root);
@@ -181,15 +183,10 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	BodyResponse body(servers, client);
 
 	// to do check cgi 
+	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{
-		bool method_allowed = false;
-		for (size_t i = 0; i < this->_methods.size(); i++)
-		{
-			if(this->_methods[i] == method)
-				method_allowed = true;
-		}
-
+		std::cout << "get method" << std::endl;
 		if (method_allowed)
 			handleGet(header, body, path);
 		else
@@ -200,27 +197,36 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	}
 	else if (method == "POST")
 	{
-		std::string content_type = header.getValueHeader(client, "Content-Type");
-
-		if (content_type.substr(0, 20) == " multipart/form-data")
+		std::cout << "post method" << std::endl;
+		if (method_allowed)
 		{
-			std::string temp_filename = client->_body._multipart[0].filename;
-			if (!temp_filename.empty())
+			std::string content_type = header.getValueHeader(client, "Content-Type");
+	
+			if (content_type.substr(0, 20) == " multipart/form-data")
 			{
-				createFileOnServer(client, header, body, temp_filename);
+				std::string temp_filename = client->_body._multipart[0].filename;
+				if (!temp_filename.empty())
+				{
+					createFileOnServer(client, header, body, temp_filename);
+				}
+				else //try to upload an empty file
+				{
+					body._body = "<html><body><h1>Empty Upload</h1></body></html>";
+					header._body_len = body._body.size();
+					header._content_length = header.setContentLength();
+					header.setHeader(200, this->_methods);
+					sendHeaderAndBody(header, body);
+				}
 			}
-			else //try to upload an empty file
+			else
 			{
-				body._body = "<html><body><h1>Empty Upload</h1></body></html>";
-				header._body_len = body._body.size();
-				header._content_length = header.setContentLength();
 				header.setHeader(200, this->_methods);
-				sendHeaderAndBody(header, body);
+				header.sendHeader();
 			}
 		}
 		else
 		{
-			header.setHeader(200, this->_methods);
+			header.setHeader(405, this->_methods);
 			header.sendHeader();
 		}
 	}
@@ -296,6 +302,18 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 std::string Response::GetErrorPath(int code)
 {
 	return (this->_errors_path[code]);
+}
+
+bool Response::isMethodAllowed(std::string method)
+{
+	bool ret = false;
+	for (size_t i = 0; i < this->_methods.size(); i++)
+	{
+		std::cout << "this->_methods[" << i << "] : " << this->_methods[i] << std::endl;
+		if(this->_methods[i] == method)
+			ret = true;
+	}
+	return ret;
 }
 
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)

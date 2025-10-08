@@ -39,6 +39,7 @@ class Response
 		std::string GetErrorPath(int type_error);
 		std::string getIndex();
 		bool getAutoindex();
+		bool isMethodAllowed(std::string method);
 
 		void displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path);
 		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
