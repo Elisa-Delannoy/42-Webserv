@@ -104,21 +104,22 @@ class ParseRequest
 		std::string							_name_location;
 		int									_error;
 
-	
 	public:
 		ParseRequest();
 		~ParseRequest();
+
 		int 	DivideFirstLine(std::string& first_line);
 		void 	DivideHeader(std::string& first_line);
+		
+		int	GetIndexEndHeader() const;
+		int	GetError() const;
 		const std::string&	GetMethod() const;
 		const std::string&	GetPath() const;
 		const std::string&	GetVersion() const;
 		const std::string&	GetNameLocation() const;
 		const std::map<std::string, std::string>&	GetHeader() const;
 
-		int			GetIndexEndHeader() const;
 		void		SetIndexEndHeader(int index);
-		int			GetError() const;
 		void		SetError(int index);
 };
 

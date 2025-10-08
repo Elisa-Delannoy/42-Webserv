@@ -16,14 +16,12 @@ class Epoll
 		Epoll(std::vector<int> socket_servers);
 		~Epoll();
 
-		int epollWait();
-		// void setClientEpollin(int socket_client);
-		// void SetClientEpollout(int index, int socket_client);
-		void SetEpoll(int fd);
-		void deleteClient(int client_fd);
+		int		epollWait();
+		void	SetEpoll(int fd);
+		void	deleteClient(int client_fd);
 
-		epoll_event getEvent(int index);
-		int getEpollFd();
+		int	getEpollFd();
+		epoll_event	getEvent(int index);
 
 	private:
 		epoll_event _events[10];

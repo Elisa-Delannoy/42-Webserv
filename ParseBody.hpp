@@ -25,15 +25,13 @@ class ParseBody
 	public:
 		ParseBody();
 		~ParseBody();
-		int	line;
-		
+
 		struct Part
 		{
 			std::string	type;
 			std::string	name;
 			std::string	filename;
 			std::vector<char>	content;
-
 
 			friend std::ostream& operator<<(std::ostream& out, const Part& parts)
 			{
@@ -60,12 +58,15 @@ class ParseBody
 		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
 		int		ParseContent(std::vector<char>& content, std::vector<char>::iterator& start,
 					int& size, std::vector<char>::iterator& it);
-		int 	GetContentLen() const;
-		std::string GetContentType() const;
+		void	ParseChunk(std::vector<char>& content);
+
+		int		GetContentLen() const;
 		bool	GetChunk() const;
+		std::string GetContentType() const;
+
 		void	SetChunk(bool chunk);
 		void	SetBody(std::vector<char> body);
-		void	ParseChunk(std::vector<char>& content);
+		
 		std::vector<ParseBody::Part> _multipart;
 };
 

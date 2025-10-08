@@ -27,18 +27,21 @@ class Clients
 
 		Clients(int fd, int server_index);
 		~Clients();
-		status GetStatus() const;
-		void SetStatus(status new_status);
-		std::vector<char>& GetReadBuffer();
-		void	SetReadBuff(char* c, size_t len);
-		void	ClearBuff();
+
 		int		GetServerIndex() const;
 		int		GetSocket() const;
 		bool	GetReadHeader() const;
+		status	GetStatus() const;
+		std::vector<char>&	GetReadBuffer();
+
+		void	SetStatus(status new_status);
+		void	SetReadBuff(char* c, size_t len);
 		void	SetReadHeader(bool r_header);
 
-		ParseRequest		_head;
-		ParseBody			_body;
+		void	ClearBuff();		
+
+		ParseRequest	_head;
+		ParseBody		_body;
 };
 
 #endif

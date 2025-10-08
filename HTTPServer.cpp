@@ -201,7 +201,6 @@ int	HTTPServer::CheckEndWithChunk(Clients* client)
 int	HTTPServer::CheckEndWithLen(Clients* client)
 {
 	int	len = client->_body.GetContentLen();
-	std::cout << "LEN = " << len << std::endl;
 	if (len == 0)
 		return (0);
 	if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(len)) /*to do verifier si -1 a jouter ou autre*/
@@ -236,7 +235,6 @@ int	HTTPServer::CheckEndRead(Clients* client)
 	}
 	return (0);
 }
-
 
 void HTTPServer::ReadAllRequest(Clients* client, int fd)
 {
