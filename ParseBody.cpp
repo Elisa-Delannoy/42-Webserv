@@ -30,7 +30,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody() : _len(0), _content_chunk(false)
+ParseBody::ParseBody() : _len(0), _content_chunk(false), _line(0)
 {
 	Part	parts;
 	parts.name = "";
@@ -63,63 +63,6 @@ void	ParseBody::SetChunk(bool status)
 	this->_content_chunk = status;
 }
 
-// void	ParseBody::SetVecChunk(std::vector<char> chunk)
-// {
-// 	this->_chunk.insert(this->_chunk.end(), chunk.begin(), chunk.end());
-// }
-
-
-// void	ParseBody::SetBuff(char* buff, size_t len)
-// {
-// 	this->_buff.insert(this->_buff.end(), buff, buff + len);
-// }
-
-// std::vector<char>&	ParseBody::GetBuff()
-// {
-// 	return (this->_buff);
-// }
-
-// int ParseBody::GetPreviousSize() const
-// {
-// 	return (this->_previous_size);
-// }
-
-// void ParseBody::SetPreviousSize(int previous)
-// {
-// 	this->_previous_size += previous;
-// }
-
-// int ParseBody::GetLine() const
-// {
-// 	return (this->_line);
-// }
-
-// void ParseBody::SetLine(int previous)
-// {
-// 	this->_line += previous;
-// }
-// taille en hexa \r\n 
-// morceau \r\n 
-// fin : taille 0\r\n
-
-/*
-string s = "DD";
-  int i;
-
-  // Used for breaking words
-  istringstream iss(s);
-
-  // Converting to integer and 
-  // storing it to i
-  iss >> hex >> i;
-
-  cout << i << endl;
-  */
-// int	HexaToDec(std::string)
-// {
-// 	std::string	hexa
-// }
-
 int	ConvertChunkSize(std::string to_convert)
 {
 	int i;
@@ -141,7 +84,6 @@ int	ParseHexa(std::vector<char>& content, std::vector<char>::iterator& start,
 	if (end == content.end())
 		return (-1);
 	std::string	to_convert(start, end);
-	std::cout << "test hexa " << to_convert << std::endl;
 	size = ConvertChunkSize(to_convert);
 	it = end + 1;
 	if (size == -1)
@@ -170,50 +112,29 @@ int	ParseBody::ParseContent(std::vector<char>& content, std::vector<char>::itera
 
 void	ParseBody::ParseChunk(std::vector<char>& content)
 {
-	std::cout << "IN PARSE CHUNK " << std::endl;
 	int size = 0;
 
 	for (std::vector<char>::iterator it = content.begin(); it != content.end(); it++)
 	{
 		std::vector<char>::iterator start = it;
-		if (this->line % 2 == 0)
+		if (this->_line % 2 == 0)
 		{
 			int check = ParseHexa(content, start, size, it);
 			if (check == -1)
 				return ; /*voir pour erreur*/
 			if (check == 1)
 				return ;	
-			this->line++;
+			this->_line++;
 		}
-		else if (this->line % 2 != 0)
+		else if (this->_line % 2 != 0)
 		{
 			int check = ParseContent(content, start, size, it);
 			if (check == -1)
 				return ; /*voir pour erreur*/
-			this->line++;
+			this->_line++;
 		}
 	}
-	printvec1(this->_body.begin(), this->_body);
-	// for (int i = 0; i < content.size(); i++)
-	// {
-	// 	int begin = i;
-	// 	if (line % 2 == 0)
-	// 	{
-	// 		while (i < content.size() && content[i] != '\r')
-	// 			i++;
-	// 		std::string	to_convert(content.begin() + begin, content.begin() + i);
-	// 		size = ConvertChunkSize(to_convert);
-	// 		if (size == -1)
-	// 			return ; /*voir pour erreur*/
-	// 		if (i + 1 < content.size() && content[i] != '\r' && content[i + 1] != '\n')
-	// 			return ; /*voir pour erreur*/
-	// 		i++;
-	// 		line++;
-	// 	}
-	// 	if (line % 2 = 0)
-
-	// }
-	
+	this->_line = 0;
 }
 
 void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)

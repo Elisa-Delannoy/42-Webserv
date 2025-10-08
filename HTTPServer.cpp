@@ -182,33 +182,19 @@ int	HTTPServer::CheckEndWithChunk(Clients* client)
 {
 	if (!client->_body.GetChunk())
 		return (0);
-	const char endchunk[] = { '\0', '\r', '\n' };
+	const char endchunk[] = { '0', '\r', '\n' };
 	const char endbody[] = { '\r', '\n' };
 
-	std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
-		endchunk, endchunk + 3);
-	
-	// std::vector<char>::iterator temp;
-	// temp = it;
-	// // std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	// // std::vector<char>::iterator it = request.begin();
-	// // for(; it != request.end(); it++)
-	// // 	std::cout << *it;
-	// // std::cout << "\n--------BUF END-------\n" << std::endl;
+	std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin() + client->_head.GetIndexEndHeader(),
+		client->GetReadBuffer().end(), endchunk, endchunk + 3);
 	if (it != client->GetReadBuffer().end())
 	{
-		std::vector<char>::iterator it_end = std::search(it + 2, client->GetReadBuffer().end(), 
+		std::vector<char>::iterator it_end = std::search(it, client->GetReadBuffer().end(), 
 		endbody, endbody + 2);
-
 		if (it_end != client->GetReadBuffer().end())
-		{
-			std::cout << "retur 1" << std::endl;
 			return (1);
-		}
-		std::cout << "3333" << std::endl;
 		return (0);
 	}
-	std::cout << "44444" << std::endl;
 	return (0);
 }
 
@@ -257,7 +243,6 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	char	buffer[4096];
 	int		bytes = recv(fd, buffer, sizeof(buffer), 0);
 
-	std::cout << "lecture : " << bytes << std::endl;
 	client->SetReadBuff(buffer, bytes);
 	if (bytes > 0 && CheckEndRead(client) > 0)
 		client->SetStatus(Clients::PARSING_REQUEST);
@@ -290,7 +275,6 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		body_len = client->_body.GetContentLen();
 		if (client->_body.IsBody(client->_head))
 		{
-			std::cout << "IN IS BODY " << std::endl;
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader() + 1);
 			if (client->_body.GetChunk() == true)
 				client->_body.ParseChunk(request);
