@@ -47,6 +47,10 @@ void Response::setRootLocation(std::string & path)
 			this->_index_location = i;
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
 		{
+			//add allowed methods
+			for (int j = 0; j < this->_server.GetLocation(i).nb_methods; j++)
+				this->_methods.push_back(this->_server.GetLocation(i).GetMethods(j));
+
 			this->_index_location = i;
 			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
 			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
@@ -56,6 +60,9 @@ void Response::setRootLocation(std::string & path)
 	}
 	if (this->_root.empty())
 	{
+		//add allowed methods
+		for (int j = 0; j < this->_server.GetLocation(this->_index_location).nb_methods; j++)
+			this->_methods.push_back(this->_server.GetLocation(this->_index_location).GetMethods(j));
 		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
 		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 		path.replace(0, name.size() - 1, this->_root);
@@ -75,7 +82,7 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 	if (dir == NULL)
 	{
 		std::cout << "path opendir error : " << path << std::endl;
-		header.setHeader(404);
+		header.setHeader(404, this->_methods);
 		sendError(header, body, 404);
 	}
 	else
@@ -98,7 +105,7 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 		body._body += "</ul></body></html>";
 		header._body_len = body._body.size();
 		header._content_length = header.setContentLength();
-		header.setHeader(200);
+		header.setHeader(200, this->_methods);
 		sendHeaderAndBody(header, body);
 	}
 	closedir(dir);
@@ -109,7 +116,7 @@ void Response::displayUploadSuccessfull(HeaderResponse & header, BodyResponse & 
 	body._body = "<html><body><h1>Upload Successfull!</h1></body></html>";
 	header._body_len = body._body.size();
 	header._content_length = header.setContentLength();
-	header.setHeader(200);
+	header.setHeader(200, this->_methods);
 	sendHeaderAndBody(header, body);
 }
 
@@ -124,7 +131,7 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 	dir = opendir("uploads/");
 	if (dir == NULL)
 	{
-		header.setHeader(404);
+		header.setHeader(404, this->_methods);
 		header.sendHeader();
 	}
 	std::string filename = "uploads/" + str;
@@ -137,7 +144,7 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 	if (size >= header._server.GetClientBodySize())
 	{
 		out.close();
-		header.setHeader(404);
+		header.setHeader(404, this->_methods);
 		header.sendHeader();
 	}
 	else
@@ -176,7 +183,20 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	// to do check cgi 
 	if (method == "GET")
 	{
-		handleGet(header, body, path);
+		bool method_allowed = false;
+		for (size_t i = 0; i < this->_methods.size(); i++)
+		{
+			if(this->_methods[i] == method)
+				method_allowed = true;
+		}
+
+		if (method_allowed)
+			handleGet(header, body, path);
+		else
+		{
+			header.setHeader(405, this->_methods);
+			header.sendHeader();
+		}
 	}
 	else if (method == "POST")
 	{
@@ -194,13 +214,13 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 				body._body = "<html><body><h1>Empty Upload</h1></body></html>";
 				header._body_len = body._body.size();
 				header._content_length = header.setContentLength();
-				header.setHeader(200);
+				header.setHeader(200, this->_methods);
 				sendHeaderAndBody(header, body);
 			}
 		}
 		else
 		{
-			header.setHeader(200);
+			header.setHeader(200, this->_methods);
 			header.sendHeader();
 		}
 	}
@@ -221,17 +241,17 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
-			header.setHeader(200);
+			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
 		else if (check == 404) //wrong path
 		{
-			header.setHeader(404);
+			header.setHeader(404, this->_methods);
 			header.sendHeader();
 		}
 		else
 		{
-			header.setHeader(200); // to do check le 200
+			header.setHeader(200, this->_methods); // to do check le 200
 			header.sendHeader();
 		}
 	}
@@ -252,7 +272,7 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		}
 		else
 		{
-			header.setHeader(404);
+			header.setHeader(404, this->_methods);
 			sendError(header, body, 404);
 		}
 	}
@@ -262,12 +282,12 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
-			header.setHeader(200);
+			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
 		else
 		{
-			header.setHeader(500);
+			header.setHeader(500, this->_methods);
 			sendError(header, body, 500);
 		}
 	}

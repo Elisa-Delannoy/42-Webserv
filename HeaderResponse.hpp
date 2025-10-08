@@ -12,7 +12,7 @@ class HeaderResponse : public Response
 		void 		sendHeader();
 
 		//SETTING HEADER
-		void 		setHeader(int code);
+		void 		setHeader(int code, std::vector<std::string> & methods);
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
@@ -29,6 +29,7 @@ class HeaderResponse : public Response
 		std::string & _path;
 		std::string _version;
 		std::string _connection;
+		std::string _allow;
 		int 		_close_alive;
 };
 

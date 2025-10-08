@@ -28,16 +28,18 @@ class Response
 		~Response();
 
 		int sendResponse(ServerConf & servers, Clients* client, std::vector<char> request);
+		void setRootLocation(std::string & path);
 		void sendError(HeaderResponse & header, BodyResponse & body, int code);
 		void sendHeaderAndBody(HeaderResponse & header, BodyResponse & body);
+
 		void handleGet(HeaderResponse & header, BodyResponse & body, std::string & path);
 		void handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path);
 
 
 		std::string GetErrorPath(int type_error);
-		void setRootLocation(std::string & path);
 		std::string getIndex();
 		bool getAutoindex();
+
 		void displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path);
 		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
 
@@ -47,8 +49,8 @@ class Response
 	private:
 		ServerConf _server;
 		std::map<int, std::string> _errors_path;
+		std::vector<std::string> _methods;
 		std::string _root;
-		std::string _content;
 		int _index_location;
 
 	protected:

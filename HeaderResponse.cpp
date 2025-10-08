@@ -11,14 +11,14 @@ HeaderResponse::~HeaderResponse()
 
 void HeaderResponse::sendHeader()
 {
-	this->_header = this->_status + this->_content_type
+	this->_header = this->_status + this->_content_type + this->_allow
 		+ this->_content_length + this->_connection + "\r\n";
-
+	std::cout << "header : " << this->_header << std::endl;
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
 }
 
-void HeaderResponse::setHeader(int code)
+void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 {
 	if (code == 200)
 	{
@@ -36,6 +36,24 @@ void HeaderResponse::setHeader(int code)
 	{
 		this->_status = setStatus(" 404 Not Found\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
+		return ;
+	}
+	if (code == 405)
+	{
+		this->_status = setStatus(" 405 Method Not Allowed\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		
+		for(size_t i = 0; i < methods.size(); i++)
+		{
+			if (i == 0)
+				this->_allow = "Allow: ";
+			this->_allow += methods[i];
+			if (i < methods.size() - 1)
+				this->_allow += ", ";
+			else
+				this->_allow += "\r\n";
+		}
 		return ;
 	}
 	if (code == 500)
