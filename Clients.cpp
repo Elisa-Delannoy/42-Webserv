@@ -22,7 +22,7 @@ void Clients::SetStatus(status new_status)
 	this->_status = new_status;
 }
 
-std::vector<char> Clients::GetReadBuffer()
+std::vector<char>& Clients::GetReadBuffer()
 {
 	return (this->_read_buff);
 }

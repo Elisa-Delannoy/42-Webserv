@@ -102,6 +102,8 @@ class ParseRequest
 		std::map<std::string, std::string>	_header;
 		int									_end_header;
 		std::string							_name_location;
+		int									_error;
+
 	
 	public:
 		ParseRequest();
@@ -116,6 +118,8 @@ class ParseRequest
 
 		int			GetIndexEndHeader() const;
 		void		SetIndexEndHeader(int index);
+		int			GetError() const;
+		void		SetError(int index);
 };
 
 #endif

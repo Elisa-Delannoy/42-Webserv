@@ -20,6 +20,7 @@ class ParseBody
 		int					_len;
 		bool				_content_chunk;
 		std::vector<char>	_body;
+		int					_line;
 
 	public:
 		ParseBody();
@@ -70,3 +71,4 @@ class ParseBody
 
 
 #endif
+

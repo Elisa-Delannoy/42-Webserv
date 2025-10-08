@@ -29,7 +29,7 @@ class Clients
 		~Clients();
 		status GetStatus() const;
 		void SetStatus(status new_status);
-		std::vector<char> GetReadBuffer();
+		std::vector<char>& GetReadBuffer();
 		void	SetReadBuff(char* c, size_t len);
 		void	ClearBuff();
 		int		GetServerIndex() const;

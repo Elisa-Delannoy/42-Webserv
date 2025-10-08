@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 
-ParseRequest::ParseRequest()
+ParseRequest::ParseRequest() : _error(0)
 {
 }
 
@@ -75,3 +75,13 @@ void	ParseRequest::SetIndexEndHeader(int index)
 {
 	this->_end_header = index;
 }
+
+int	ParseRequest::GetError() const
+{
+	return (this->_error);
+}
+
+void	ParseRequest::SetError(int code)
+{
+	this->_error = code;
+} 
