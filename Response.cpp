@@ -309,7 +309,6 @@ bool Response::isMethodAllowed(std::string method)
 	bool ret = false;
 	for (size_t i = 0; i < this->_methods.size(); i++)
 	{
-		std::cout << "this->_methods[" << i << "] : " << this->_methods[i] << std::endl;
 		if(this->_methods[i] == method)
 			ret = true;
 	}
@@ -321,12 +320,3 @@ void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 	header.sendHeader();
 	body.sendBody();
 }
-
-
-/*
-Connection : Connection: keep-alive
-path is a dir
-index is empty
-path_image set size : html/
-body len set size : 140
-*/
