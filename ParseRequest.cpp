@@ -88,17 +88,17 @@ const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
 	return (this->_header);
 }
 
-void	ParseRequest::SetError(int code)
-{
-	this->_error = code;
-} 
+// void	ParseRequest::SetError(int code)
+// {
+// 	this->_error = code;
+// } 
 
 void	ParseRequest::SetIndexEndHeader(int index)
 {
 	this->_end_header = index;
 }
 
-void	ParseRequest::SetToClose(bool status)
-{
-	this->_to_close = status;
-}
+// void	ParseRequest::SetToClose(bool status)
+// {
+// 	this->_to_close = status;
+// }

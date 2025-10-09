@@ -35,10 +35,10 @@ class ParseRequest
 		const std::string&	GetNameLocation() const;
 		const std::map<std::string, std::string>&	GetHeader() const;
 
-		void	SetError(int index);
+		// void	SetError(int index);
 		void	SetIndexEndHeader(int index);
 		void	SetForError(bool to_close, int code);
-		void	SetToClose(bool status);
+		// void	SetToClose(bool status);
 };
 
 #endif
