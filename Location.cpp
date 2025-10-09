@@ -68,7 +68,6 @@ std::string Location::GetCGIPass(std::string ext) const
 	std::map<std::string, std::string>::const_iterator it = _cgi.begin();
 	for (; it != _cgi.end(); it++)
 	{
-		std::cout << it->first << std::endl;
 		if (it->first == ext)
 			return it->second;
 	}

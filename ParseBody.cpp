@@ -70,6 +70,7 @@ int	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
 	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
 		return (-1);
 	return (0);
+	return this->_content_chunk;
 }
 
 int	ConvertChunkSize(std::string to_convert)
@@ -81,7 +82,6 @@ int	ConvertChunkSize(std::string to_convert)
 		return (-1);
 	return (i);	
 }
-
 
 int	ParseHexa(std::vector<char>& content, std::vector<char>::iterator& start,
 	int& size, std::vector<char>::iterator& it)
@@ -357,6 +357,12 @@ int ParseBody::GetContentLen() const
 bool ParseBody::GetChunk() const
 {
 	return (this->_content_chunk);
+}
+
+std::string ParseBody::GetBody() const
+{
+	std::string str(_body.begin(), _body.end());
+	return str;
 }
 
 std::string ParseBody::GetContentType() const

@@ -63,6 +63,7 @@ class ParseBody
 
 		int		GetContentLen() const;
 		bool	GetChunk() const;
+		std::string GetBody() const;
 		std::string GetContentType() const;
 
 		void	SetChunk(bool chunk);
