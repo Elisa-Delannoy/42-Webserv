@@ -11,7 +11,7 @@ Epoll::Epoll(std::vector<int> socket_servers)
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
 		epoll_event event;
-		event.events = EPOLLIN;
+		event.events = EPOLLIN; /*voir si epollout*/
 		event.data.fd = socket_servers[i];
 		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i], &event) == -1)
 		{
@@ -51,7 +51,7 @@ void Epoll::SetEpoll(int fd)
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) 
 	{
-    	close(fd);
+		close(fd);
 		return; //to do gestion erreur;
 	}
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);

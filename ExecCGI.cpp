@@ -37,14 +37,14 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
 	env.push_back("REDIRECT_STATUS=200");
 	size_t pos = header.GetPath().find('?');
-    if (pos != std::string::npos)
-        env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
-    else
-    {
+	if (pos != std::string::npos)
+		env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
+	else
+	{
 		env.push_back("QUERY_STRING=");
 	}
 	env.push_back("PATH_INFO=");
-    env.push_back("PATH_TRANSLATED=");
+	env.push_back("PATH_TRANSLATED=");
 	if (header.GetMethod() == "POST")
 	{
 		std::ostringstream oss;
@@ -54,10 +54,10 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 		env.push_back("CONTENT_TYPE=" + body.GetContentType());
 	}
 	else
-    {
-        env.push_back("CONTENT_LENGTH=0");
-        env.push_back("CONTENT_TYPE=");
-    }
+	{
+		env.push_back("CONTENT_LENGTH=0");
+		env.push_back("CONTENT_TYPE=");
+	}
 	_envp = new char*[env.size() + 1];
 	for (size_t i = 0; i < env.size(); i++)
 	{
@@ -94,7 +94,7 @@ std::string SetupPath(std::string path, const std::string& LocName, const std::s
 		}
 		newpath = newpath.substr(1);
 		pos = newpath.find('?');
-    	if (pos != std::string::npos)
+		if (pos != std::string::npos)
 		{
 			newpath = newpath.substr(0, pos);
 		}
@@ -159,11 +159,11 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 			std::cerr << "[CHILD ERROR] dup2 stdout: " << strerror(errno) << std::endl;
 			return "";
 		}
-		if (dup2(pipe_out[1], STDERR_FILENO) == -1)
-		{
-			std::cerr << "[CHILD ERROR] dup2 stderr: " << strerror(errno) << std::endl;
-			return "";
-		}
+		// if (dup2(pipe_out[1], STDERR_FILENO) == -1)
+		// {
+		// 	std::cerr << "[CHILD ERROR] dup2 stderr: " << strerror(errno) << std::endl;
+		// 	return "";
+		// }
 		
 		close(pipe_in[0]);
 		close(pipe_out[1]);
@@ -220,44 +220,19 @@ std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &
 		std::string cgihtml;
 		char buffer[4096];
 		ssize_t bytesRead;
-		int read_count = 0;
 		
 		while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer) - 1)) > 0)
 		{
 			buffer[bytesRead] = '\0';
 			cgihtml += buffer;
-			read_count++;
 		}
 		if (bytesRead == -1)
 			std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
 		
 		close(pipe_out[0]);
 		
-		int status;
-		waitpid(pid, &status, 0);
+		waitpid(pid, NULL, 0);
 		
-		if (WIFEXITED(status))
-		{
-			int exit_code = WEXITSTATUS(status);
-			if (exit_code != 0)
-				std::cerr << "[PARENT ERROR] Non-zero exit code!" << std::endl;
-		}
-		else if (WIFSIGNALED(status))
-		{
-			std::cout << "[PARENT] Child killed by signal: " << WTERMSIG(status) << std::endl;
-		}
-		
-		if (cgihtml.length() > 0)
-		{
-			std::cout << "[PARENT] First 200 chars of output:" << std::endl;
-			std::cout << "test :" << cgihtml << std::endl;
-		}
-		else
-		{
-			std::cout << "[PARENT ERROR] NO OUTPUT FROM CGI!" << std::endl;
-		}
-		
-		std::cout << "========== FIN EXECUTION CGI ==========\n" << std::endl;
 		return cgihtml;
 	}
 }
@@ -270,7 +245,7 @@ int ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers
 	size_t pos = header.GetPath().find(".");
 	if (pos != std::string::npos)
 	{
-		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
+		std::string ext = header.GetPath().substr(pos);
 		size_t sep = ext.find("?");
 		if (sep != std::string::npos)
 			ext = ext.substr(0, sep);
@@ -278,7 +253,7 @@ int ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers
 		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
 		{
 			std::string result;
-			result = Execution(header, body, loc, ext).empty();
+			result = Execution(header, body, loc, ext);
 			std::cout << "result = " << result << std::endl;
 			return 0;
 		}
