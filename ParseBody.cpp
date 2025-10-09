@@ -7,17 +7,6 @@ void	printmap(std::map<std::string, std::string>& map)
 		std::cout << "key: " << it->first << " | value: " << it->second << std::endl;
 }
 
-void	printvec1(std::vector<char>::iterator begin, std::vector<char> vec)
-{
-	
-	std::cout << "vector" << std::endl;
-	for (std::vector<char>::const_iterator test = begin; test != vec.end(); test++)
-	{
-		std::cout << *(test);
-	}
-	std::cout << "FIN" << std::endl;
-}
-
 void printvecpart(std::vector<ParseBody::Part>& vec)
 {
 	std::cout << "vector" << std::endl;
@@ -30,7 +19,7 @@ void printvecpart(std::vector<ParseBody::Part>& vec)
 
 /*A SUPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPRIMER A LA FIN */
 
-ParseBody::ParseBody() : _len(0), _content_chunk(false), _line(0)
+ParseBody::ParseBody() : _len(0), _line(0), _content_chunk(false)
 {
 	Part	parts;
 	parts.name = "";
@@ -43,24 +32,40 @@ ParseBody::~ParseBody()
 {
 }
 
-int ParseBody::GetContentLen() const
+bool	ParseBody::IsBody(ParseRequest& request)
 {
-	return this->_len;
+	std::map<std::string, std::string> head = request.GetHeader();
+	std::map<std::string, std::string>::iterator it = head.find("Content-Type");
+
+	if (it == head.end())
+		return (false);
+	this->_type = it->second;
+	CheckBodyType(head);
+	return (true);	
 }
 
-std::string ParseBody::GetContentType() const
+void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
 {
-	return this->_type;
+	std::map<std::string, std::string>::iterator it;
+
+	it = head.find("Content-Length");
+	if (it != head.end())
+		FindBodyLen(it);
+	else
+	{
+		it = head.begin();
+		it = head.find("Transfer-Encoding");
+		if (it != head.end())
+			this->_content_chunk = true;
+	}
 }
 
-bool ParseBody::GetChunk() const
+void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
 {
-	return this->_content_chunk;
-}
-
-void	ParseBody::SetChunk(bool status)
-{
-	this->_content_chunk = status;
+	std::istringstream	ss_body_len(it->second);
+	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
+		return; /*voir pour send erreur*/
+	std::cout << "len = " << this->_len << std::endl;
 }
 
 int	ConvertChunkSize(std::string to_convert)
@@ -137,40 +142,8 @@ void	ParseBody::ParseChunk(std::vector<char>& content)
 	this->_line = 0;
 }
 
-void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
-{
-	std::map<std::string, std::string>::iterator it;
 
-	it = head.find("Content-Length");
-	if (it != head.end())
-		FindBodyLen(it);
-	else
-	{
-		it = head.begin();
-		it = head.find("Transfer-Encoding");
-		if (it != head.end())
-			this->_content_chunk = true;
-	}
-}
 
-void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
-{
-	std::istringstream	ss_body_len(it->second);
-	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
-		return; /*voir pour send erreur*/
-	std::cout << "len = " << this->_len << std::endl;
-}
-
-bool	ParseBody::IsBody(ParseRequest& request)
-{
-	std::map<std::string, std::string> head = request.GetHeader();
-	std::map<std::string, std::string>::iterator it = head.find("Content-Type");
-	if (it == head.end())
-		return (false);
-	this->_type = it->second;
-	CheckBodyType(head);
-	return (true);	
-}
 
 void  ParseBody::ChooseContent(std::vector<char> to_parse)
 {
@@ -368,6 +341,30 @@ void	ParseBody::AppMultipart(std::vector<char>& r_body)
 	// out.write(parts.content.data(), parts.content.size());
 	// out.close();
 
+}
+
+
+
+
+
+int ParseBody::GetContentLen() const
+{
+	return (this->_len);
+}
+
+bool ParseBody::GetChunk() const
+{
+	return (this->_content_chunk);
+}
+
+std::string ParseBody::GetContentType() const
+{
+	return (this->_type);
+}
+
+void	ParseBody::SetChunk(bool status)
+{
+	this->_content_chunk = status;
 }
 
 void	ParseBody::SetBody(std::vector<char> body)
