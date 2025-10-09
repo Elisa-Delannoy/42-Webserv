@@ -33,8 +33,18 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	env.push_back("REQUEST_METHOD=" + header.GetMethod());
 	env.push_back("SCRIPT_FILENAME=" + path);
+	env.push_back("SCRIPT_NAME=" + header.GetPath());
 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
 	env.push_back("REDIRECT_STATUS=200");
+	size_t pos = header.GetPath().find('?');
+    if (pos != std::string::npos)
+        env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
+    else
+    {
+		env.push_back("QUERY_STRING=");
+	}
+	env.push_back("PATH_INFO=");
+    env.push_back("PATH_TRANSLATED=");
 	if (header.GetMethod() == "POST")
 	{
 		std::ostringstream oss;
@@ -43,6 +53,11 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 		env.push_back("CONTENT_LENGTH=" + len);
 		env.push_back("CONTENT_TYPE=" + body.GetContentType());
 	}
+	else
+    {
+        env.push_back("CONTENT_LENGTH=0");
+        env.push_back("CONTENT_TYPE=");
+    }
 	_envp = new char*[env.size() + 1];
 	for (size_t i = 0; i < env.size(); i++)
 	{
@@ -53,11 +68,10 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 }
 
 
-void ExecCGI::SetArgv(std::string &path, Location &location, std::string &ext)
+void ExecCGI::SetArgv(Location &location, std::string &ext)
 {
 	std::vector<std::string> argv;
 	argv.push_back(location.GetCGIPass(ext));
-	argv.push_back(path);
 	_argv = new char*[argv.size() + 1];
 	for (size_t i = 0; i < argv.size(); i++)
 	{
@@ -79,46 +93,177 @@ std::string SetupPath(std::string path, const std::string& LocName, const std::s
 			newpath.replace(pos, LocName.length(), LocRoot);
 		}
 		newpath = newpath.substr(1);
+		pos = newpath.find('?');
+    	if (pos != std::string::npos)
+		{
+			newpath = newpath.substr(0, pos);
+		}
 		return newpath;
 	}
 
 std::string ExecCGI::Execution(ParseRequest &header, ParseBody& body, Location &location, std::string &ext)
 {
+	std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
+	
 	std::string path = SetupPath(header.GetPath(), location.GetName(), location.GetRoot());
-	SetArgv(path, location, ext);
+	// char resolved[PATH_MAX];
+	// if (realpath(path.c_str(), resolved) == NULL)
+	// {
+	// 	std::cerr << "[ERROR] realpath failed: " << strerror(errno) << std::endl;
+	// 	std::cerr << "[ERROR] Path: " << path << std::endl;
+	// 	return "";
+	// }
+	// path = std::string(resolved);
+	// if (access(path.c_str(), R_OK) != 0)
+	// {
+	// 	std::cerr << "[ERROR] File not readable: " << strerror(errno) << std::endl;
+	// 	return "";
+	// }
+	
+	SetArgv(location, ext);
 	SetEnvp(header, body, path);
-	int pipefd[2];
-	if (pipe(pipefd) == -1)
-		std::cerr << "Error creation pipe." << std::endl;
-	pid_t pid = fork();
-	if (pid == -1)
-		std::cerr << "Error creation child." << std::endl;
-	if (pid == 0)
+	
+	int pipe_in[2];
+	int pipe_out[2];
+	
+	if (pipe(pipe_in) == -1)
 	{
-		close(pipefd[0]);
-		dup2(pipefd[1], STDIN_FILENO);
-		close(pipefd[1]);
-		execve(location.GetCGIPass(ext).c_str(), GetArgv(), GetEnvp());
-		std::cerr << "Error execve." << std::endl;
+		std::cerr << "[ERROR] pipe_in failed: " << strerror(errno) << std::endl;
 		return "";
 	}
-	else 
+	if (pipe(pipe_out) == -1)
 	{
-		close(pipefd[1]);
-		char buffer[4096];
-		ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1);
-		if (bytesRead > 0)
-			buffer[bytesRead] = '\0';
-		std::string cgihtml = buffer;
-		close(pipefd[0]);
-		waitpid(pid, NULL, 0);
-		if (cgihtml.empty())
+		std::cerr << "[ERROR] pipe_out failed: " << strerror(errno) << std::endl;
+		return "";
+	}
+	
+	pid_t pid = fork();
+	if (pid == -1)
+	{
+		std::cerr << "[ERROR] fork failed: " << strerror(errno) << std::endl;
+		return "";
+	}
+	
+	if (pid == 0)
+	{
+		close(pipe_in[1]);
+		close(pipe_out[0]);
+		
+		if (dup2(pipe_in[0], STDIN_FILENO) == -1)
+		{
+			std::cerr << "[CHILD ERROR] dup2 stdin: " << strerror(errno) << std::endl;
 			return "";
+		}
+		if (dup2(pipe_out[1], STDOUT_FILENO) == -1)
+		{
+			std::cerr << "[CHILD ERROR] dup2 stdout: " << strerror(errno) << std::endl;
+			return "";
+		}
+		if (dup2(pipe_out[1], STDERR_FILENO) == -1)
+		{
+			std::cerr << "[CHILD ERROR] dup2 stderr: " << strerror(errno) << std::endl;
+			return "";
+		}
+		
+		close(pipe_in[0]);
+		close(pipe_out[1]);
+
+		execve(location.GetCGIPass(ext).c_str(), GetArgv(), GetEnvp());
+
+		std::cerr << "[CHILD ERROR] Command was: " << location.GetCGIPass(ext) << std::endl;
+		exit(1);
+	}
+	else
+	{
+		close(pipe_in[0]);
+		close(pipe_out[1]);
+
+		std::string bodyContent = body.GetBody();
+		if (!bodyContent.empty())
+		{
+			ssize_t written = write(pipe_in[1], bodyContent.c_str(), bodyContent.length());
+			if (written == -1)
+				std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
+		}
+		
+		close(pipe_in[1]);
+		
+		usleep(100000);
+
+		fd_set readfds;
+		struct timeval timeout;
+		timeout.tv_sec = 5;
+		timeout.tv_usec = 0;
+		
+		FD_ZERO(&readfds);
+		FD_SET(pipe_out[0], &readfds);
+
+		int select_ret = select(pipe_out[0] + 1, &readfds, NULL, NULL, &timeout);
+		
+		if (select_ret == -1)
+		{
+			std::cerr << "[PARENT ERROR] select failed: " << strerror(errno) << std::endl;
+			close(pipe_out[0]);
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			return "";
+		}
+		else if (select_ret == 0)
+		{
+			std::cerr << "[PARENT ERROR] Timeout! No output from CGI" << std::endl;
+			close(pipe_out[0]);
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			return "";
+		}
+		
+		std::string cgihtml;
+		char buffer[4096];
+		ssize_t bytesRead;
+		int read_count = 0;
+		
+		while ((bytesRead = read(pipe_out[0], buffer, sizeof(buffer) - 1)) > 0)
+		{
+			buffer[bytesRead] = '\0';
+			cgihtml += buffer;
+			read_count++;
+		}
+		if (bytesRead == -1)
+			std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
+		
+		close(pipe_out[0]);
+		
+		int status;
+		waitpid(pid, &status, 0);
+		
+		if (WIFEXITED(status))
+		{
+			int exit_code = WEXITSTATUS(status);
+			if (exit_code != 0)
+				std::cerr << "[PARENT ERROR] Non-zero exit code!" << std::endl;
+		}
+		else if (WIFSIGNALED(status))
+		{
+			std::cout << "[PARENT] Child killed by signal: " << WTERMSIG(status) << std::endl;
+		}
+		
+		if (cgihtml.length() > 0)
+		{
+			std::cout << "[PARENT] First 200 chars of output:" << std::endl;
+			std::cout << "test :" << cgihtml << std::endl;
+		}
+		else
+		{
+			std::cout << "[PARENT ERROR] NO OUTPUT FROM CGI!" << std::endl;
+		}
+		
+		std::cout << "========== FIN EXECUTION CGI ==========\n" << std::endl;
 		return cgihtml;
 	}
 }
 
-std::string ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
+
+int ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
 {
 	(void)body;
 	(void)servers;
@@ -126,18 +271,17 @@ std::string ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf 
 	if (pos != std::string::npos)
 	{
 		std::string ext = header.GetPath().substr(pos, header.GetPath().length() - 1);
-		std::cout << ext << std::endl;
 		size_t sep = ext.find("?");
 		if (sep != std::string::npos)
 			ext = ext.substr(0, sep);
 		Location loc;
 		if (servers.HasLocationForExtension(header.GetNameLocation(), ext, loc))
 		{
-			std::cout << loc.GetName() << std::endl;
 			std::string result;
 			result = Execution(header, body, loc, ext).empty();
-			return result;
+			std::cout << "result = " << result << std::endl;
+			return 0;
 		}
 	}
-	return "";
+	return 1;
 }

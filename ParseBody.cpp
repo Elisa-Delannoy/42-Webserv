@@ -58,6 +58,12 @@ bool ParseBody::GetChunk() const
 	return this->_content_chunk;
 }
 
+std::string ParseBody::GetBody() const
+{
+	std::string str(_body.begin(), _body.end());
+	return str;
+}
+
 void	ParseBody::SetChunk(bool status)
 {
 	this->_content_chunk = status;

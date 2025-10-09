@@ -167,6 +167,7 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
 	(void)request;
+	ExecCGI cgi;
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
@@ -182,7 +183,9 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
 
-	// to do check cgi 
+	// to do check cgi
+	if (cgi.CheckCGI(client->_head, client->_body, servers) == 0)
+		return 0;
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{

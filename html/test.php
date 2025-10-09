@@ -1,32 +1,28 @@
-#!/usr/bin/php
+#!/usr/bin/php-cgi
 <?php
-// Assure-toi que ce fichier est exécutable : chmod +x test.php
+// En-tête CGI obligatoire
+echo "Content-type: text/html\r\n\r\n";
 
-header("Content-Type: text/html; charset=UTF-8");
+// Lire les données POST
+parse_str(file_get_contents("php://input"), $_POST);
 
-echo "<!DOCTYPE html>\n<html>\n<head><title>Test CGI PHP</title></head>\n<body>\n";
-echo "<h1>Test CGI avec PHP</h1>\n";
+// Récupérer les champs du formulaire
+$nom = isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : '';
+$email = isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '';
+$message = isset($_POST['message']) ? nl2br(htmlspecialchars($_POST['message'])) : '';
 
-// Variables CGI (transmises par le serveur)
-echo "<h2>Variables d'environnement</h2>\n<pre>";
-foreach ($_SERVER as $key => $value) {
-    echo htmlspecialchars("$key = $value") . "\n";
-}
-echo "</pre>\n";
-
-// Données GET
-if (!empty($_GET)) {
-    echo "<h2>Données GET</h2>\n<pre>";
-    print_r($_GET);
-    echo "</pre>\n";
-}
-
-// Données POST
-if (!empty($_POST)) {
-    echo "<h2>Données POST</h2>\n<pre>";
-    print_r($_POST);
-    echo "</pre>\n";
-}
-
-echo "</body>\n</html>";
+// Affichage HTML
 ?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Résultat du formulaire</title>
+</head>
+<body>
+    <h1>Données reçues</h1>
+    <p><strong>Nom :</strong> <?= $nom ?></p>
+    <p><strong>Email :</strong> <?= $email ?></p>
+    <p><strong>Message :</strong><br> <?= $message ?></p>
+</body>
+</html>

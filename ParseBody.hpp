@@ -53,6 +53,7 @@ class ParseBody
 		void	AppForm(char* body_req);
 		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);
+
 		bool	IsBody(ParseRequest& request);
 		void	CheckBodyType(std::map<std::string, std::string>& head);
 		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
@@ -62,6 +63,7 @@ class ParseBody
 
 		int		GetContentLen() const;
 		bool	GetChunk() const;
+		std::string GetBody() const;
 		std::string GetContentType() const;
 
 		void	SetChunk(bool chunk);
