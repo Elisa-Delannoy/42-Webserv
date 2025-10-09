@@ -37,7 +37,7 @@ class ParseRequest
 
 		void	SetError(int index);
 		void	SetIndexEndHeader(int index);
-		void	SetStatusClient(bool to_close, int code);
+		void	SetForError(bool to_close, int code);
 		void	SetToClose(bool status);
 };
 

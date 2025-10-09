@@ -55,9 +55,9 @@ class ParseBody
 		void	AppMultipart(std::vector<char>& body);
 
 		bool	IsBody(ParseRequest& request);
-		void	CheckBodyType(std::map<std::string, std::string>& head);
-		void	FindBodyLen(std::map<std::string, std::string>::iterator& it);
-		void	ParseChunk(std::vector<char>& content);
+		int		CheckBodyType(std::map<std::string, std::string>& head);
+		int		FindBodyLen(std::map<std::string, std::string>::iterator& it);
+		int		ParseChunk(std::vector<char>& content);
 		int		ParseContent(std::vector<char>& content, std::vector<char>::iterator& start,
 					int& size, std::vector<char>::iterator& it);
 

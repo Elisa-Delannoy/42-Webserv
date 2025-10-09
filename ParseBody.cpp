@@ -40,17 +40,20 @@ bool	ParseBody::IsBody(ParseRequest& request)
 	if (it == head.end())
 		return (false);
 	this->_type = it->second;
-	CheckBodyType(head);
+	if (CheckBodyType(head) == -1)
+		request.SetForError(true, 400);
 	return (true);	
 }
 
-void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
+int	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
 {
 	std::map<std::string, std::string>::iterator it;
-
 	it = head.find("Content-Length");
 	if (it != head.end())
-		FindBodyLen(it);
+	{
+		if (FindBodyLen(it) == -1)
+			return (-1);
+	}
 	else
 	{
 		it = head.begin();
@@ -58,14 +61,15 @@ void	ParseBody::CheckBodyType(std::map<std::string, std::string>& head)
 		if (it != head.end())
 			this->_content_chunk = true;
 	}
+	return (1);
 }
 
-void	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
+int	ParseBody::FindBodyLen(std::map<std::string, std::string>::iterator& it)
 {
 	std::istringstream	ss_body_len(it->second);
 	if (!(ss_body_len >> this->_len) || !ss_body_len.eof() || this->_len <= 0)
-		return; /*voir pour send erreur*/
-	std::cout << "len = " << this->_len << std::endl;
+		return (-1);
+	return (0);
 }
 
 int	ConvertChunkSize(std::string to_convert)
@@ -115,7 +119,7 @@ int	ParseBody::ParseContent(std::vector<char>& content, std::vector<char>::itera
 	return (1);
 }
 
-void	ParseBody::ParseChunk(std::vector<char>& content)
+int	ParseBody::ParseChunk(std::vector<char>& content)
 {
 	int size = 0;
 
@@ -126,24 +130,22 @@ void	ParseBody::ParseChunk(std::vector<char>& content)
 		{
 			int check = ParseHexa(content, start, size, it);
 			if (check == -1)
-				return ; /*voir pour erreur*/
+				return (-1);
 			if (check == 1)
-				return ;	
+				return (1);	
 			this->_line++;
 		}
 		else if (this->_line % 2 != 0)
 		{
 			int check = ParseContent(content, start, size, it);
 			if (check == -1)
-				return ; /*voir pour erreur*/
+				return (-1);
 			this->_line++;
 		}
 	}
 	this->_line = 0;
+	return (1);
 }
-
-
-
 
 void  ParseBody::ChooseContent(std::vector<char> to_parse)
 {

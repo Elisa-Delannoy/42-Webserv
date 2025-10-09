@@ -45,6 +45,7 @@ void Clients::ClearBuff()
 	this->_read_buff.clear();
 	this->_head.SetIndexEndHeader(0);
 	this->_r_header = false;
+	this->_recv = 0;
 }
 
 int Clients::GetServerIndex() const

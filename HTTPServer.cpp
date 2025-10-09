@@ -148,14 +148,15 @@ int	HTTPServer::GetServerIndex(int used_socket)
 	}
 	return (-1);
 }
-
-int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<char> request)
+// -1 error
+// 0 pas fini 
+// i ok fin header
+int HTTPServer::readHeaderRequest(Clients* client, std::vector<char> request)
 {
 
-	bool		first = false;
+	bool	first = false;
 	std::string	line;
-	int begin = 0;
-	(void) client_fd;
+	int	begin = 0;
 
 	for (size_t i = 0; i < request.size(); i++)	
 	{
@@ -166,7 +167,7 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 			if (!line.empty() && line.at(line.size() - 1) == '\r')
 				line.erase(line.size() - 1);
 			if (first == false && client->_head.DivideFirstLine(line) == 0)
-				return (-1);
+				return (client->SetStatus(Clients::SENDING_RESPONSE), -1);
 			first = true;
 			if (line.empty())
 				return (i);
@@ -178,7 +179,7 @@ int HTTPServer::readHeaderRequest(int client_fd, Clients* client, std::vector<ch
 	return (0);
 }
 
-int	HTTPServer::CheckEndWithChunk(Clients* client)
+int	HTTPServer::CheckEndWithChunk(Clients* client) /*to do voir comment faire pour verifier si erreur avec par exemple chunk infini, faire un timeout ?*/
 {
 	if (!client->_body.GetChunk())
 		return (0);
@@ -200,14 +201,26 @@ int	HTTPServer::CheckEndWithChunk(Clients* client)
 
 int	HTTPServer::CheckEndWithLen(Clients* client)
 {
-	int	len = client->_body.GetContentLen();
+	int		len = client->_body.GetContentLen();
+	size_t	read_body_len = client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() - 1;
+
 	if (len == 0)
 		return (0);
-	if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() >= static_cast<size_t>(len)) /*to do verifier si -1 a jouter ou autre*/
+	if (read_body_len == static_cast<size_t>(len))
 		return (1);
-	return (0);
+	else if (read_body_len > static_cast<size_t>(len))
+	{
+		client->_head.SetForError(true, 404);
+		client->SetStatus(Clients::SENDING_RESPONSE);
+		return (-1);
+	}
+	else
+		return (0);
 }
 
+// -1 error to send parse request
+// 1 ok fini 
+// 0 pas fini
 int	HTTPServer::CheckEndRead(Clients* client)
 {
 	const char* endheader = "\r\n\r\n";
@@ -218,23 +231,22 @@ int	HTTPServer::CheckEndRead(Clients* client)
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
 			endheader, endheader + 4);
 		if (it == client->GetReadBuffer().end())
-			return (-1);
-		int i = readHeaderRequest(client->GetSocket(), client, client->GetReadBuffer());
+			return (0);
+		int i = readHeaderRequest(client, client->GetReadBuffer());
 		if (i > 0)
 			client->_head.SetIndexEndHeader(i);
 		else if (i == 0)
-			return (0);
-		else
 			return (-1);
+		else
+			return (0);
 		client->SetReadHeader(true);
 	}
 	if (!client->_body.IsBody(client->_head))
 		return (1);
-	else
-	{
-		if (CheckEndWithChunk(client) == 1 || CheckEndWithLen(client) == 1)
-			return (1);
-	}
+	else if (CheckEndWithChunk(client) == 1 || CheckEndWithLen(client) == 1)
+		return (1);
+	if (client->_head.GetError() != 0)
+		return (client->SetStatus(Clients::SENDING_RESPONSE), -1);
 	return (0);
 }
 
@@ -275,7 +287,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		{
 			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader() + 1);
 			if (client->_body.GetChunk() == true)
-				client->_body.ParseChunk(request);
+			{
+				if (client->_body.ParseChunk(request) == -1)
+					return (client->_head.SetForError(true, 400), client->SetStatus(Clients::SENDING_RESPONSE));
+			}
 			else
 				client->_body.SetBody(request);
 			client->_body.ChooseContent(request);
@@ -306,6 +321,7 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 	{
 		close(it->first);
 		delete it->second;
+		this->_socket_client.erase(it);
 	}
 }
 
@@ -318,7 +334,8 @@ int	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 		std::cerr << "Failed to grab socket_client." << std::endl;
 		return (-1);
 	}
-	Clients*	client = new Clients(socket, j); /*voir ou delete*/
+	std::cout << "new client, fd " << socket << std::endl;
+	Clients*	client = new Clients(socket, j);
 	this->_socket_client[socket] = client;
 	epoll.SetEpoll(socket);
 	return (1);

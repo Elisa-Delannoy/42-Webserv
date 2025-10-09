@@ -38,11 +38,11 @@ int ParseRequest::DivideFirstLine(std::string& first_line)
 	if (sep != std::string::npos)
 		this->_name_location = this->_path.substr(0, sep + 1);
 	if (len - len_w != 2)
-		return (SetStatusClient(true, 404), 0);
+		return (SetForError(true, 404), 0);
 	return (1);
 }
 
-void	ParseRequest::SetStatusClient(bool to_close, int code)
+void	ParseRequest::SetForError(bool to_close, int code)
 {
 	this->_to_close = to_close;
 	this->_error = code;

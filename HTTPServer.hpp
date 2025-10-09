@@ -13,10 +13,6 @@
 #include "ServerConf.hpp"
 #include "Response.hpp"
 #include "ExecCGI.hpp"
-// #include "Clients.hpp"
-
-
-
 
 class HTTPServer
 {
@@ -24,11 +20,11 @@ class HTTPServer
 		HTTPServer();
 		~HTTPServer();
 
-		int startServer(std::string conf_file);
-		int runServer();
-		void closeServer();
-		int prepareServerSockets();
-		int createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
+		int	startServer(std::string conf_file);
+		int	runServer();
+		void	closeServer();
+		int	prepareServerSockets();
+		int	createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 		int	AcceptRequest(Epoll& epoll, int j);
 		void	CleanClient(int client_fd, Epoll& epoll);
 
@@ -39,9 +35,7 @@ class HTTPServer
 		void displayServers();
 		std::vector<ServerConf> servers;
 
-		// const char* GetRequest(void) const;
-
-		int readHeaderRequest(int client_fd, Clients* client, std::vector<char> request);
+		int readHeaderRequest(Clients* client, std::vector<char> request);
 		void handleRequest(Epoll& epoll, int i, Clients* client);
 
 		uint32_t 	prepareAddrForHtonl(std::string addr);
@@ -54,9 +48,9 @@ class HTTPServer
 
 	private:
 
-		std::vector<int> 		_socket_server;
-		std::map<int, Clients*> _socket_client;
-		std::map<int, size_t> 	_attached_server;
+		std::vector<int>		_socket_server;
+		std::map<int, Clients*>	_socket_client;
+		std::map<int, size_t>	_attached_server;
 };
 
 #endif
