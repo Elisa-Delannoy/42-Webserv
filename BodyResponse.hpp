@@ -12,7 +12,21 @@ class BodyResponse : public Response
 		void sendBody();
 		int checkBody(const char* path);
 
+		bool				getHasFilename() const;
+		std::string			getFilename() const;
+		std::vector<char>	getContent();
+
+		void findBoundary(std::vector<char> & request);
+		void findFilename(std::vector<char> & request);
+		void findContent(std::vector<char> & request);
+
 		std::string _body;
+
+	private:
+		std::vector<char> _content;
+		std::string	_filename;
+		std::string	_boundary;
+		bool		_has_filename;
 };
 
 #endif

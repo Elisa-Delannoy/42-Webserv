@@ -278,7 +278,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 				client->_body.ParseChunk(request);
 			else
 				client->_body.SetBody(request);
-			client->_body.ChooseContent(request);
+			// client->_body.ChooseContent(request);
 		}
 		client->ClearBuff();
 		client->SetStatus(Clients::SENDING_RESPONSE);
