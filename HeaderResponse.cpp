@@ -13,7 +13,6 @@ void HeaderResponse::sendHeader()
 {
 	this->_header = this->_status + this->_content_type + this->_allow
 		+ this->_content_length + this->_connection + "\r\n";
-	std::cout << "header : " << this->_header << std::endl;
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
 }
@@ -137,7 +136,6 @@ std::string HeaderResponse::setConnection(Clients* client)
 	if (status.empty())
 		status = " keep-alive\r\n";
 	ret += status;
-	std::cout << "Connection : " << ret << std::endl;
 	ret += "\r\n";
 
 	if (status == " keep-alive")

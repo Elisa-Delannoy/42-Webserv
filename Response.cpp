@@ -127,8 +127,9 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::string str)
+void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::vector<char> & request)
 {
+	(void)client;
 	DIR *dir;
 	dir = opendir("uploads/");
 	if (dir == NULL)
@@ -136,14 +137,12 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 		header.setHeader(404, this->_methods);
 		header.sendHeader();
 	}
-	std::string filename = "uploads/" + str;
+	std::string filename = "uploads/" + body.getFilename();
 	std::ofstream out(filename.c_str(), std::ios::binary);
-	long long size = 0;
+	body.findBoundary(request);
+	body.findContent(request);
 
-	for(size_t i = 0; i < client->_body._multipart.size(); i++)
-		size += client->_body._multipart[i].content.size();
-
-	if (size >= header._server.GetClientBodySize())
+	if (body._body.size() >= static_cast<size_t>(header._server.GetClientBodySize()))
 	{
 		out.close();
 		header.setHeader(404, this->_methods);
@@ -151,11 +150,7 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 	}
 	else
 	{
-		for(size_t i = 0; i < client->_body._multipart.size(); i++)
-		{
-			out.write(client->_body._multipart[i].content.data(),
-			client->_body._multipart[i].content.size());
-		}
+		out.write(body.getContent().data(), body.getContent().size());
 		out.close();
 		displayUploadSuccessfull(header, body);
 	}
@@ -166,16 +161,15 @@ void Response::createFileOnServer(Clients* client, HeaderResponse & header, Body
 //Return 1 if connection is keep-alive
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
-	(void)request;
 	ExecCGI cgi;
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 	
-/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	std::vector<char>::iterator it = buf.begin();
-	for(; it != buf.end(); it++)
+	/* std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::vector<char>::iterator it = request.begin();
+	for(; it != request.end(); it++)
 		std::cout << *it;
 	std::cout << "\n--------BUF END-------\n" << std::endl; */
 
@@ -207,10 +201,10 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	
 			if (content_type.substr(0, 20) == " multipart/form-data")
 			{
-				std::string temp_filename = client->_body._multipart[0].filename;
-				if (!temp_filename.empty())
+				body.findFilename(request);
+				if (body.getHasFilename())
 				{
-					createFileOnServer(client, header, body, temp_filename);
+					createFileOnServer(client, header, body, request);
 				}
 				else //try to upload an empty file
 				{
@@ -232,6 +226,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 			header.setHeader(405, this->_methods);
 			header.sendHeader();
 		}
+	}
+	else
+	{
+		header.setHeader(404, this->_methods);
+		header.sendHeader();
 	}
 	return (header.getCloseAlive());
 }
