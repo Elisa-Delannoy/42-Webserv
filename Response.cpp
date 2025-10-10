@@ -127,9 +127,8 @@ bool Response::getAutoindex()
 	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
 
-void Response::createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::vector<char> & request)
+void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, std::vector<char> & request)
 {
-	(void)client;
 	DIR *dir;
 	dir = opendir("uploads/");
 	if (dir == NULL)
@@ -177,6 +176,12 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
 
+	//error in header
+	if (client->_head.GetToClose() == true)
+	{
+		header.setHeader(client->_head.GetError(), this->_methods);
+		header.sendHeader();
+	}
 	// to do check cgi
 	if (cgi.CheckCGI(client->_head, client->_body, servers) == 0)
 		return 0;
@@ -204,7 +209,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 				body.findFilename(request);
 				if (body.getHasFilename())
 				{
-					createFileOnServer(client, header, body, request);
+					createFileOnServer(header, body, request);
 				}
 				else //try to upload an empty file
 				{

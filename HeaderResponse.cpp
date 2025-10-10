@@ -31,6 +31,13 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
+	if (code == 400)
+	{
+		this->_status = setStatus(" 400 Bad Request\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		return ;
+	}
 	if (code == 404)
 	{
 		this->_status = setStatus(" 404 Not Found\r\n");
@@ -41,7 +48,6 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 405 Method Not Allowed\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		this->_connection = "Connection: close\r\n";
 		
 		for(size_t i = 0; i < methods.size(); i++)
 		{

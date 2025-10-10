@@ -46,7 +46,7 @@ class Response
 		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
 
 		//POST
-		void createFileOnServer(Clients* client, HeaderResponse & header, BodyResponse & body, std::vector<char> & request);
+		void createFileOnServer(HeaderResponse & header, BodyResponse & body, std::vector<char> & request);
 
 	private:
 		ServerConf _server;
