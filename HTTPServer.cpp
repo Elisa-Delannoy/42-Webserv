@@ -1,12 +1,10 @@
 #include "HTTPServer.hpp"
-#include "ParseBody.hpp"
-#include <cstring>
-#include <signal.h>
 
 volatile sig_atomic_t g_running = 1;
 
 HTTPServer::HTTPServer()
 {
+	this->_tot_inactivity = 60;
 }
 
 HTTPServer::~HTTPServer()
@@ -27,6 +25,14 @@ void handle_sigint(int sig)
 	g_running = 0;
 }
 
+bool	Timeout(int last_time, int limit)
+{
+	time_t	now = time(NULL);
+
+	if (now - last_time > limit)
+		return (true);
+	return (false);
+}
 
 //READ REQUEST UNTIL END OF HEADERS
 //GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
@@ -179,7 +185,7 @@ int HTTPServer::readHeaderRequest(Clients* client, std::vector<char> request)
 	return (0);
 }
 
-int	HTTPServer::CheckEndWithChunk(Clients* client) /*to do voir comment faire pour verifier si erreur avec par exemple chunk infini, faire un timeout ?*/
+int	HTTPServer::CheckEndWithChunk(Clients* client) /*to do voir si on fait une limite du nombre de chunk*/
 {
 	if (!client->_body.GetChunk())
 		return (0);
@@ -223,9 +229,10 @@ int	HTTPServer::CheckEndWithLen(Clients* client)
 // 0 pas fini
 int	HTTPServer::CheckEndRead(Clients* client)
 {
-	const char* endheader = "\r\n\r\n";
+	const char* endheader = "\r\n\r\n";;
 
 	client->SetRecv(0);
+	client->SetLastActivity();
 	if (client->GetReadHeader() == false)
 	{
 		std::vector<char>::iterator it = std::search(client->GetReadBuffer().begin(), client->GetReadBuffer().end(), 
@@ -255,7 +262,17 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	char	buffer[4096];
 	int		bytes = recv(fd, buffer, sizeof(buffer), 0);
 
+	if (client->GetReadBuffer().size() == static_cast<size_t>(0))
+		client->SetBeginRequest();
+	if (Timeout(client->GetBeginRequest(), 60) == true)
+	{
+		client->_head.SetForError(true, 408);
+		client->SetStatus(Clients::SENDING_RESPONSE);
+		return ;
+	}
 	client->SetReadBuff(buffer, bytes);
+	if (client->GetReadBuffer().size() > static_cast<size_t>(this->servers[client->GetServerIndex()].GetClientBodySize()))
+		return (client->_head.SetForError(true, 413), client->SetStatus(Clients::SENDING_RESPONSE));
 	if (bytes > 0 && CheckEndRead(client) > 0)
 		client->SetStatus(Clients::PARSING_REQUEST);
 	if (bytes == 0)
@@ -266,6 +283,26 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 			client->SetStatus(Clients::CLOSED);
 		client->SetRecv(client->GetRecv() + 1);
 	}
+}
+
+void HTTPServer::HandleAfterReading(std::vector<char>& request, Clients* client)
+{
+	request = client->GetReadBuffer();
+	if (request.empty())
+		return (client->SetStatus(Clients::WAITING_REQUEST));
+	if (client->_body.IsBody(client->_head))
+	{
+		request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader() + 1);
+		if (client->_body.GetChunk() == true)
+		{
+			if (client->_body.ParseChunk(request) == -1)
+				return (client->_head.SetForError(true, 400), client->SetStatus(Clients::SENDING_RESPONSE));
+		}
+		else
+			client->_body.SetBody(request);
+	}
+	client->ClearBuff();
+	client->SetStatus(Clients::SENDING_RESPONSE);
 }
 
 void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
@@ -279,29 +316,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		ReadAllRequest(client, client_fd);
 	}
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
-	{
-		request = client->GetReadBuffer();
-		if (request.empty())
-			return (client->SetStatus(Clients::WAITING_REQUEST));
-		if (client->_body.IsBody(client->_head))
-		{
-			request.erase(request.begin(), request.begin() + client->_head.GetIndexEndHeader() + 1);
-			if (client->_body.GetChunk() == true)
-			{
-				if (client->_body.ParseChunk(request) == -1)
-					return (client->_head.SetForError(true, 400), client->SetStatus(Clients::SENDING_RESPONSE));
-			}
-			else
-				client->_body.SetBody(request);
-			// client->_body.ChooseContent(request);
-		}
-		client->ClearBuff();
-		client->SetStatus(Clients::SENDING_RESPONSE);
-	}
-
+		HandleAfterReading(request, client);
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		Response resp(this->servers[client->GetServerIndex()], client);
+		Response resp(this->servers[client->GetServerIndex()], client); /*voir si remettre setlastactivity qqpart pour que la connection ne se ferme pas*/
 		if (!request.empty())
 		{
 			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
@@ -311,6 +329,45 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	}
 	if (client->GetStatus() == Clients::CLOSED)
 		CleanClient(client_fd, epoll);
+}
+
+void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
+{
+	int socket = accept(this->_socket_server[j], NULL, NULL);
+	if (socket < 0)
+	{
+		std::cerr << "Failed to grab socket_client." << std::endl;
+		return;
+	}
+	Clients*	client = new Clients(socket, j);
+	this->_socket_client[socket] = client;
+	if (epoll.SetEpoll(socket) == 0)
+	{
+		std::cerr << "Error: client socket is not created" << std::endl;
+		CleanClient(client->GetSocket(), epoll);
+	}
+}
+
+Clients*	HTTPServer::FindClient(int fd)
+{
+	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
+	if (it != this->_socket_client.end())
+		return (it->second);
+	else
+		return NULL;
+}
+
+void HTTPServer::CheckToDelete(Epoll& epoll)
+{
+	std::vector<int>	to_delete;
+
+	for (std::map<int, Clients*>::iterator it = this->_socket_client.begin(); it != this->_socket_client.end(); it++)
+	{
+		if (Timeout(it->second->GetLastActivity(), this->_tot_inactivity) == true) 
+			to_delete.push_back(it->first);
+	}
+	for (size_t i = 0; i < to_delete.size(); i++)
+		CleanClient(to_delete[i], epoll);
 }
 
 void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
@@ -324,56 +381,43 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 		this->_socket_client.erase(it);
 	}
 }
-
-
-int	HTTPServer::AcceptRequest(Epoll& epoll, int j)
-{
-	int socket = accept(this->_socket_server[j], NULL, NULL);
-	if (socket < 0)
-	{
-		std::cerr << "Failed to grab socket_client." << std::endl;
-		return (-1);
-	}
-	std::cout << "new client, fd " << socket << std::endl;
-	Clients*	client = new Clients(socket, j);
-	this->_socket_client[socket] = client;
-	epoll.SetEpoll(socket);
-	return (1);
-}
-
-Clients*	HTTPServer::FindClient(int fd)
-{
-	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
-	if (it != this->_socket_client.end())
-		return (it->second);
-	else
-		return NULL;
-}
-
 int HTTPServer::runServer()
 {
-	Epoll epoll(this->_socket_server);
-	int	server_index;
+	Epoll* epoll = NULL;
+	Clients* client = NULL;
 
+	try
+	{
+		epoll = new Epoll(this->_socket_server);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		delete epoll;
+		return (1);
+	}
+	int	server_index;
 	signal(SIGINT, handle_sigint);
 
 	while(g_running)
 	{
-		int n = epoll.epollWait();
+		int n = epoll->epollWait();
+		CheckToDelete(*epoll);
 		for (int i = 0; i < n; i++)
 		{
-			int	used_socket = epoll.getEvent(i).data.fd;
+			int	used_socket = epoll->getEvent(i).data.fd;
 			server_index = GetServerIndex(used_socket);
 			if (server_index >= 0)
-				AcceptRequest(epoll, server_index);
+			AcceptRequest(*epoll, server_index);
 			else 
 			{
-				Clients* client = FindClient(used_socket);
+				client = FindClient(used_socket);
 				if (client != NULL)
-					handleRequest(epoll, i, client);
+				handleRequest(*epoll, i, client);
 			}
 		}
 	}
+	delete epoll;
 	//to do gerer ctrl+C pour quitter proprement
 	//=>fermer tous les sockets, etc
 	return 0;
@@ -483,6 +527,5 @@ int HTTPServer::prepareServerSockets()
 				return 1;
 		}
 	}
-
 	return 0;
 }

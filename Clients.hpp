@@ -10,12 +10,13 @@
 class Clients
 {
 	private:
-		
+		int					_recv;
 		int					_socket_fd;
 		int					_server_index;
+		int					_last_activity;
+		int					_t_begin_request;
 		std::vector<char>	_read_buff;
 		bool				_r_header;
-		int					_recv;
 
 	public:
 		enum status
@@ -26,9 +27,12 @@ class Clients
 			CLOSED
 		} _status;
 
+		Clients();
 		Clients(int fd, int server_index);
 		~Clients();
 
+		int		GetLastActivity() const;
+		int		GetBeginRequest() const;
 		int		GetServerIndex() const;
 		int		GetSocket() const;
 		int&	GetRecv();
@@ -36,6 +40,8 @@ class Clients
 		status	GetStatus() const;
 		std::vector<char>&	GetReadBuffer();
 
+		void	SetLastActivity();
+		void	SetBeginRequest();
 		void	SetStatus(status new_status);
 		void	SetReadBuff(char* c, size_t len);
 		void	SetReadHeader(bool r_header);

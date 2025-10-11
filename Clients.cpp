@@ -1,14 +1,30 @@
 #include "Clients.hpp"
 
-Clients::Clients(int fd, int server_index) : _socket_fd(fd), _server_index(server_index),
-	 _r_header(false),  _recv(0), _status(WAITING_REQUEST)
+Clients::Clients()
+{
+}
+
+Clients::Clients(int fd, int server_index) : _recv(0), _socket_fd(fd), _server_index(server_index),
+	 _r_header(false), _status(WAITING_REQUEST)
 {
 	this->_read_buff.clear();
+	this->_head.SetIndexEndHeader(0);
+	this->SetLastActivity();
 }
 
 Clients::~Clients()
 {
 	close(_socket_fd);
+}
+
+int		Clients::GetLastActivity() const
+{
+	return (this->_last_activity);
+}
+
+int		Clients::GetBeginRequest() const
+{
+	return (this->_t_begin_request);
 }
 
 Clients::status Clients::GetStatus() const
@@ -26,10 +42,23 @@ std::vector<char>& Clients::GetReadBuffer()
 	return (this->_read_buff);
 }
 
-int&		Clients::GetRecv()
+int&	Clients::GetRecv()
 {
 	return (this->_recv);
 }
+
+void	Clients::SetLastActivity()
+{
+	time_t now = time(NULL);
+	this->_last_activity = now;
+}
+
+void	Clients::SetBeginRequest()
+{
+	time_t now = time(NULL);
+	this->_t_begin_request = now;
+}
+
 void	Clients::SetRecv(int count)
 {
 	this->_recv = count;
@@ -46,6 +75,7 @@ void Clients::ClearBuff()
 	this->_head.SetIndexEndHeader(0);
 	this->_r_header = false;
 	this->_recv = 0;
+	this->_t_begin_request = 0;
 }
 
 int Clients::GetServerIndex() const
