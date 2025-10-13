@@ -182,9 +182,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		header.setHeader(client->_head.GetError(), this->_methods);
 		header.sendHeader();
 	}
-	// to do check cgi
-	if (cgi.CheckCGI(client->_head, client->_body, servers) == 0)
-		return 0;
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{

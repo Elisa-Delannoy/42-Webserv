@@ -45,6 +45,8 @@ class Location
 		int AddAutoindex(std::string line);
 		int AddCGIPass(std::string line);
 		int AddIndex(std::string line);
+
+		bool CheckMethod(std::string method);
 };
 
 

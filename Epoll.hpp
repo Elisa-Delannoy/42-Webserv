@@ -17,7 +17,7 @@ class Epoll
 		~Epoll();
 
 		int		epollWait();
-		int		SetEpoll(int fd);
+		int		SetEpoll(int fd ,uint32_t events);
 		void	deleteClient(int client_fd);
 
 		int	getEpollFd();

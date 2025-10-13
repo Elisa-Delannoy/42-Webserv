@@ -319,13 +319,39 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		HandleAfterReading(request, client);
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		Response resp(this->servers[client->GetServerIndex()], client); /*voir si remettre setlastactivity qqpart pour que la connection ne se ferme pas*/
-		if (!request.empty())
+		if (client->GetCgiStatus() == Clients::CGI_NONE && client->_cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]))
+			client->SetCgiStatus(Clients::CGI_AVAILABLE);
+		if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
 		{
-			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-				client->SetStatus(Clients::CLOSED);
+			int state = client->_cgi.Execution(client->_head, client->_body, epoll);
+			if (state == 1)
+				client->SetCgiStatus(Clients::CGI_EXECUTING);
+			if (state == 0)
+				client->SetCgiStatus(Clients::CGI_ERROR);
 		}
-		client->SetStatus(Clients::WAITING_REQUEST);
+		if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
+		{
+			int state = client->_cgi.ReadWrite(client->_body);
+			if (state == 1)
+				client->SetCgiStatus(Clients::CGI_FINISHED);
+			if (state == 0)
+				client->SetCgiStatus(Clients::CGI_ERROR);
+		}
+		if (client->GetCgiStatus() == Clients::CGI_FINISHED)
+		{
+			std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
+			client->SetCgiStatus(Clients::CGI_NONE);
+		}
+		if (client->GetCgiStatus() == Clients::CGI_NONE)
+		{
+			Response resp(this->servers[client->GetServerIndex()], client);/*voir si remettre setlastactivity qqpart pour que la connection ne se ferme pas*/
+			if (!request.empty())
+			{
+				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
+					client->SetStatus(Clients::CLOSED);
+			}
+			client->SetStatus(Clients::WAITING_REQUEST);
+		}
 	}
 	if (client->GetStatus() == Clients::CLOSED)
 		CleanClient(client_fd, epoll);
@@ -341,7 +367,7 @@ void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 	}
 	Clients*	client = new Clients(socket, j);
 	this->_socket_client[socket] = client;
-	if (epoll.SetEpoll(socket) == 0)
+	if (epoll.SetEpoll(socket, EPOLLIN | EPOLLOUT) == 0)
 	{
 		std::cerr << "Error: client socket is not created" << std::endl;
 		CleanClient(client->GetSocket(), epoll);
@@ -381,6 +407,16 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 		this->_socket_client.erase(it);
 	}
 }
+
+Clients*	HTTPServer::FindClient(int fd)
+{
+	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
+	if (it != this->_socket_client.end())
+		return (it->second);
+	else
+		return NULL;
+}
+
 int HTTPServer::runServer()
 {
 	Epoll* epoll = NULL;

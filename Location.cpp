@@ -200,3 +200,13 @@ int Location::AddIndex(std::string line)
 	SetIndex(word);
 	return 0;
 }
+
+bool Location::CheckMethod(std::string method)
+{
+	for (int i = 0; i < nb_methods; i++)
+	{
+		if (GetMethods(i) == method)
+			return true;
+	}
+	return false;
+}
