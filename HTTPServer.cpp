@@ -408,15 +408,6 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 	}
 }
 
-Clients*	HTTPServer::FindClient(int fd)
-{
-	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
-	if (it != this->_socket_client.end())
-		return (it->second);
-	else
-		return NULL;
-}
-
 int HTTPServer::runServer()
 {
 	Epoll* epoll = NULL;
