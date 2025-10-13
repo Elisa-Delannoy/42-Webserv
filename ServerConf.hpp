@@ -10,7 +10,6 @@
 #include <fstream>
 #include <cstdlib>
 #include <arpa/inet.h>
-
 #include "Location.hpp"
 
 class ServerConf

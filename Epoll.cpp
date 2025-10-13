@@ -43,22 +43,22 @@ int Epoll::getEpollFd()
 	return this->_epoll_fd;
 }
 
-void Epoll::SetEpoll(int fd)
+int Epoll::SetEpoll(int fd, uint32_t events)
 {
 	epoll_event	event;
-	event.events = EPOLLIN | EPOLLOUT;
+	event.events = events;
 	event.data.fd = fd;
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) 
 	{
 		close(fd);
-		return; //to do gestion erreur;
+		return 0; //to do gestion erreur;
 	}
 	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
 		close (fd);
+	return 1;
 }
-
 
 void Epoll::deleteClient(int client_fd)
 {
