@@ -19,7 +19,9 @@
 class HeaderResponse;
 class BodyResponse;
 
+#define ERROR400 "<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
+#define ERROR405 "<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center><hr><center>MyWebServ</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
 
 class Response
@@ -29,7 +31,7 @@ class Response
 		~Response();
 
 		int sendResponse(ServerConf & servers, Clients* client, std::vector<char> request);
-		void setRootLocation(std::string & path);
+		void setRootLocationAndMethods(std::string & path);
 		void sendError(HeaderResponse & header, BodyResponse & body, int code);
 		void sendHeaderAndBody(HeaderResponse & header, BodyResponse & body);
 

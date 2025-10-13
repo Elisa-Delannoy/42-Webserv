@@ -13,30 +13,9 @@ Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 Response::~Response()
 { }
 
-void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
-{
-	if (this->_errors_path.find(code)->second.empty())
-	{
-		if (code == 404)
-			body._body = ERROR404;
-		if (code == 500)
-			body._body  = ERROR500;
-		std::ostringstream oss;
-		oss << body._body.size();
-		header._content_length = "Content-Length: " + oss.str() + "\r\n";
-	}
-	else
-	{
-		std::string path = GetErrorPath(code).c_str();
-		header.setPath(path);
-		body.checkBody(path.c_str());
-		header._content_length = header.setContentLength();
-	}
-	sendHeaderAndBody(header, body);
-}
-
 //Loop through locations from conf file to find correct root
-void Response::setRootLocation(std::string & path)
+//Also set allowed methods (GET/POST/DELETE)
+void Response::setRootLocationAndMethods(std::string & path)
 {
 	std::string name;
 	this->_methods.clear();
@@ -71,10 +50,44 @@ void Response::setRootLocation(std::string & path)
 	}
 }
 
-//Return index from conf file
-std::string Response::getIndex()
+/*
+	(code == 400)
+	(code == 405)
+*/
+
+void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 {
-	return this->_server.GetLocation(this->_index_location).GetIndex();
+	header.setHeader(code, this->_methods);
+	std::cout << "this->_errors_path.find(code) " << this->_errors_path[code] << std::endl;
+	if (this->_errors_path[code].empty())
+	{
+		if (code == 400)
+			body._body = ERROR400;
+		if (code == 404)
+			body._body = ERROR404;
+		if (code == 405)
+			body._body = ERROR405;
+		if (code == 500)
+			body._body  = ERROR500;
+
+		std::ostringstream oss;
+		oss << body._body.size();
+		header._content_length = "Content-Length: " + oss.str() + "\r\n";
+	}
+	else
+	{
+		std::string path = GetErrorPath(code).c_str();
+		header.setPath(path);
+		if (body.checkBody(path.c_str()) == 0)
+			header._content_length = header.setContentLength();
+		else
+		{
+			header.setHeader(500, this->_methods);
+			header.sendHeader(false);
+			return ;
+		}
+	}
+	sendHeaderAndBody(header, body);
 }
 
 void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path)
@@ -98,6 +111,7 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 			size_t found = name.find(".");
 			if (found == std::string::npos)
 				name += "/";
+			std::cout << "path : " << path << std::endl;
 			if (path == "uploads/")
 				body._body += "<li><a href=\"" + path + name + "\">" + name + "</a></li>";
 			else
@@ -122,11 +136,6 @@ void Response::displayUploadSuccessfull(HeaderResponse & header, BodyResponse & 
 	sendHeaderAndBody(header, body);
 }
 
-bool Response::getAutoindex()
-{
-	return this->_server.GetLocation(this->_index_location).GetAutoindex();
-}
-
 void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, std::vector<char> & request)
 {
 	DIR *dir;
@@ -134,7 +143,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	if (dir == NULL)
 	{
 		header.setHeader(404, this->_methods);
-		header.sendHeader();
+		header.sendHeader(false);
 	}
 	std::string filename = "uploads/" + body.getFilename();
 	std::ofstream out(filename.c_str(), std::ios::binary);
@@ -145,7 +154,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	{
 		out.close();
 		header.setHeader(404, this->_methods);
-		header.sendHeader();
+		header.sendHeader(false);
 	}
 	else
 	{
@@ -172,15 +181,14 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		std::cout << *it;
 	std::cout << "\n--------BUF END-------\n" << std::endl; */
 
-	setRootLocation(path);
+	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
 
 	//error in header
 	if (client->_head.GetToClose() == true)
 	{
-		header.setHeader(client->_head.GetError(), this->_methods);
-		header.sendHeader();
+		sendError(header, body, client->_head.GetError());
 	}
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
@@ -190,8 +198,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 			handleGet(header, body, path);
 		else
 		{
-			header.setHeader(405, this->_methods);
-			header.sendHeader();
+			sendError(header, body, 405);
 		}
 	}
 	else if (method == "POST")
@@ -220,19 +227,58 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 			else
 			{
 				header.setHeader(200, this->_methods);
-				header.sendHeader();
+				header.sendHeader(false);
 			}
 		}
 		else
 		{
-			header.setHeader(405, this->_methods);
-			header.sendHeader();
+			sendError(header, body, 405);
+		}
+	}
+	else if (method == "DELETE")
+	{
+		std::cout << "delete method" << std::endl;
+		if (method_allowed)
+		{
+			if (access(path.c_str(), F_OK) != 0) //file not found
+			{
+				std::cout << "file not found" << std::endl;
+				header.setHeader(404, this->_methods);
+				header._content_length = "Content-Length: 16\r\n";
+				body._body = "File not found";
+				sendHeaderAndBody(header, body);
+			}
+			else
+			{
+				std::cout << "path.substr(0, 8)" << path.substr(0, 8) << std::endl;
+				if (path.substr(0, 8) != "uploads/")
+				{
+					header.setHeader(403, this->_methods);
+					header.sendHeader(false);
+				}
+				else
+				{
+					if (unlink(path.c_str()) == 0) //delete file
+					{
+						header.setHeader(204, this->_methods);
+						header.sendHeader(false);
+					}
+					else //could not delete file
+					{
+						header.setHeader(404, this->_methods);
+						header.sendHeader(false);
+					}
+				}
+			}
+		}
+		else
+		{
+			sendError(header, body, 405);
 		}
 	}
 	else
 	{
-		header.setHeader(404, this->_methods);
-		header.sendHeader();
+		sendError(header, body, 405);
 	}
 	return (header.getCloseAlive());
 }
@@ -256,13 +302,11 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		}
 		else if (check == 404) //wrong path
 		{
-			header.setHeader(404, this->_methods);
-			header.sendHeader();
+			sendError(header, body, 404);
 		}
 		else
 		{
-			header.setHeader(200, this->_methods); // to do check le 200
-			header.sendHeader();
+			sendError(header, body, 500);
 		}
 	}
 	closedir(dir);
@@ -282,7 +326,6 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		}
 		else
 		{
-			header.setHeader(404, this->_methods);
 			sendError(header, body, 404);
 		}
 	}
@@ -297,15 +340,9 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		}
 		else
 		{
-			header.setHeader(500, this->_methods);
 			sendError(header, body, 500);
 		}
 	}
-}
-
-std::string Response::GetErrorPath(int code)
-{
-	return (this->_errors_path[code]);
 }
 
 bool Response::isMethodAllowed(std::string method)
@@ -321,6 +358,22 @@ bool Response::isMethodAllowed(std::string method)
 
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 {
-	header.sendHeader();
+	header.sendHeader(true);
 	body.sendBody();
+}
+
+//Return index from conf file
+std::string Response::getIndex()
+{
+	return this->_server.GetLocation(this->_index_location).GetIndex();
+}
+
+std::string Response::GetErrorPath(int code)
+{
+	return (this->_errors_path[code]);
+}
+
+bool Response::getAutoindex()
+{
+	return this->_server.GetLocation(this->_index_location).GetAutoindex();
 }
