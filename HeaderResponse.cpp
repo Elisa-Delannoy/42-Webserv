@@ -69,23 +69,23 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		}
 		return ;
 	}
-	// voir si d autres infos a ajouter pour ces pages
-	// if (code == 408)
-	// {
-	// 	this->_status = setStatus(" 408 Request Timeout\r\n");
-	// 	this->_content_length = "Content-Length: 0\r\n";
-	// 	return ;
-	// }
-	// if (code == 413)
-	// {
-	// 	this->_status = setStatus(" 413 Payload Too Large\r\n");
-	// 	this->_content_length = "Content-Length: 0\r\n";
-	// 	return ;
-	// }
+	if (code == 408)
+	{
+		this->_status = setStatus(" 408 Request Timeout\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		return ;
+	}
+	if (code == 413)
+	{
+		this->_status = setStatus(" 413 Payload Too Large\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		return ;
+	}
 	if (code == 500)
 	{
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
+		return ;
 	}
 	if (!this->_path.empty())
 		this->_content_type = setContentType();

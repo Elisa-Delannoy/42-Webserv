@@ -153,7 +153,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	if (body._body.size() >= static_cast<size_t>(header._server.GetClientBodySize()))
 	{
 		out.close();
-		header.setHeader(404, this->_methods);
+		header.setHeader(413, this->_methods);
 		header.sendHeader(false);
 	}
 	else
@@ -186,10 +186,14 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	BodyResponse body(servers, client);
 
 	//error in header
-	if (client->_head.GetToClose() == true)
+	if (client->_head.GetError() != 0)
 	{
-		sendError(header, body, client->_head.GetError());
+		header.setHeader(client->_head.GetError(), this->_methods);
+		sendHeader(header);
+		return (header.getCloseAlive());
 	}
+	//if cgi > body._body = string  de noah
+	//
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{
@@ -207,7 +211,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		if (method_allowed)
 		{
 			std::string content_type = header.getValueHeader(client, "Content-Type");
-	
+
 			if (content_type.substr(0, 20) == " multipart/form-data")
 			{
 				body.findFilename(request);
