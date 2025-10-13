@@ -8,6 +8,7 @@ Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 	this->_errors_path = this->_server.GetErrorPath();
 	this->_body_len = client->_body.GetContentLen();
 	this->_client_fd = client->GetSocket();
+	this->_to_close = client->_head.GetToClose();
 }
 
 Response::~Response()
@@ -50,11 +51,6 @@ void Response::setRootLocationAndMethods(std::string & path)
 	}
 }
 
-/*
-	(code == 400)
-	(code == 405)
-*/
-
 void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 {
 	header.setHeader(code, this->_methods);
@@ -83,7 +79,7 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 		else
 		{
 			header.setHeader(500, this->_methods);
-			header.sendHeader(false);
+			header.sendHeader(false, this->_to_close);
 			return ;
 		}
 	}
@@ -143,7 +139,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	if (dir == NULL)
 	{
 		header.setHeader(404, this->_methods);
-		header.sendHeader(false);
+		header.sendHeader(false, this->_to_close);
 	}
 	std::string filename = "uploads/" + body.getFilename();
 	std::ofstream out(filename.c_str(), std::ios::binary);
@@ -154,7 +150,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	{
 		out.close();
 		header.setHeader(413, this->_methods);
-		header.sendHeader(false);
+		header.sendHeader(false, this->_to_close);
 	}
 	else
 	{
@@ -189,14 +185,16 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	if (client->_head.GetError() != 0)
 	{
 		header.setHeader(client->_head.GetError(), this->_methods);
-		header.sendHeader(false);
+		header.sendHeader(false, this->_to_close);
 		return (header.getCloseAlive());
 	}
 
 	//cgi
 	if (!client->_cgi.GetCgiBody().empty())
 	{
+		//never got in there?
 		std::cout << "cgi" << std::endl;
+		handleCgi(header, body, client);
 		return 1;
 	}
 
@@ -207,89 +205,53 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		if (method_allowed)
 			handleGet(header, body, path);
 		else
-		{
 			sendError(header, body, 405);
-		}
 	}
 	else if (method == "POST")
 	{
 		std::cout << "post method" << std::endl;
 		if (method_allowed)
-		{
-			std::string content_type = header.getValueHeader(client, "Content-Type");
-
-			if (content_type.substr(0, 20) == " multipart/form-data")
-			{
-				body.findFilename(request);
-				if (body.getHasFilename())
-				{
-					createFileOnServer(header, body, request);
-				}
-				else //try to upload an empty file
-				{
-					body._body = "<html><body><h1>Empty Upload</h1></body></html>";
-					header._body_len = body._body.size();
-					header._content_length = header.setContentLength();
-					header.setHeader(200, this->_methods);
-					sendHeaderAndBody(header, body);
-				}
-			}
-			else
-			{
-				header.setHeader(200, this->_methods);
-				header.sendHeader(false);
-			}
-		}
+			handlePost(header, body, client, request);
 		else
-		{
 			sendError(header, body, 405);
-		}
 	}
 	else if (method == "DELETE")
 	{
 		std::cout << "delete method" << std::endl;
 		if (method_allowed)
-		{
-			if (access(path.c_str(), F_OK) != 0) //file not found
-			{
-				header.setHeader(404, this->_methods);
-				header._content_length = "Content-Length: 16\r\n";
-				body._body = "File not found";
-				sendHeaderAndBody(header, body);
-			}
-			else
-			{
-				std::cout << "path.substr(0, 8)" << path.substr(0, 8) << std::endl;
-				if (path.substr(0, 8) != "uploads/")
-				{
-					header.setHeader(403, this->_methods);
-					header.sendHeader(false);
-				}
-				else
-				{
-					if (unlink(path.c_str()) == 0) //delete file
-					{
-						header.setHeader(204, this->_methods);
-						header.sendHeader(false);
-					}
-					else //could not delete file
-					{
-						header.setHeader(404, this->_methods);
-						header.sendHeader(false);
-					}
-				}
-			}
-		}
+			handleDelete(header, body, path);
 		else
-		{
 			sendError(header, body, 405);
+	}
+	else
+		sendError(header, body, 405);
+	return (header.getCloseAlive());
+}
+
+void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client)
+{
+	size_t found = client->_cgi.GetCgiBody().find("Content-Type");
+	if (found != std::string::npos)
+	{
+		while(client->_cgi.GetCgiBody()[found] != '\n')
+		{
+			header._content_type += client->_cgi.GetCgiBody()[found];
+			found++;
 		}
+	}
+
+	found = client->_cgi.GetCgiBody().find("<!DOCTYPE html>");
+	if (found != std::string::npos)
+	{
+		body._body = client->_cgi.GetCgiBody().substr(found);
+		header.setHeader(200, this->_methods);
+		sendHeaderAndBody(header, body);
 	}
 	else
 	{
-		sendError(header, body, 405);
+		header.setHeader(500, this->_methods);
+		header.sendHeader(false, this->_to_close);
 	}
-	return (header.getCloseAlive());
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
@@ -319,6 +281,66 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		}
 	}
 	closedir(dir);
+}
+
+void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients* client, std::vector<char> request)
+{
+	std::string content_type = header.getValueHeader(client, "Content-Type");
+
+	if (!content_type.empty() && content_type.substr(0, 20) == " multipart/form-data")
+	{
+		body.findFilename(request);
+		if (body.getHasFilename())
+		{
+			createFileOnServer(header, body, request);
+		}
+		else //try to upload an empty file
+		{
+			body._body = "<html><body><h1>Empty Upload</h1></body></html>";
+			header._body_len = body._body.size();
+			header._content_length = header.setContentLength();
+			header.setHeader(200, this->_methods);
+			sendHeaderAndBody(header, body);
+		}
+	}
+	else
+	{
+		header.setHeader(500, this->_methods);
+		header.sendHeader(false, this->_to_close);
+	}
+}
+
+void Response::handleDelete(HeaderResponse & header, BodyResponse & body, std::string & path)
+{
+	if (access(path.c_str(), F_OK) != 0) //file not found
+	{
+		header.setHeader(404, this->_methods);
+		header._content_length = "Content-Length: 16\r\n";
+		body._body = "File not found";
+		sendHeaderAndBody(header, body);
+	}
+	else
+	{
+		std::cout << "path.substr(0, 8)" << path.substr(0, 8) << std::endl;
+		if (path.substr(0, 8) != "uploads/")
+		{
+			header.setHeader(403, this->_methods);
+			header.sendHeader(false, this->_to_close);
+		}
+		else
+		{
+			if (unlink(path.c_str()) == 0) //delete file
+			{
+				header.setHeader(204, this->_methods);
+				header.sendHeader(false, this->_to_close);
+			}
+			else //could not delete file
+			{
+				header.setHeader(404, this->_methods);
+				header.sendHeader(false, this->_to_close);
+			}
+		}
+	}
 }
 
 void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path)
@@ -367,7 +389,7 @@ bool Response::isMethodAllowed(std::string method)
 
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 {
-	header.sendHeader(true);
+	header.sendHeader(true, this->_to_close);
 	body.sendBody();
 }
 

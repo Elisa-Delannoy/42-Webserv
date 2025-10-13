@@ -35,7 +35,10 @@ class Response
 		void sendError(HeaderResponse & header, BodyResponse & body, int code);
 		void sendHeaderAndBody(HeaderResponse & header, BodyResponse & body);
 
+		void handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client);
 		void handleGet(HeaderResponse & header, BodyResponse & body, std::string & path);
+		void handlePost(HeaderResponse & header, BodyResponse & body, Clients* client, std::vector<char> request);
+		void handleDelete(HeaderResponse & header, BodyResponse & body, std::string & path);
 		void handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path);
 
 
@@ -56,6 +59,7 @@ class Response
 		std::vector<std::string> _methods;
 		std::string _root;
 		int _index_location;
+		bool _to_close;
 
 	protected:
 		std::string _status;
