@@ -169,12 +169,12 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 //Return 1 if connection is keep-alive
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
-	ExecCGI cgi;
+	// ExecCGI cgi;
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
-	
+
 	/* std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = request.begin();
 	for(; it != request.end(); it++)
@@ -189,11 +189,17 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	if (client->_head.GetError() != 0)
 	{
 		header.setHeader(client->_head.GetError(), this->_methods);
-		sendHeader(header);
+		header.sendHeader(false);
 		return (header.getCloseAlive());
 	}
-	//if cgi > body._body = string  de noah
-	//
+
+	//cgi
+	if (!client->_cgi.GetCgiBody().empty())
+	{
+		std::cout << "cgi" << std::endl;
+		return 1;
+	}
+
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{
@@ -246,7 +252,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		{
 			if (access(path.c_str(), F_OK) != 0) //file not found
 			{
-				std::cout << "file not found" << std::endl;
 				header.setHeader(404, this->_methods);
 				header._content_length = "Content-Length: 16\r\n";
 				body._body = "File not found";

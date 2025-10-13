@@ -319,32 +319,32 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		HandleAfterReading(request, client);
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		if (client->_head.GetError() == 0)
+		// if (client->_head.GetError() == 0)
+		// {
+		if (client->GetCgiStatus() == Clients::CGI_NONE && client->_cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]))
+			client->SetCgiStatus(Clients::CGI_AVAILABLE);
+		if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
 		{
-			if (client->GetCgiStatus() == Clients::CGI_NONE && client->_cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]))
-				client->SetCgiStatus(Clients::CGI_AVAILABLE);
-			if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
-			{
-				int state = client->_cgi.Execution(client->_head, client->_body, epoll);
-				if (state == 1)
-					client->SetCgiStatus(Clients::CGI_EXECUTING);
-				if (state == 0)
-					client->SetCgiStatus(Clients::CGI_ERROR);
-			}
-			if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
-			{
-				int state = client->_cgi.ReadWrite(client->_body);
-				if (state == 1)
-					client->SetCgiStatus(Clients::CGI_FINISHED);
-				if (state == 0)
-					client->SetCgiStatus(Clients::CGI_ERROR);
-			}
-			if (client->GetCgiStatus() == Clients::CGI_FINISHED)
-			{
-				std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
-				client->SetCgiStatus(Clients::CGI_NONE);
-			}
+			int state = client->_cgi.Execution(client->_head, client->_body, epoll);
+			if (state == 1)
+				client->SetCgiStatus(Clients::CGI_EXECUTING);
+			if (state == 0)
+				client->SetCgiStatus(Clients::CGI_ERROR);
 		}
+		if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
+		{
+			int state = client->_cgi.ReadWrite(client->_body);
+			if (state == 1)
+				client->SetCgiStatus(Clients::CGI_FINISHED);
+			if (state == 0)
+				client->SetCgiStatus(Clients::CGI_ERROR);
+		}
+		if (client->GetCgiStatus() == Clients::CGI_FINISHED)
+		{
+			std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
+			client->SetCgiStatus(Clients::CGI_NONE);
+		}
+		// }
 		if (client->GetCgiStatus() == Clients::CGI_NONE)
 		{
 			Response resp(this->servers[client->GetServerIndex()], client);/*voir si remettre setlastactivity qqpart pour que la connection ne se ferme pas*/
