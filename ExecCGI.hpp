@@ -27,6 +27,7 @@ class ExecCGI
 		int		_fdin;
 		int		_fdout;
 		bool 	_wrote;
+		int		_time_begin_cgi;
 
 	public:
 		ExecCGI();
@@ -35,11 +36,14 @@ class ExecCGI
 		int Execution(ParseRequest &header, ParseBody &body, Epoll& epoll);
 		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
 		int ReadWrite(ParseBody &body);
+		void	KillAndClose();
 
 		void SetArgv(Location &location, std::string &ext);
 		void SetEnvp(ParseRequest &header, ParseBody &body, std::string path);
+		void SetTimeBeginCGI();
 
 		char** GetEnvp() const;
 		char** GetArgv() const;
 		std::string GetCgiBody() const;
+		int GetTimeBeginCGI() const;
 };

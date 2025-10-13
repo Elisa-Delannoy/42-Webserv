@@ -4,7 +4,6 @@ volatile sig_atomic_t g_running = 1;
 
 HTTPServer::HTTPServer()
 {
-	this->_tot_inactivity = 60;
 }
 
 HTTPServer::~HTTPServer()
@@ -305,6 +304,44 @@ void HTTPServer::HandleAfterReading(std::vector<char>& request, Clients* client)
 	client->SetStatus(Clients::SENDING_RESPONSE);
 }
 
+void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
+{
+	if (client->GetCgiStatus() == Clients::CGI_NONE && client->_cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]))
+		client->SetCgiStatus(Clients::CGI_AVAILABLE);
+	if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
+	{
+		int state = client->_cgi.Execution(client->_head, client->_body, epoll);
+		if (state == 0)
+			client->SetCgiStatus(Clients::CGI_EXECUTING);
+		if (state > 0)
+		{
+			client->_head.SetForError(true, state);
+			client->SetCgiStatus(Clients::CGI_NONE);
+		}
+	}
+	if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
+	{
+		if (Timeout(client->_cgi.GetTimeBeginCGI(), 30))
+		{
+			client->_cgi.KillAndClose();
+			client->_head.SetForError(true, 504);
+		}
+		int state = client->_cgi.ReadWrite(client->_body);
+		if (state == 0)
+			client->SetCgiStatus(Clients::CGI_FINISHED);
+		if (state > 0)
+		{
+			client->_head.SetForError(true, state);
+			client->SetCgiStatus(Clients::CGI_NONE);
+		}
+	}
+	if (client->GetCgiStatus() == Clients::CGI_FINISHED)
+	{
+		std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
+		client->SetCgiStatus(Clients::CGI_NONE);
+	}
+}
+
 void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 {
 	std::vector<char> request;
@@ -319,32 +356,11 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		HandleAfterReading(request, client);
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		if (client->GetCgiStatus() == Clients::CGI_NONE && client->_cgi.CheckCGI(client->_head, client->_body, servers[client->GetServerIndex()]))
-			client->SetCgiStatus(Clients::CGI_AVAILABLE);
-		if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
-		{
-			int state = client->_cgi.Execution(client->_head, client->_body, epoll);
-			if (state == 1)
-				client->SetCgiStatus(Clients::CGI_EXECUTING);
-			if (state == 0)
-				client->SetCgiStatus(Clients::CGI_ERROR);
-		}
-		if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
-		{
-			int state = client->_cgi.ReadWrite(client->_body);
-			if (state == 1)
-				client->SetCgiStatus(Clients::CGI_FINISHED);
-			if (state == 0)
-				client->SetCgiStatus(Clients::CGI_ERROR);
-		}
-		if (client->GetCgiStatus() == Clients::CGI_FINISHED)
-		{
-			std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
-			client->SetCgiStatus(Clients::CGI_NONE);
-		}
+		client->SetLastActivity();
+		HandleCGI(epoll, client);
 		if (client->GetCgiStatus() == Clients::CGI_NONE)
 		{
-			Response resp(this->servers[client->GetServerIndex()], client);/*voir si remettre setlastactivity qqpart pour que la connection ne se ferme pas*/
+			Response resp(this->servers[client->GetServerIndex()], client);
 			if (!request.empty())
 			{
 				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
@@ -389,7 +405,7 @@ void HTTPServer::CheckToDelete(Epoll& epoll)
 
 	for (std::map<int, Clients*>::iterator it = this->_socket_client.begin(); it != this->_socket_client.end(); it++)
 	{
-		if (Timeout(it->second->GetLastActivity(), this->_tot_inactivity) == true) 
+		if (Timeout(it->second->GetLastActivity(), 60) == true) 
 			to_delete.push_back(it->first);
 	}
 	for (size_t i = 0; i < to_delete.size(); i++)

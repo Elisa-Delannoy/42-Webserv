@@ -50,9 +50,9 @@ class HTTPServer
 		int			CheckEndWithChunk(Clients* client);
 		int			CheckEndWithLen(Clients* client);
 		void		CheckToDelete(Epoll& epoll);
+		void		HandleCGI(Epoll& epoll, Clients* client);
 
 	private:
-		int	_tot_inactivity;
 		std::vector<int>		_socket_server;
 		std::map<int, Clients*>	_socket_client;
 		std::map<int, size_t>	_attached_server;
