@@ -4,8 +4,8 @@ Clients::Clients()
 {
 }
 
-Clients::Clients(int fd, int server_index) : _socket_fd(fd), _server_index(server_index),
-	 _r_header(false),  _recv(0), _status(WAITING_REQUEST), _cgistatus(CGI_NONE)
+Clients::Clients(int fd, int server_index) : _recv(0), _socket_fd(fd), _server_index(server_index),
+	 _r_header(false), _status(WAITING_REQUEST), _cgistatus(CGI_NONE)
 {
 	this->_read_buff.clear();
 	this->_head.SetIndexEndHeader(0);
