@@ -9,10 +9,12 @@ Response(servers, client) , _path(path), _version(version)
 HeaderResponse::~HeaderResponse()
 { }
 
-void HeaderResponse::sendHeader()
+void HeaderResponse::sendHeader(bool isbody)
 {
 	this->_header = this->_status + this->_content_type + this->_allow
-		+ this->_content_length + this->_connection + "\r\n";
+		+ this->_content_length + this->_connection;
+	if (isbody)
+		this->_header += "\r\n";
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
 }
@@ -36,6 +38,12 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_status = setStatus(" 400 Bad Request\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		this->_connection = "Connection: close\r\n";
+		return ;
+	}
+	if (code == 403)
+	{
+		this->_status = setStatus(" 403 Forbidden\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
 	if (code == 404)
@@ -100,6 +108,8 @@ std::string HeaderResponse::setContentType()
 			ret += "application/javascript";
 		if (type == "pdf" || type == "zip")
 			ret += "application/" + type;
+		else
+			return "";
 	}
 	return (ret + "\r\n");
 }

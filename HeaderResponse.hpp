@@ -9,7 +9,7 @@ class HeaderResponse : public Response
 		HeaderResponse(ServerConf & servers, Clients* client, std::string & path, std::string version);
 		~HeaderResponse();
 
-		void 		sendHeader();
+		void 		sendHeader(bool isbody);
 
 		//SETTING HEADER
 		void 		setHeader(int code, std::vector<std::string> & methods);

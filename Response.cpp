@@ -83,7 +83,7 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 		else
 		{
 			header.setHeader(500, this->_methods);
-			header.sendHeader();
+			header.sendHeader(false);
 			return ;
 		}
 	}
@@ -143,7 +143,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	if (dir == NULL)
 	{
 		header.setHeader(404, this->_methods);
-		header.sendHeader();
+		header.sendHeader(false);
 	}
 	std::string filename = "uploads/" + body.getFilename();
 	std::ofstream out(filename.c_str(), std::ios::binary);
@@ -154,7 +154,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	{
 		out.close();
 		header.setHeader(404, this->_methods);
-		header.sendHeader();
+		header.sendHeader(false);
 	}
 	else
 	{
@@ -230,7 +230,48 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 			else
 			{
 				header.setHeader(200, this->_methods);
-				header.sendHeader();
+				header.sendHeader(false);
+			}
+		}
+		else
+		{
+			sendError(header, body, 405);
+		}
+	}
+	else if (method == "DELETE")
+	{
+		std::cout << "delete method" << std::endl;
+		if (method_allowed)
+		{
+			if (access(path.c_str(), F_OK) != 0) //file not found
+			{
+				std::cout << "file not found" << std::endl;
+				header.setHeader(404, this->_methods);
+				header._content_length = "Content-Length: 16\r\n";
+				body._body = "File not found";
+				sendHeaderAndBody(header, body);
+			}
+			else
+			{
+				std::cout << "path.substr(0, 8)" << path.substr(0, 8) << std::endl;
+				if (path.substr(0, 8) != "uploads/")
+				{
+					header.setHeader(403, this->_methods);
+					header.sendHeader(false);
+				}
+				else
+				{
+					if (unlink(path.c_str()) == 0) //delete file
+					{
+						header.setHeader(204, this->_methods);
+						header.sendHeader(false);
+					}
+					else //could not delete file
+					{
+						header.setHeader(404, this->_methods);
+						header.sendHeader(false);
+					}
+				}
 			}
 		}
 		else
@@ -240,7 +281,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	}
 	else
 	{
-		sendError(header, body, 404);
+		sendError(header, body, 405);
 	}
 	return (header.getCloseAlive());
 }
@@ -320,7 +361,7 @@ bool Response::isMethodAllowed(std::string method)
 
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 {
-	header.sendHeader();
+	header.sendHeader(true);
 	body.sendBody();
 }
 
