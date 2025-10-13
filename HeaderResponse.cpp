@@ -87,6 +87,12 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
+	if (code == 504)
+	{
+		this->_status = setStatus(" 500 Gateway Timeout\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		return;
+	}
 	if (!this->_path.empty())
 		this->_content_type = setContentType();
 }

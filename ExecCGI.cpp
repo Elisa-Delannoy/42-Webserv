@@ -1,6 +1,6 @@
 #include "ExecCGI.hpp"
 
-ExecCGI::ExecCGI()
+ExecCGI::ExecCGI() : _time_begin_cgi(0)
 {}
 
 ExecCGI::~ExecCGI()
@@ -19,6 +19,11 @@ char** ExecCGI::GetArgv() const
 std::string ExecCGI::GetCgiBody() const
 {
 	return _cgibody;
+}
+
+int ExecCGI::GetTimeBeginCGI() const
+{
+	return _time_begin_cgi;
 }
 
 std::string replace_substring(std::string str, const std::string& to_replace, const std::string& replacement) 
@@ -106,6 +111,12 @@ std::string SetupPath(std::string path, const std::string& LocName, const std::s
 	return newpath;
 }
 
+void ExecCGI::SetTimeBeginCGI()
+{
+	time_t now = time(NULL);
+	this->_time_begin_cgi = now;
+}
+
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 {
 	std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
@@ -124,19 +135,19 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 	if (pipe(pipe_in) == -1)
 	{
 		std::cerr << "[ERROR] pipe_in failed: " << strerror(errno) << std::endl;
-		return 500;
+		return (500);
 	}
 	if (pipe(pipe_out) == -1)
 	{
 		std::cerr << "[ERROR] pipe_out failed: " << strerror(errno) << std::endl;
-		return 500;
+		return (500);
 	}
 	
 	pid_t pid = fork();
 	if (pid == -1)
 	{
 		std::cerr << "[ERROR] fork failed: " << strerror(errno) << std::endl;
-		return 500;
+		return (500);
 	}
 	
 	if (pid == 0)
@@ -147,12 +158,12 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 		if (dup2(pipe_in[0], STDIN_FILENO) == -1)
 		{
 			std::cerr << "[CHILD ERROR] dup2 stdin: " << strerror(errno) << std::endl;
-			return 500;
+			exit(500);
 		}
 		if (dup2(pipe_out[1], STDOUT_FILENO) == -1)
 		{
 			std::cerr << "[CHILD ERROR] dup2 stdout: " << strerror(errno) << std::endl;
-			return 500;
+			exit(500);
 		}
 		
 		close(pipe_in[0]);
@@ -160,23 +171,22 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 
 		execve(_loc.GetCGIPass(_ext).c_str(), GetArgv(), GetEnvp());
 		if (errno == ENOENT)
-			return (404);
+			exit(404);
 		if (errno == EACCES)
-			return (403);
+			exit(403);
 		else
-			return (500);
-		std::cerr << "[CHILD ERROR] Command was: " << _loc.GetCGIPass(_ext) << std::endl;
-		exit(1);
+			exit(500);
 	}
 	else
 	{
+		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
 	}
-	return 1;
+	return 0;
 }
 
 int ExecCGI::ReadWrite(ParseBody& body)
@@ -204,10 +214,33 @@ int ExecCGI::ReadWrite(ParseBody& body)
 	{
 		close(_fdout);
 		int status;
-		waitpid(_pid, &status, 0);
-		return 1;
+		int	error_code;
+		waitpid(_pid, &status, WNOHANG);
+		if (WIFEXITED(status)) 
+			error_code = WEXITSTATUS(status);
+		else if (WIFSIGNALED(status))
+		{
+			int sig = WTERMSIG(status);
+			switch(sig)
+			{
+				case SIGKILL:
+					error_code = 504;  // Gateway Timeout
+					break;
+				case SIGTERM:  // arrêt du service ou kill
+					error_code = 503;  // Service Unavailable
+					break;
+				case SIGSEGV:
+					error_code = 500;
+					break;
+				default:
+					error_code = 500;
+			}
+		}
+		else
+			error_code = 500;
+		return (error_code);
 	}
-	return 2;
+	return -1;
 }
 
 
@@ -234,4 +267,12 @@ bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &server
 		}
 	}
 	return false;
+}
+
+void	ExecCGI::KillAndClose()
+{
+	kill(_pid, SIGKILL);
+	waitpid(_pid, NULL, 0);
+	close(_fdin);
+	close(_fdout);
 }
