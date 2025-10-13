@@ -66,7 +66,8 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 	}
-	this->_content_type = setContentType();
+	if (!this->_path.empty())
+		this->_content_type = setContentType();
 }
 
 std::string HeaderResponse::setStatus(std::string code)
