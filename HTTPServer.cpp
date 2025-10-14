@@ -340,7 +340,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
 	if (client->GetCgiStatus() == Clients::CGI_FINISHED)
 	{
 		std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
-		client->_cgi.SetCgibody("");
+		// client->_cgi.SetCgibody("");
 		client->SetCgiStatus(Clients::CGI_NONE);
 	}
 }

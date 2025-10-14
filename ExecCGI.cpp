@@ -184,7 +184,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 	}
 	else
 	{
-		sleep(100000);
+		std::cout << "test8" << std::endl;
 		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
@@ -200,6 +200,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 int ExecCGI::ReadWrite(ParseBody& body)
 {
 	std::string bodyContent = body.GetBody();
+	std::cout << "test3" << std::endl;
 	if (_wrote == false && !bodyContent.empty())
 	{
 		ssize_t written = write(_fdin, bodyContent.c_str(), bodyContent.length());
@@ -215,12 +216,12 @@ int ExecCGI::ReadWrite(ParseBody& body)
 	if ((bytesRead = read(_fdout, buffer, sizeof(buffer) - 1)) > 0)
 	{
 		buffer[bytesRead] = '\0';
-		std::cout << "test3" << std::endl;
+		std::cout << "test4" << std::endl;
 		_cgibody += buffer;
 	}
-	else if (bytesRead == -1)
+	if (bytesRead == -1)
 		std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
-	else if (bytesRead == 0)
+	if (bytesRead == 0)
 	{
 		close(_fdout);
 		int status;
