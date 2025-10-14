@@ -111,6 +111,11 @@ std::string SetupPath(std::string path, const std::string& LocName, const std::s
 	return newpath;
 }
 
+void ExecCGI::SetCgibody(std::string str)
+{
+	_cgibody = str;
+}
+
 void ExecCGI::SetTimeBeginCGI()
 {
 	time_t now = time(NULL);
@@ -179,12 +184,15 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 	}
 	else
 	{
+		sleep(100000);
 		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
+		delete [] _argv;
+		delete [] _envp;
 	}
 	return 0;
 }
@@ -203,14 +211,16 @@ int ExecCGI::ReadWrite(ParseBody& body)
 	
 	char buffer[4096];
 	ssize_t bytesRead;
+	std::cout << "test" << std::endl;
 	if ((bytesRead = read(_fdout, buffer, sizeof(buffer) - 1)) > 0)
 	{
 		buffer[bytesRead] = '\0';
+		std::cout << "test3" << std::endl;
 		_cgibody += buffer;
 	}
-	if (bytesRead == -1)
+	else if (bytesRead == -1)
 		std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
-	if (bytesRead == 0)
+	else if (bytesRead == 0)
 	{
 		close(_fdout);
 		int status;
@@ -240,6 +250,7 @@ int ExecCGI::ReadWrite(ParseBody& body)
 			error_code = 500;
 		return (error_code);
 	}
+	std::cout << "test2" << std::endl;
 	return -1;
 }
 

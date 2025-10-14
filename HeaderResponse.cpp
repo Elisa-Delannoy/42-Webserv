@@ -95,7 +95,7 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	}
 	if (code == 504)
 	{
-		this->_status = setStatus(" 500 Gateway Timeout\r\n");
+		this->_status = setStatus(" 504 Gateway Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		return;
 	}
