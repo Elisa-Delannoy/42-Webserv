@@ -9,6 +9,8 @@ Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 	this->_body_len = client->_body.GetContentLen();
 	this->_client_fd = client->GetSocket();
 	this->_to_close = client->_head.GetToClose();
+	this->_begin_405 = "<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center>";
+	this->_end_405 = "<hr><center>MyWebServ</center></body></html>";
 }
 
 Response::~Response()
@@ -62,7 +64,16 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 		if (code == 404)
 			body._body = ERROR404;
 		if (code == 405)
-			body._body = ERROR405;
+		{
+			this->_begin_405 += "<center><h3>Methods allowed : ";
+			for(size_t i = 0; i < this->_methods.size(); i++)
+			{
+				this->_begin_405 += this->_methods[i];
+				this->_begin_405 += " ";
+			}
+			this->_begin_405 += "</h3></center>";
+			body._body = this->_begin_405 + this->_end_405;
+		}
 		if (code == 500)
 			body._body  = ERROR500;
 
@@ -165,17 +176,16 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 //Return 1 if connection is keep-alive
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
-	// ExecCGI cgi;
 	std::string path = client->_head.GetPath();
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = request.begin();
 	for(; it != request.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl;
+	std::cout << "\n--------BUF END-------\n" << std::endl; */
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -188,8 +198,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		header.sendHeader(false, this->_to_close);
 		return (header.getCloseAlive());
 	}
-
-	std::cout << "in response" << std::endl;
 
 	if (!client->_cgi.GetCgiBody().empty())
 	{

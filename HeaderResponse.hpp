@@ -30,6 +30,7 @@ class HeaderResponse : public Response
 		std::string _version;
 		std::string _connection;
 		std::string _allow;
+		std::string _accept;
 		int 		_close_alive;
 };
 
