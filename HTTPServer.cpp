@@ -321,10 +321,13 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
 	}
 	if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
 	{
-		if (Timeout(client->_cgi.GetTimeBeginCGI(), 30))
+		if (Timeout(client->_cgi.GetTimeBeginCGI(), 10))
 		{
 			client->_cgi.KillAndClose();
 			client->_head.SetForError(true, 504);
+			client->SetCgiStatus(Clients::CGI_NONE);
+			client->_cgi.SetCgibody("");
+			return ;
 		}
 		int state = client->_cgi.ReadWrite(client->_body);
 		if (state == 0)
@@ -338,6 +341,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
 	if (client->GetCgiStatus() == Clients::CGI_FINISHED)
 	{
 		std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
+		client->_cgi.SetCgibody("");
 		client->SetCgiStatus(Clients::CGI_NONE);
 	}
 }
