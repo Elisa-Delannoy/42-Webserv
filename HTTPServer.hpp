@@ -13,7 +13,7 @@
 #include <signal.h>
 #include "ServerConf.hpp"
 #include "Response.hpp"
-#include "ExecCGI.hpp"
+// #include "ExecCGI.hpp"
 #include "Epoll.hpp"
 #include "ParseBody.hpp"
 
@@ -50,7 +50,7 @@ class HTTPServer
 		int			CheckEndWithChunk(Clients* client);
 		int			CheckEndWithLen(Clients* client);
 		void		CheckToDelete(Epoll& epoll);
-		void		HandleCGI(Epoll& epoll, Clients* client);
+		void		HandleCGI(Epoll& epoll, Clients* client, int i);
 
 	private:
 		std::vector<int>		_socket_server;

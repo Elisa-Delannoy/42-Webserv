@@ -26,18 +26,25 @@ class ExecCGI
 		pid_t	_pid;
 		int		_fdin;
 		int		_fdout;
-		bool 	_wrote;
+		bool	_wrote;
+		bool	_read;
+		size_t		_w_len;
+		int		_count_read;
+		int		_count_write;
 		int		_time_begin_cgi;
 
 	public:
 		ExecCGI();
 		~ExecCGI();
 
+		int Read(Epoll& epoll);
+		int Write(ParseBody &body);
 		int Execution(ParseRequest &header, ParseBody &body, Epoll& epoll);
 		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
-		int ReadWrite(ParseBody &body);
 		void	KillAndClose();
 
+		void SetRead(bool state);
+		void SetWrote(bool state);
 		void SetArgv(Location &location, std::string &ext);
 		void SetEnvp(ParseRequest &header, ParseBody &body, std::string path);
 		void SetTimeBeginCGI();
@@ -45,6 +52,9 @@ class ExecCGI
 
 		char** GetEnvp() const;
 		char** GetArgv() const;
+		bool	GetRead();
+		bool	GetWrote();
+
 		std::string GetCgiBody() const;
 		int GetTimeBeginCGI() const;
 };
