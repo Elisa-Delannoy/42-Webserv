@@ -99,7 +99,7 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_content_length = "Content-Length: 0\r\n";
 		return;
 	}
-	if (!this->_path.empty())
+	if (!this->_path.empty() && !this->_content_type.empty())
 		this->_content_type = setContentType();
 }
 
@@ -134,7 +134,7 @@ std::string HeaderResponse::setContentType()
 		if (type == "pdf" || type == "zip")
 			ret += "application/" + type;
 		else
-			return "";
+			ret += "text/plain";
 	}
 	return (ret + "\r\n");
 }

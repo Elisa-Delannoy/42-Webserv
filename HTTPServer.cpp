@@ -300,7 +300,6 @@ void HTTPServer::HandleAfterReading(std::vector<char>& request, Clients* client)
 		else
 			client->_body.SetBody(request);
 	}
-	client->ClearBuff();
 	client->SetStatus(Clients::SENDING_RESPONSE);
 }
 
@@ -366,8 +365,12 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 			if (!request.empty() || !client->_cgi.GetCgiBody().empty())
 			{
 				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
+				{
 					client->SetStatus(Clients::CLOSED);
+					return ;
+				}
 			}
+			client->ClearBuff();
 			client->SetStatus(Clients::WAITING_REQUEST);
 		}
 	}

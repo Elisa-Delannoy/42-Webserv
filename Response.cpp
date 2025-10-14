@@ -309,6 +309,9 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 		std::string temp(request.begin(), request.end());
 		body._body = temp;
 		header._body_len = temp.size() + 2;
+		for (size_t i = 0; i < body._body.size(); ++i)
+			std::cout << i << ": " << std::hex << (int)(unsigned char)body._body[i] << std::endl;
+
 		header.setHeader(200, this->_methods);
 		sendHeaderAndBody(header, body);
 	}
