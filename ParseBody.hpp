@@ -54,6 +54,7 @@ class ParseBody
 		void	AppJson(std::vector<char> body);
 		void	AppMultipart(std::vector<char>& body);
 
+		void	ClearBody();
 		bool	IsBody(ParseRequest& request);
 		int		CheckBodyType(std::map<std::string, std::string>& head);
 		int		FindBodyLen(std::map<std::string, std::string>::iterator& it);

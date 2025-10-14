@@ -29,16 +29,15 @@ class ParseRequest
 		int	GetError() const;
 		int	GetIndexEndHeader() const;
 		bool	GetToClose() const;
+		void	ClearHeader();
 		const std::string&	GetPath() const;
 		const std::string&	GetMethod() const;
 		const std::string&	GetVersion() const;
 		const std::string&	GetNameLocation() const;
 		const std::map<std::string, std::string>&	GetHeader() const;
 
-		// void	SetError(int index);
 		void	SetIndexEndHeader(int index);
 		void	SetForError(bool to_close, int code);
-		// void	SetToClose(bool status);
 };
 
 #endif
