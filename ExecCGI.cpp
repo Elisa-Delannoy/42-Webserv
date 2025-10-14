@@ -4,7 +4,8 @@ ExecCGI::ExecCGI() : _wrote(false), _read(false), _w_len(0), _count_read(0), _co
 {}
 
 ExecCGI::~ExecCGI()
-{}
+{
+}
 
 char** ExecCGI::GetEnvp() const
 {
@@ -143,6 +144,22 @@ void ExecCGI::SetTimeBeginCGI()
 	this->_time_begin_cgi = now;
 }
 
+void ExecCGI::DeleteArgvEnvp()
+{
+	if (_argv)
+	{
+		for (int i = 0; _argv[i]; i++)
+			delete [] _argv[i];
+		delete [] _argv;
+	}
+	if (_envp)
+	{
+		for (int i = 0; _envp[i]; i++)
+			delete [] _envp[i];
+		delete [] _envp;
+	}
+}
+
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 {
 	std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
@@ -221,8 +238,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
-		delete [] _argv;
-		delete [] _envp;
+		DeleteArgvEnvp();
 	}
 	return 0;
 }

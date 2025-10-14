@@ -20,7 +20,7 @@ void ServerConf::SetHostPort(std::string host, int port)
 	_host_port.push_back(std::make_pair(host, port));
 }
 
-void ServerConf::SetClientBodySize(int size)
+void ServerConf::SetClientBodySize(long long size)
 {
 	_client_body_size = size;
 }
@@ -40,7 +40,7 @@ std::vector<std::string> ServerConf::GetServerName() const
 	return _server_name;
 }
 
-int ServerConf::GetClientBodySize() const
+long long ServerConf::GetClientBodySize() const
 {
 	return _client_body_size;
 }
@@ -143,7 +143,7 @@ int ServerConf::AddHostPort(std::string line)
 	return 0;
 }
 
-int ClientBodyValue(int value, int multiplier)
+void ClientBodyValue(size_t& value, int multiplier)
 {
 	switch (multiplier)
 	{
@@ -157,10 +157,9 @@ int ClientBodyValue(int value, int multiplier)
 		value = value * 1000000000;
 		break;
 	default:
-		value = -1;
+		value = 0;
 		break;
 	}
-	return value;
 }
 
 int ServerConf::AddClientBody(std::string line)
@@ -177,10 +176,27 @@ int ServerConf::AddClientBody(std::string line)
 	word.erase(word.length() - 1);
 	if (word.length() <= 0)
 		return 4;
-	int temp = atoi(word.substr(0, word.length() - 1).c_str());
-	char multiplier = word.substr(word.length() - 1).c_str()[0];
-	int value = ClientBodyValue(temp, multiplier);
-	if (value == -1)
+	size_t value = 0;
+	size_t i = 0;
+	for (; i < word.length() && word[i] >= '0' && word[i] <= '9'; i++)
+	{	
+		value = value * 10 + word[i] - '0';
+	}
+	if (value > LONG_MAX || value == 0)
+		return 4;
+	std::cout << value << std::endl;
+	std::cout << word.length() << std::endl;
+	if (i == word.length())
+	{
+		this->SetClientBodySize(value);
+		return 0;
+	}
+	char multiplier = word[i];
+	std::cout << multiplier << std::endl;
+	if (word[++i] != '\0')
+		return 4;
+	ClientBodyValue(value, multiplier);
+	if (value == 0 || value > LONG_MAX)
 		return 4;
 	this->SetClientBodySize(value);
 	return 0;

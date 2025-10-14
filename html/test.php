@@ -1,7 +1,6 @@
 #!/usr/bin/php-cgi
 <?php
 // En-tête CGI obligatoire
-echo "Content-type: text/html\r\n\r\n";
 
 // Lire les données POST
 parse_str(file_get_contents("php://input"), $_POST);
@@ -18,7 +17,6 @@ $message = isset($_POST['message']) ? nl2br(htmlspecialchars($_POST['message']))
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
     <title>Résultat du formulaire</title>
 </head>
 <body>

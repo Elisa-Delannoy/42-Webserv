@@ -41,7 +41,8 @@ class ExecCGI
 		int Write(ParseBody &body);
 		int Execution(ParseRequest &header, ParseBody &body, Epoll& epoll);
 		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
-		void	KillAndClose();
+		void KillAndClose();
+		void DeleteArgvEnvp();
 
 		void SetRead(bool state);
 		void SetWrote(bool state);

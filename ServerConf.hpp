@@ -8,7 +8,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <fstream>
-#include <cstdlib>
+#include <climits>
 #include <arpa/inet.h>
 #include "Location.hpp"
 
@@ -16,7 +16,7 @@ class ServerConf
 {
 	private:
 		std::vector<std::string> _server_name;
-		int _client_body_size;
+		long long _client_body_size;
 		std::map<int, std::string> _error_pages;
 		std::vector<std::pair<std::string, int> > _host_port;
 		std::vector<Location> _location;
@@ -27,12 +27,12 @@ class ServerConf
 		
 		void SetServerName(std::string server_name);
 		void SetHostPort(std::string host, int port);
-		void SetClientBodySize(int size);
+		void SetClientBodySize(long long size);
 		void SetErrorPage(int type_error, std::string path);
 		void SetLocation(Location location);
 
 		std::vector<std::string> GetServerName() const;
-		int GetClientBodySize() const;
+		long long GetClientBodySize() const;
 		int GetPort(int nb) const;
 		std::string GetHost(int nb) const;
 		std::string GetErrorPath(int type_error);

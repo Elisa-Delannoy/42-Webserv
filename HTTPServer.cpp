@@ -397,6 +397,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 					client->SetStatus(Clients::CLOSED);
 					return ;
 				}
+				client->_cgi.SetCgibody("");
 			}
 			client->ClearBuff();
 			client->SetStatus(Clients::WAITING_REQUEST);
