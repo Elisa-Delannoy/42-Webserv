@@ -362,7 +362,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		if (client->GetCgiStatus() == Clients::CGI_NONE)
 		{
 			Response resp(this->servers[client->GetServerIndex()], client);
-			if (!request.empty() || !client->_cgi.GetCgiBody().empty())
+			if (!request.empty() || !client->_cgi.GetCgiBody().empty() || client->_head.GetMethod() == "POST")
 			{
 				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
 				{

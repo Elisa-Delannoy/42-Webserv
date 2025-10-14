@@ -78,7 +78,10 @@ void BodyResponse::findFilename(std::vector<char> & request)
 void BodyResponse::findContent(std::vector<char> & request)
 {
 	std::string s(request.begin(), request.end());
-	size_t index = s.find("\r\n\r\n");
+	size_t found = s.find("Content-Type");
+	size_t index = 0;
+	while(index < found)
+		index = s.find("\r\n\r\n", index+4);
 	if (index != std::string::npos)
 	{
 		index += 4;

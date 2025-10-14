@@ -298,7 +298,6 @@ int	CheckIndex(size_t& index, std::string& boundary, std::vector<char>& r_body, 
 	return (1);
 }
 
-
 size_t		BodyMultipart(std::vector<char>::iterator end_head, std::string& boundary, std::vector<char>& r_body, ParseBody::Part& parts)
 {
 	std::vector<char>::iterator	it_body = end_head + 4;
