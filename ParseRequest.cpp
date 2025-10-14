@@ -42,6 +42,19 @@ int ParseRequest::DivideFirstLine(std::string& first_line)
 	return (1);
 }
 
+void	ParseRequest::ClearHeader()
+{
+	this->_error = 0;
+	this->_end_header = 0;
+	this->_header.clear();
+	this->_to_close = false;
+	this->_path.clear();
+	this->_method.clear();
+	this->_version.clear();
+	this->_name_location.clear();
+	this->_header.clear();
+}
+
 void	ParseRequest::SetForError(bool to_close, int code)
 {
 	this->_to_close = to_close;
@@ -88,17 +101,7 @@ const std::map<std::string, std::string>&	ParseRequest::GetHeader() const
 	return (this->_header);
 }
 
-// void	ParseRequest::SetError(int code)
-// {
-// 	this->_error = code;
-// } 
-
 void	ParseRequest::SetIndexEndHeader(int index)
 {
 	this->_end_header = index;
 }
-
-// void	ParseRequest::SetToClose(bool status)
-// {
-// 	this->_to_close = status;
-// }

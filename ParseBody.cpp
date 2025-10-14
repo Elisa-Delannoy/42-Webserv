@@ -147,6 +147,16 @@ int	ParseBody::ParseChunk(std::vector<char>& content)
 	return (1);
 }
 
+void	ParseBody::ClearBody()
+{
+	this->_len = 0;
+	this->_line = 0;
+	this->_type.clear();
+	this->_body.clear();
+	this->_content_chunk = false;
+}
+
+
 void  ParseBody::ChooseContent(std::vector<char> to_parse)
 {
 	if (this->_type.find("multipart/form-data") != std::string::npos)

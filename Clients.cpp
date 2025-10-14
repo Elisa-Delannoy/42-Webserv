@@ -83,10 +83,12 @@ void Clients::SetReadBuff(char* buff, ssize_t len)
 void Clients::ClearBuff()
 {
 	this->_read_buff.clear();
-	this->_head.SetIndexEndHeader(0);
 	this->_r_header = false;
 	this->_recv = 0;
 	this->_t_begin_request = 0;
+	this->_head.ClearHeader();
+	this->_body.ClearBody();
+
 }
 
 int Clients::GetServerIndex() const
