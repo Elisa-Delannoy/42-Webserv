@@ -52,18 +52,23 @@ void Response::setRootLocationAndMethods(std::string & path)
 		path.replace(0, name.size() - 1, this->_root);
 	}
 }
+/*
+#define ERROR408 "<html><head><title>408 Request Timeout</title></head><body><center><h1>408 Request Timeout</h1></center><hr><center>MyWebServ</center></body></html>"
+#define ERROR413 "<html><head><title>413 Payload Too Large</title></head><body><center><h1>413 Payload Too Large</h1></center><hr><center>MyWebServ</center></body></html>"
+#define ERROR504 "<html><head><title>504 Gateway Timeout</title></head><body><center><h1>504 Gateway Timeout</h1></center><hr><center>MyWebServ</center></body></html>"
 
+*/
 void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 {
 	header.setHeader(code, this->_methods);
-	std::cout << "this->_errors_path.find(code) " << this->_errors_path[code] << std::endl;
+	std::cout << "this->_errors_path.find(code) : " << this->_errors_path[code] << std::endl;
 	if (this->_errors_path[code].empty())
 	{
 		if (code == 400)
 			body._body = ERROR400;
-		if (code == 404)
+		else if (code == 404)
 			body._body = ERROR404;
-		if (code == 405)
+		else if (code == 405)
 		{
 			this->_begin_405 += "<center><h3>Methods allowed : ";
 			for(size_t i = 0; i < this->_methods.size(); i++)
@@ -74,8 +79,14 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 			this->_begin_405 += "</h3></center>";
 			body._body = this->_begin_405 + this->_end_405;
 		}
-		if (code == 500)
+		else if (code == 408)
+			body._body  = ERROR408;
+		else if (code == 413)
+			body._body  = ERROR413;
+		else if (code == 500)
 			body._body  = ERROR500;
+		else if (code == 504)
+			body._body  = ERROR504;
 
 		std::ostringstream oss;
 		oss << body._body.size();
@@ -90,8 +101,10 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 		else
 		{
 			header.setHeader(500, this->_methods);
-			header.sendHeader(false, this->_to_close);
-			return ;
+			body._body  = ERROR500;
+			std::ostringstream oss;
+			oss << body._body.size();
+			header._content_length = "Content-Length: " + oss.str() + "\r\n";
 		}
 	}
 	sendHeaderAndBody(header, body);
@@ -104,7 +117,6 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 	if (dir == NULL)
 	{
 		std::cout << "path opendir error : " << path << std::endl;
-		header.setHeader(404, this->_methods);
 		sendError(header, body, 404);
 	}
 	else
@@ -160,8 +172,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	if (body._body.size() >= static_cast<size_t>(header._server.GetClientBodySize()))
 	{
 		out.close();
-		header.setHeader(413, this->_methods);
-		header.sendHeader(false, this->_to_close);
+		sendError(header, body, 413);
 	}
 	else
 	{
@@ -194,8 +205,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	//error in header
 	if (client->_head.GetError() != 0)
 	{
-		header.setHeader(client->_head.GetError(), this->_methods);
-		header.sendHeader(false, this->_to_close);
+		sendError(header, body, client->_head.GetError());
 		return (header.getCloseAlive());
 	}
 
@@ -248,21 +258,15 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 			found++;
 		}
 		header._content_type += "\r\n";
-	}
-
-	found = client->_cgi.GetCgiBody().find("<!DOCTYPE html>");
-	if (found != std::string::npos)
-	{
+		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found); 
+		found += 4;
 		body._body = client->_cgi.GetCgiBody().substr(found);
 		header._body_len = body._body.size();
 		header.setHeader(200, this->_methods);
 		sendHeaderAndBody(header, body);
 	}
 	else
-	{
-		header.setHeader(500, this->_methods);
-		header.sendHeader(false, this->_to_close);
-	}
+		sendError(header, body, 500);
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
@@ -271,25 +275,20 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 	DIR *dir;
 	dir = opendir(path.c_str());
 	if (dir != NULL) //path is a dir
-	{
 		handlePathDir(header, body, path);
-	}
 	else //path is a file
 	{
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
+			std::cout << "body._body : " << body._body << std::endl;
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
 		else if (check == 404) //wrong path
-		{
 			sendError(header, body, 404);
-		}
 		else
-		{
 			sendError(header, body, 500);
-		}
 	}
 	closedir(dir);
 }
@@ -302,9 +301,7 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 	{
 		body.findFilename(request);
 		if (body.getHasFilename())
-		{
 			createFileOnServer(header, body, request);
-		}
 		else //try to upload an empty file
 		{
 			body._body = "<html><body><h1>Empty Upload</h1></body></html>";
@@ -316,7 +313,6 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 	}
 	else if (!request.empty())
 	{
-		std::cout << "request not empty" << std::endl;
 		std::string temp(request.begin(), request.end());
 		if (temp.empty())
 		{
@@ -332,11 +328,7 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 		}
 	}
 	else
-	{
-		std::cout << "request empty" << std::endl;
-		header.setHeader(500, this->_methods);
-		header.sendHeader(false, this->_to_close);
-	}
+		sendError(header, body, 500);
 }
 
 void Response::handleDelete(HeaderResponse & header, BodyResponse & body, std::string & path)
@@ -364,10 +356,7 @@ void Response::handleDelete(HeaderResponse & header, BodyResponse & body, std::s
 				header.sendHeader(false, this->_to_close);
 			}
 			else //could not delete file
-			{
-				header.setHeader(404, this->_methods);
-				header.sendHeader(false, this->_to_close);
-			}
+				sendError(header, body, 404);
 		}
 	}
 }
@@ -381,13 +370,9 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 	{
 		bool autoindex = getAutoindex();
 		if (autoindex)
-		{
 			displayAutoindex(header, body, path);
-		}
 		else
-		{
 			sendError(header, body, 404);
-		}
 	}
 	else
 	{
@@ -399,9 +384,7 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 			sendHeaderAndBody(header, body);
 		}
 		else
-		{
 			sendError(header, body, 500);
-		}
 	}
 }
 

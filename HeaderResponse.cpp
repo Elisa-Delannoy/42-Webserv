@@ -114,12 +114,14 @@ std::string HeaderResponse::setContentType()
 		std::cout << "(setContentType) this->_path : " << this->_path << std::endl;
 		std::string type;
 		size_t i = this->_path.size() - 1;
-		while (this->_path[i - 1] && this->_path[i - 1] != '.')
+		while (i > 0 && this->_path[i - 1] != '.')
 			i--;
 		type = this->_path.substr(i);
 		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
-			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
+			|| type == "webp" || type == "ico" || type == "avif")
 			ret += "image/" + type;
+		else if(type == "svg")
+			ret += "image/" + type + "+xml";
 		else if (type == "css")
 			ret += "text/css";
 		else if (type == "html")
@@ -131,9 +133,15 @@ std::string HeaderResponse::setContentType()
 		else
 		{
 			size_t found = this->_accept.find(",");
-			ret += this->_accept.substr(1, found - 1);
+			if (found != std::string::npos)
+				ret += this->_accept.substr(1, found - 1);
+			else
+				ret += "text/html";
 		}
 	}
+	size_t found = ret.find("text/");
+	if (found != std::string::npos)
+		ret += "; charset=utf-8";
 	return (ret + "\r\n");
 }
 
