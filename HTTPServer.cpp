@@ -361,18 +361,17 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
+		std::cout << "client->GetCgiStatus(): " << client->GetCgiStatus() << std::endl;
 		client->SetLastActivity();
-		HandleCGI(epoll, client);
+		if (client->_head.GetError() == 0)
+			HandleCGI(epoll, client);
 		if (client->GetCgiStatus() == Clients::CGI_NONE)
 		{
 			Response resp(this->servers[client->GetServerIndex()], client);
-			if (!request.empty() || !client->_cgi.GetCgiBody().empty() || client->_head.GetMethod() == "POST")
+			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
 			{
-				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-				{
-					client->SetStatus(Clients::CLOSED);
-					return ;
-				}
+				client->SetStatus(Clients::CLOSED);
+				return ;
 			}
 			client->ClearBuff();
 			client->SetStatus(Clients::WAITING_REQUEST);

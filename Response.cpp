@@ -188,11 +188,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		header.sendHeader(false, this->_to_close);
 		return (header.getCloseAlive());
 	}
+
 	std::cout << "in response" << std::endl;
-	//cgi
+
 	if (!client->_cgi.GetCgiBody().empty())
 	{
-		//never got in there?
 		std::cout << "cgi" << std::endl;
 		handleCgi(header, body, client);
 		return 1;
@@ -230,14 +230,16 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 
 void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client)
 {
-	size_t found = client->_cgi.GetCgiBody().find("Content-Type");
+	size_t found = client->_cgi.GetCgiBody().find("Content-type");
 	if (found != std::string::npos)
 	{
-		while(client->_cgi.GetCgiBody()[found] != '\n')
+		while(client->_cgi.GetCgiBody()[found] != ';')
 		{
 			header._content_type += client->_cgi.GetCgiBody()[found];
+			std::cout << "header._content_type : " << header._content_type << std::endl;
 			found++;
 		}
+		header._content_type += "\r\n";
 	}
 
 	found = client->_cgi.GetCgiBody().find("<!DOCTYPE html>");
@@ -316,7 +318,7 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 		else
 		{
 			body._body = temp;
-			header._body_len = temp.size() + 2;
+			header._body_len = temp.size(); //+2?
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
