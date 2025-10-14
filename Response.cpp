@@ -306,17 +306,24 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 	}
 	else if (!request.empty())
 	{
+		std::cout << "request not empty" << std::endl;
 		std::string temp(request.begin(), request.end());
-		body._body = temp;
-		header._body_len = temp.size() + 2;
-		for (size_t i = 0; i < body._body.size(); ++i)
-			std::cout << i << ": " << std::hex << (int)(unsigned char)body._body[i] << std::endl;
-
-		header.setHeader(200, this->_methods);
-		sendHeaderAndBody(header, body);
+		if (temp.empty())
+		{
+			header.setHeader(200, this->_methods);
+			header.sendHeader(false, this->_to_close);
+		}
+		else
+		{
+			body._body = temp;
+			header._body_len = temp.size() + 2;
+			header.setHeader(200, this->_methods);
+			sendHeaderAndBody(header, body);
+		}
 	}
 	else
 	{
+		std::cout << "request empty" << std::endl;
 		header.setHeader(500, this->_methods);
 		header.sendHeader(false, this->_to_close);
 	}
