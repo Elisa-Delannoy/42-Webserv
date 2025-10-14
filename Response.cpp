@@ -171,11 +171,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-	/* std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = request.begin();
 	for(; it != request.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl; */
+	std::cout << "\n--------BUF END-------\n" << std::endl;
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -188,7 +188,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		header.sendHeader(false, this->_to_close);
 		return (header.getCloseAlive());
 	}
-
+	std::cout << "in response" << std::endl;
 	//cgi
 	if (!client->_cgi.GetCgiBody().empty())
 	{
@@ -244,6 +244,7 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	if (found != std::string::npos)
 	{
 		body._body = client->_cgi.GetCgiBody().substr(found);
+		header._body_len = body._body.size();
 		header.setHeader(200, this->_methods);
 		sendHeaderAndBody(header, body);
 	}
@@ -302,6 +303,14 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
+	}
+	else if (!request.empty())
+	{
+		std::string temp(request.begin(), request.end());
+		body._body = temp;
+		header._body_len = temp.size() + 2;
+		header.setHeader(200, this->_methods);
+		sendHeaderAndBody(header, body);
 	}
 	else
 	{

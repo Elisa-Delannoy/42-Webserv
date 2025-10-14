@@ -259,7 +259,7 @@ int	HTTPServer::CheckEndRead(Clients* client)
 void HTTPServer::ReadAllRequest(Clients* client, int fd)
 {
 	char	buffer[4096];
-	int		bytes = recv(fd, buffer, sizeof(buffer), 0);
+	ssize_t		bytes = recv(fd, buffer, sizeof(buffer), 0);
 
 	if (client->GetReadBuffer().size() == static_cast<size_t>(0))
 		client->SetBeginRequest();
@@ -352,8 +352,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		std::cout << "------------REQUEST------------" << client_fd << std::endl;
 		ReadAllRequest(client, client_fd);
 	}
+
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 		HandleAfterReading(request, client);
+
 	if (epoll.getEvent(i).events & EPOLLOUT && client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
 		client->SetLastActivity();
@@ -361,7 +363,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		if (client->GetCgiStatus() == Clients::CGI_NONE)
 		{
 			Response resp(this->servers[client->GetServerIndex()], client);
-			if (!request.empty())
+			if (!request.empty() || !client->_cgi.GetCgiBody().empty())
 			{
 				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
 					client->SetStatus(Clients::CLOSED);

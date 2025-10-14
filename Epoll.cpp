@@ -43,7 +43,7 @@ int Epoll::getEpollFd()
 	return this->_epoll_fd;
 }
 
-int Epoll::SetEpoll(int fd, uint32_t events)
+int Epoll::SetEpoll(int & fd, uint32_t events)
 {
 	epoll_event	event;
 	event.events = events;

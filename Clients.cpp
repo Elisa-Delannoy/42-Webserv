@@ -74,9 +74,10 @@ void	Clients::SetRecv(int count)
 	this->_recv = count;
 }
 
-void Clients::SetReadBuff(char* buff, size_t len)
+void Clients::SetReadBuff(char* buff, ssize_t len)
 {
-	this->_read_buff.insert(this->_read_buff.end(), buff, buff + len);
+	if (len > 0)
+		this->_read_buff.insert(this->_read_buff.end(), buff, buff + len);
 }
 
 void Clients::ClearBuff()

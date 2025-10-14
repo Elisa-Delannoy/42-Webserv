@@ -20,6 +20,7 @@ void HeaderResponse::sendHeader(bool has_body, bool to_close)
 		+ this->_content_length + this->_connection;
 	if (has_body)
 		this->_header += "\r\n";
+	
 	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
 		std::cerr << "Error while sending headers." << std::endl;
 }

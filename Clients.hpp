@@ -54,7 +54,7 @@ class Clients
 		void	SetBeginRequest();
 		void	SetStatus(status new_status);
 		void	SetCgiStatus(cgistatus new_status);
-		void	SetReadBuff(char* c, size_t len);
+		void	SetReadBuff(char* c, ssize_t len);
 		void	SetReadHeader(bool r_header);
 		void	SetRecv(int count);
 

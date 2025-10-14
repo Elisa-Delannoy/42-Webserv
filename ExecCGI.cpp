@@ -1,6 +1,6 @@
 #include "ExecCGI.hpp"
 
-ExecCGI::ExecCGI() : _time_begin_cgi(0)
+ExecCGI::ExecCGI() : _wrote(false), _time_begin_cgi(0)
 {}
 
 ExecCGI::~ExecCGI()
@@ -129,9 +129,6 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 	int pipe_in[2];
 	int pipe_out[2];
 
-	epoll.SetEpoll(pipe_in[1], EPOLLOUT);
-	epoll.SetEpoll(pipe_in[0], EPOLLIN);
-
 	if (pipe(pipe_in) == -1)
 	{
 		std::cerr << "[ERROR] pipe_in failed: " << strerror(errno) << std::endl;
@@ -142,6 +139,9 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 		std::cerr << "[ERROR] pipe_out failed: " << strerror(errno) << std::endl;
 		return (500);
 	}
+
+	epoll.SetEpoll(pipe_in[1], EPOLLOUT);
+	epoll.SetEpoll(pipe_in[0], EPOLLIN);
 	
 	pid_t pid = fork();
 	if (pid == -1)
