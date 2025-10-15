@@ -244,7 +244,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 	}
 	else
 	{
-		std::cout << "test8" << std::endl;
+		// std::cout << "test8" << std::endl;
 		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
@@ -260,16 +260,16 @@ int ExecCGI::Read(Epoll& epoll)
 {
 	char buffer[4096];
 	ssize_t bytesRead = read(_fdout, buffer, sizeof(buffer) - 1);
-	std::cout << "test " << std::endl;
+	// std::cout << "test " << std::endl;
 	if (bytesRead  > 0)
 	{
 		buffer[bytesRead] = '\0';
-		std::cout << "test4 " << bytesRead<< std::endl;
+		// std::cout << "test4 " << bytesRead<< std::endl;
 		_cgibody += buffer;
 	}
 	else if (bytesRead == -1)
 	{
-		std::cout << "dans read -1 " << std::endl;
+		// std::cout << "dans read -1 " << std::endl;
 
 		if (this->_count_read > 10)
 			return (500);
@@ -279,7 +279,7 @@ int ExecCGI::Read(Epoll& epoll)
 	}
 	else if (bytesRead == 0)
 	{
-		std::cout << "dans == 0 " << std::endl;
+		// std::cout << "dans == 0 " << std::endl;
 		// this->_wrote = false;
 		close(_fdout);
 		int status;
@@ -315,22 +315,22 @@ int ExecCGI::Read(Epoll& epoll)
 	event.data.fd = this->_fdout;
 	if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
 		return (500);
-	std::cout << "test2" << std::endl;
+	// std::cout << "test2" << std::endl;
 	return -1;
 }
 
 int ExecCGI::Write(ParseBody& body)
 {
 	std::string bodyContent = body.GetBody();
-	std::cout << "test3" << std::endl;
+	// std::cout << "test3" << std::endl;
 	if (!bodyContent.empty())
 	{
-		std::cout << "non vide\n" << std::endl;
+		// std::cout << "non vide\n" << std::endl;
 		ssize_t written = write(_fdin, bodyContent.c_str() + this->_w_len, bodyContent.length() - this->_w_len);
-		std::cout << " written " << written << std::endl;
+		// std::cout << " written " << written << std::endl;
 		if (written == -1)
 		{
-			std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
+			// std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
 			if (this->_count_write > 10)
 				return (500);
 			this->_count_write++;
@@ -338,7 +338,7 @@ int ExecCGI::Write(ParseBody& body)
 		else
 		{
 			this->_w_len += written;
-			std::cout << "bodyContent.size() " << bodyContent.size() << " _w_len " << _w_len<< std::endl;
+			// std::cout << "bodyContent.size() " << bodyContent.size() << " _w_len " << _w_len<< std::endl;
 			if (this->_w_len >= bodyContent.size())
 			{
 				close(_fdin);
@@ -382,6 +382,8 @@ void	ExecCGI::KillAndClose()
 {
 	kill(_pid, SIGKILL);
 	waitpid(_pid, NULL, 0);
+
+	
 	close(_fdin);
 	close(_fdout);
 }
