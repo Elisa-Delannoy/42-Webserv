@@ -395,7 +395,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	}
 	if (client->GetCgiStatus() == Clients::CGI_FINISHED)
 	{
-		// std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
+		std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
 		client->SetCgiStatus(Clients::CGI_NONE);
 	}
 }

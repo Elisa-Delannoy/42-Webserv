@@ -192,11 +192,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	std::vector<char>::iterator it = request.begin();
-	for(; it != request.end(); it++)
-		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl;
+	// std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	// std::vector<char>::iterator it = request.begin();
+	// for(; it != request.end(); it++)
+	// 	std::cout << *it;
+	// std::cout << "\n--------BUF END-------\n" << std::endl;
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -207,6 +207,13 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	{
 		sendError(header, body, client->_head.GetError());
 		return (header.getCloseAlive());
+	}
+
+	if (client->_head.GetPath() == "/favicon.ico")
+	{
+		header.setHeader(204, this->_methods);
+		header.sendHeader(false, false);
+		return 1;
 	}
 
 	if (!client->_cgi.GetCgiBody().empty())
@@ -280,7 +287,6 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
-			std::cout << "body._body : " << body._body << std::endl;
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
