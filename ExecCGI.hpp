@@ -28,7 +28,7 @@ class ExecCGI
 		int		_fdout;
 		bool	_wrote;
 		bool	_read;
-		size_t		_w_len;
+		size_t	_w_len;
 		int		_count_read;
 		int		_count_write;
 		int		_time_begin_cgi;
@@ -53,6 +53,8 @@ class ExecCGI
 
 		char** GetEnvp() const;
 		char** GetArgv() const;
+		int		GetFdOut();
+		int		GetFdIn();
 		bool	GetRead();
 		bool	GetWrote();
 

@@ -2,6 +2,7 @@
 
 volatile sig_atomic_t g_running = 1;
 
+
 HTTPServer::HTTPServer()
 {
 }
@@ -311,7 +312,13 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	{
 		int state = client->_cgi.Execution(client->_head, client->_body, epoll);
 		if (state == 0)
+		{
+			std::cout << " fdin= " << client->_cgi.GetFdIn() << std::endl;
+			this->_socket_client[client->_cgi.GetFdIn()] = client;
+			std::cout << " fdout= " << client->_cgi.GetFdOut() << std::endl;
+			this->_socket_client[client->_cgi.GetFdOut()] = client;
 			client->SetCgiStatus(Clients::CGI_EXECUTING);
+		}
 		if (state > 0)
 		{
 			client->_head.SetForError(true, state);
@@ -331,6 +338,11 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 		}
 		if (epoll.getEvent(i).events & EPOLLOUT && client->_cgi.GetWrote() == false)
 		{
+			std::cout << "fd epollout= " << epoll.getEvent(i).data.fd << std::endl;
+			std::map<int, Clients*>::iterator it = this->_socket_client.find(epoll.getEvent(i).data.fd);
+			if (it != this->_socket_client.end())
+				std::cout << "client = " << it->second << std::endl;
+
 			int state = client->_cgi.Write(client->_body);
 			std::cout << "dans write " << state << std::endl;
 			if (state == 0)
@@ -342,8 +354,13 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 			}
 			std::cout << "client->_cgi.GetWrote()" << client->_cgi.GetWrote() << "client->_cgi.GetRead()" << client->_cgi.GetRead() << std::endl;
 		}
-		if (epoll.getEvent(i).events & EPOLLIN && client->_cgi.GetRead() == false)
+		if ((epoll.getEvent(i).events & EPOLLIN || epoll.getEvent(i).events & EPOLLHUP) && client->_cgi.GetRead() == false)
 		{
+			std::cout << "fd epollin= " << epoll.getEvent(i).data.fd << std::endl;
+			std::map<int, Clients*>::iterator it = this->_socket_client.find(epoll.getEvent(i).data.fd);
+			if (it != this->_socket_client.end())
+				std::cout << "client = " << it->second << std::endl;
+
 			std::cout << "dans read "  << std::endl;
 			int state = client->_cgi.Read(epoll);
 			if (state == 0)
@@ -370,7 +387,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 {
 	std::vector<char> request;
 	int client_fd = epoll.getEvent(i).data.fd;
-
+	// std::cout << "event = " << epoll.getEvent(i).events << std::endl;
 	if (epoll.getEvent(i).events & EPOLLIN && client->GetStatus() == Clients::WAITING_REQUEST)
 	{
 		std::cout << "------------REQUEST------------" << client_fd << std::endl;
@@ -382,7 +399,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 
 	if (client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		if (epoll.getEvent(i).events & EPOLLIN )
+		if (epoll.getEvent(i).events & EPOLLIN)
 			std::cout << "EPOLLIN " << std::endl;
 
 		client->SetLastActivity();
@@ -410,6 +427,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 {
 	int socket = accept(this->_socket_server[j], NULL, NULL);
+	std::cout << "Creating " << socket << std::endl;
 	if (socket < 0)
 	{
 		std::cerr << "Failed to grab socket_client." << std::endl;
@@ -424,11 +442,21 @@ void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 	}
 }
 
+using namespace std;
+
 Clients*	HTTPServer::FindClient(int fd)
 {
+	// for (std::map<int, Clients*>::iterator it = this->_socket_client.begin(); it != this->_socket_client.end(); it++)
+	// {
+	// 	cout << "FFF " << it->first << endl;
+	// }
+
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
 	if (it != this->_socket_client.end())
+	{
+		// std::cout << "client = " << it->second << std::endl;
 		return (it->second);
+	}
 	else
 		return NULL;
 }
@@ -448,6 +476,7 @@ void HTTPServer::CheckToDelete(Epoll& epoll)
 
 void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 {
+	// std::cout << "Ah oui ? " << client_fd << std:: endl;
 	epoll.deleteClient(client_fd);
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(client_fd);
 	if (it != this->_socket_client.end())
@@ -479,18 +508,25 @@ int HTTPServer::runServer()
 	while(g_running)
 	{
 		int n = epoll->epollWait();
-		CheckToDelete(*epoll);
+		// CheckToDelete(*epoll);
 		for (int i = 0; i < n; i++)
 		{
+
 			int	used_socket = epoll->getEvent(i).data.fd;
 			server_index = GetServerIndex(used_socket);
 			if (server_index >= 0)
-			AcceptRequest(*epoll, server_index);
+			{
+				// std::cout << used_socket << std::endl;
+				AcceptRequest(*epoll, server_index);
+			}
 			else 
 			{
+				// std::cout << used_socket << std::endl;
 				client = FindClient(used_socket);
 				if (client != NULL)
-				handleRequest(*epoll, i, client);
+					handleRequest(*epoll, i, client);
+				else
+					std::cout << "merde " << used_socket << std::endl;
 			}
 		}
 	}

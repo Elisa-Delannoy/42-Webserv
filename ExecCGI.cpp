@@ -27,6 +27,16 @@ int ExecCGI::GetTimeBeginCGI() const
 	return _time_begin_cgi;
 }
 
+int		ExecCGI::GetFdOut()
+{
+	return (this->_fdout);
+}
+
+int		ExecCGI::GetFdIn()
+{
+	return (this->_fdin);
+}
+
 bool	ExecCGI::GetRead()
 {
 	return (this->_read);
@@ -159,6 +169,8 @@ void ExecCGI::DeleteArgvEnvp()
 		delete [] _envp;
 	}
 }
+using namespace std;
+
 
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 {
@@ -183,6 +195,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 		return (500);
 	}
 
+	cout << pipe_in[1] << " " << pipe_out[0] << endl;
 	if (epoll.SetEpoll(pipe_in[1], EPOLLOUT) == 0)
 	{
 		std::cerr << "Error: client socket is not created" << std::endl;
@@ -246,25 +259,27 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
 int ExecCGI::Read(Epoll& epoll)
 {
 	char buffer[4096];
-	ssize_t bytesRead;
+	ssize_t bytesRead = read(_fdout, buffer, sizeof(buffer) - 1);
 	std::cout << "test " << std::endl;
-	if ((bytesRead = read(_fdout, buffer, sizeof(buffer) - 1)) > 0)
+	if (bytesRead  > 0)
 	{
 		buffer[bytesRead] = '\0';
-		std::cout << "test4" << std::endl;
+		std::cout << "test4 " << bytesRead<< std::endl;
 		_cgibody += buffer;
 	}
-	if (bytesRead == -1)
+	else if (bytesRead == -1)
 	{
 		std::cout << "dans read -1 " << std::endl;
+
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
 		// this->_wrote = false;
 		// std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
 	}
-	if (bytesRead == 0)
+	else if (bytesRead == 0)
 	{
+		std::cout << "dans == 0 " << std::endl;
 		// this->_wrote = false;
 		close(_fdout);
 		int status;
@@ -294,6 +309,7 @@ int ExecCGI::Read(Epoll& epoll)
 			error_code = 500;
 		return (error_code);
 	}
+	(void) epoll;
 	epoll_event	event;
 	event.events = EPOLLIN;
 	event.data.fd = this->_fdout;
@@ -327,6 +343,7 @@ int ExecCGI::Write(ParseBody& body)
 			{
 				close(_fdin);
 				this->_wrote = true;
+				//sleep(1);
 				return (0);
 			}
 		}
