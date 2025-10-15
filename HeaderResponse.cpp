@@ -78,7 +78,6 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 408 Request Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return ;
 	}
 	if (code == 413)
 	{

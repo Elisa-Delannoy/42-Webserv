@@ -10,7 +10,7 @@ Response::Response(ServerConf & servers, Clients* client) : _server(servers)
 	this->_client_fd = client->GetSocket();
 	this->_to_close = client->_head.GetToClose();
 	this->_begin_405 = "<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center>";
-	this->_end_405 = "<hr><center>MyWebServ</center></body></html>";
+	this->_end_405 = "<hr><center>CookieServ</center></body></html>";
 }
 
 Response::~Response()
@@ -254,7 +254,6 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 		while(client->_cgi.GetCgiBody()[found] != ';')
 		{
 			header._content_type += client->_cgi.GetCgiBody()[found];
-			std::cout << "header._content_type : " << header._content_type << std::endl;
 			found++;
 		}
 		header._content_type += "\r\n";
