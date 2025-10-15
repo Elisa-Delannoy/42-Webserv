@@ -1,6 +1,6 @@
 #include "ExecCGI.hpp"
 
-ExecCGI::ExecCGI() : _wrote(false), _time_begin_cgi(0)
+ExecCGI::ExecCGI() : _wrote(false), _read(false), _w_len(0), _count_read(0), _count_write(0), _time_begin_cgi(0)
 {}
 
 ExecCGI::~ExecCGI()
@@ -27,6 +27,26 @@ int ExecCGI::GetTimeBeginCGI() const
 	return _time_begin_cgi;
 }
 
+int		ExecCGI::GetFdOut()
+{
+	return (this->_fdout);
+}
+
+int		ExecCGI::GetFdIn()
+{
+	return (this->_fdin);
+}
+
+bool	ExecCGI::GetRead()
+{
+	return (this->_read);
+}
+
+bool	ExecCGI::GetWrote()
+{
+	return (this->_wrote);
+}
+
 std::string replace_substring(std::string str, const std::string& to_replace, const std::string& replacement) 
 {
 	std::string::size_type pos = str.find(to_replace);
@@ -36,6 +56,17 @@ std::string replace_substring(std::string str, const std::string& to_replace, co
 	}
 	return str;
 }
+
+void ExecCGI::SetRead(bool state)
+{
+	this->_read = state;
+}
+
+void ExecCGI::SetWrote(bool state)
+{
+	this->_wrote = state;
+}
+
 
 void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, SocketServer& socket_server)
 {
@@ -197,6 +228,8 @@ void ExecCGI::DeleteArgvEnvp()
 		delete [] _envp;
 	}
 }
+using namespace std;
+
 
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socket_server, Epoll& epoll)
 {
@@ -221,9 +254,19 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 		return (500);
 	}
 
-	epoll.SetEpoll(pipe_in[1], EPOLLOUT);
-	epoll.SetEpoll(pipe_in[0], EPOLLIN);
-	
+	cout << pipe_in[1] << " " << pipe_out[0] << endl;
+	if (epoll.SetEpoll(pipe_in[1], EPOLLOUT) == 0)
+	{
+		std::cerr << "Error: client socket is not created" << std::endl;
+		// CleanClient(client->GetSocket(), epoll);
+		return (500);
+	}
+	if (epoll.SetEpoll(pipe_out[0], EPOLLIN) == 0)
+	{
+		std::cerr << "Error: client socket is not created" << std::endl;
+		// CleanClient(client->GetSocket(), epoll);
+		return (500);
+	}
 	pid_t pid = fork();
 	if (pid == -1)
 	{
@@ -260,7 +303,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	}
 	else
 	{
-		std::cout << "test8" << std::endl;
+		// std::cout << "test8" << std::endl;
 		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
@@ -272,32 +315,31 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	return 0;
 }
 
-int ExecCGI::ReadWrite(ParseBody& body)
+int ExecCGI::Read(Epoll& epoll)
 {
-	std::string bodyContent = body.GetBody();
-	std::cout << "test3" << std::endl;
-	if (_wrote == false && !bodyContent.empty())
-	{
-		ssize_t written = write(_fdin, bodyContent.c_str(), bodyContent.length());
-		if (written == -1)
-			std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
-		close(_fdin);
-	}
-	_wrote = true;
-	
 	char buffer[4096];
-	ssize_t bytesRead;
-	std::cout << "test" << std::endl;
-	if ((bytesRead = read(_fdout, buffer, sizeof(buffer) - 1)) > 0)
+	ssize_t bytesRead = read(_fdout, buffer, sizeof(buffer) - 1);
+	// std::cout << "test " << std::endl;
+	if (bytesRead  > 0)
 	{
 		buffer[bytesRead] = '\0';
-		std::cout << "test4" << std::endl;
+		// std::cout << "test4 " << bytesRead<< std::endl;
 		_cgibody += buffer;
 	}
-	if (bytesRead == -1)
-		std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
-	if (bytesRead == 0)
+	else if (bytesRead == -1)
 	{
+		// std::cout << "dans read -1 " << std::endl;
+
+		if (this->_count_read > 10)
+			return (500);
+		this->_count_read++;
+		// this->_wrote = false;
+		// std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
+	}
+	else if (bytesRead == 0)
+	{
+		// std::cout << "dans == 0 " << std::endl;
+		// this->_wrote = false;
 		close(_fdout);
 		int status;
 		int	error_code;
@@ -326,8 +368,47 @@ int ExecCGI::ReadWrite(ParseBody& body)
 			error_code = 500;
 		return (error_code);
 	}
-	std::cout << "test2" << std::endl;
+	(void) epoll;
+	epoll_event	event;
+	event.events = EPOLLIN;
+	event.data.fd = this->_fdout;
+	if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
+		return (500);
+	// std::cout << "test2" << std::endl;
 	return -1;
+}
+
+int ExecCGI::Write(ParseBody& body)
+{
+	std::string bodyContent = body.GetBody();
+	// std::cout << "test3" << std::endl;
+	if (!bodyContent.empty())
+	{
+		// std::cout << "non vide\n" << std::endl;
+		ssize_t written = write(_fdin, bodyContent.c_str() + this->_w_len, bodyContent.length() - this->_w_len);
+		// std::cout << " written " << written << std::endl;
+		if (written == -1)
+		{
+			// std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
+			if (this->_count_write > 10)
+				return (500);
+			this->_count_write++;
+		}
+		else
+		{
+			this->_w_len += written;
+			// std::cout << "bodyContent.size() " << bodyContent.size() << " _w_len " << _w_len<< std::endl;
+			if (this->_w_len >= bodyContent.size())
+			{
+				close(_fdin);
+				this->_wrote = true;
+				//sleep(1);
+				return (0);
+			}
+		}
+		return (-1);
+	}
+	return (0);
 }
 
 
@@ -360,6 +441,8 @@ void	ExecCGI::KillAndClose()
 {
 	kill(_pid, SIGKILL);
 	waitpid(_pid, NULL, 0);
+
+	
 	close(_fdin);
 	close(_fdout);
 }

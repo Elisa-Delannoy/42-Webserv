@@ -13,7 +13,7 @@
 #include <signal.h>
 #include "ServerConf.hpp"
 #include "Response.hpp"
-#include "ExecCGI.hpp"
+// #include "ExecCGI.hpp"
 #include "Epoll.hpp"
 #include "ParseBody.hpp"
 #include "SocketServer.hpp"
@@ -42,6 +42,7 @@ class HTTPServer
 		int		readHeaderRequest(Clients* client, std::vector<char> request);
 		void	HandleAfterReading(std::vector<char>& request, Clients* client);
 		void	handleRequest(Epoll& epoll, int i, Clients* client);
+		bool	UniqueClient(std::map<int, Clients*>::iterator it, std::map<int, Clients*>::iterator same_it);
 
 		uint32_t 	prepareAddrForHtonl(std::string addr);
 		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
@@ -51,7 +52,8 @@ class HTTPServer
 		int			CheckEndWithChunk(Clients* client);
 		int			CheckEndWithLen(Clients* client);
 		void		CheckToDelete(Epoll& epoll);
-		void		HandleCGI(Epoll& epoll, Clients* client);
+		void		HandleCGI(Epoll& epoll, Clients* client, int i);
+		void		HandleExcevCGI(Epoll& epoll, Clients* client, int i);
 
 	private:
 		std::vector<SocketServer>		_socket_server;

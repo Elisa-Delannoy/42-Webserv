@@ -5,7 +5,7 @@ Epoll::Epoll()
 
 Epoll::Epoll(std::vector<SocketServer> socket_servers)
 {
-	this->_epoll_fd = epoll_create1(0);
+	this->_epoll_fd = epoll_create(1);
 	if (this->_epoll_fd == - 1)
 		throw std::runtime_error("Error: epoll is not created\n");
 	for(size_t i = 0; i < socket_servers.size(); i++)
