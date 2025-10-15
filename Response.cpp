@@ -255,7 +255,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 
 void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client)
 {
-	size_t found = client->_cgi.GetCgiBody().find("Content-type");
+	size_t found = client->_cgi.GetCgiBody().find("Content");
 	if (found != std::string::npos)
 	{
 		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found); 
