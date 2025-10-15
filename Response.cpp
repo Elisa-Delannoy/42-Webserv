@@ -209,6 +209,13 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		return (header.getCloseAlive());
 	}
 
+	if (client->_head.GetPath() == "/favicon.ico")
+	{
+		header.setHeader(204, this->_methods); //200 or 204?
+		header.sendHeader(false, false);
+		return 1;
+	}
+
 	if (!client->_cgi.GetCgiBody().empty())
 	{
 		std::cout << "cgi" << std::endl;
@@ -260,7 +267,6 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	}
 	else
 		sendError(header, body, 500);
-	client->_cgi.SetCgibody("");
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)

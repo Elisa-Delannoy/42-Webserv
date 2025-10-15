@@ -455,11 +455,12 @@ void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 
 Clients*	HTTPServer::FindClient(int fd, int & id)
 {
+	(void)id;
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
 	if (it != this->_socket_client.end())
 	{
-		it->second->SetSessionId(id);
-		id++;
+		// it->second->SetSessionId(id);
+		// id++;
 		return (it->second);
 	}
 	else
