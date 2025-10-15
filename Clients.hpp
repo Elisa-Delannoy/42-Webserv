@@ -17,6 +17,7 @@ class Clients
 		int					_t_begin_request;
 		std::vector<char>	_read_buff;
 		bool				_r_header;
+		int					_session_id;
 
 	public:
 		enum status
@@ -40,6 +41,7 @@ class Clients
 		Clients(int fd, int server_index);
 		~Clients();
 
+		int		GetSessionId() const;
 		int		GetLastActivity() const;
 		int		GetBeginRequest() const;
 		int		GetServerIndex() const;
@@ -50,6 +52,7 @@ class Clients
 		cgistatus GetCgiStatus() const;
 		std::vector<char>&	GetReadBuffer();
 
+		void	SetSessionId(int id);
 		void	SetLastActivity();
 		void	SetBeginRequest();
 		void	SetStatus(status new_status);

@@ -192,11 +192,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
 	std::vector<char>::iterator it = request.begin();
 	for(; it != request.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END----------\n" << std::endl;
+	std::cout << "\n--------BUF END----------\n" << std::endl; */
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -212,7 +212,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	if (!client->_cgi.GetCgiBody().empty())
 	{
 		std::cout << "cgi" << std::endl;
-		std::cout << "client->_cgi.GetCgiBody() : " << client->_cgi.GetCgiBody() << std::endl;
 		handleCgi(header, body, client);
 		return 1;
 	}
@@ -266,6 +265,7 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
 {
+	std::cout << "path : " << path << std::endl;
 	int check;
 	DIR *dir;
 	dir = opendir(path.c_str());
@@ -276,7 +276,6 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 		check = body.checkBody(path.c_str());
 		if (check == 0)
 		{
-			std::cout << "body._body : " << body._body << std::endl;
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
@@ -291,6 +290,7 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients* client, std::vector<char> request)
 {
 	std::string content_type = header.getValueHeader(client, "Content-Type");
+	std::string path = client->_head.GetPath();
 
 	if (!content_type.empty() && content_type.substr(0, 20) == " multipart/form-data")
 	{

@@ -117,9 +117,9 @@ std::string HeaderResponse::setContentType()
 			i--;
 		type = this->_path.substr(i);
 		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
-			|| type == "webp" || type == "ico" || type == "avif")
+			|| type == "webp" || type == "avif")
 			ret += "image/" + type;
-		else if(type == "svg")
+		else if(type == "svg" || type == "ico")
 			ret += "image/" + type + "+xml";
 		else if (type == "css")
 			ret += "text/css";
@@ -192,6 +192,12 @@ std::string HeaderResponse::setConnection(Clients* client)
 
 	return ret;
 }
+
+/* std::string HeaderResponse::setCookie(Clients* client)
+{
+
+	this->_cookie = "Set-Cookie: "
+} */
 
 int HeaderResponse::getCloseAlive()
 {

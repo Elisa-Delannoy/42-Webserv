@@ -44,7 +44,7 @@ class HTTPServer
 
 		uint32_t 	prepareAddrForHtonl(std::string addr);
 		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
-		Clients*	FindClient(int fd);
+		Clients*	FindClient(int fd, int & id);
 		void 		ReadAllRequest(Clients* client, int fd);
 		int			CheckEndRead(Clients* client);
 		int			CheckEndWithChunk(Clients* client);
@@ -56,6 +56,7 @@ class HTTPServer
 		std::vector<int>		_socket_server;
 		std::map<int, Clients*>	_socket_client;
 		std::map<int, size_t>	_attached_server;
+		int						_counter_id;
 };
 
 #endif

@@ -4,63 +4,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Cookieserv</title>
-    <link rel="icon" href="./img/favicon.svg" type="image/svg">
-    <link rel="stylesheet" type="text/css" href="./css/style.css">
+	<meta charset="UTF-8">
+	<title>Cookieserv</title>
+	<link rel="icon" href="./img/favicon.svg" type="image/svg">
+	<link rel="stylesheet" type="text/css" href="./css/style.css">
 </head>
 <body id="body">
-    <h1 id="title">Formulaire d'envoi</h1>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <label for="name">Nom :</label>
-        <input type="text" id="name" name="name"><br><br>
-
-        <!-- <label for="file">Fichier :</label>
-        <input type="file" id="file" name="file"><br><br> -->
-
-         <label for="ville">Ville :</label>
-        <input type="text" id="ville" name="testville"><br><br>
-
-        <button type="submit">Envoyer</button>
-    </form>
-    <img src="./img/cookie.jpeg" alt="a big cookie">
+	<center>
+		<h1 id="title">CookieServ</h1>
+		<img src="./img/cookie.jpeg" alt="some cookies on a plate"><br>
+	</center>
+	
+	<h2>Upload</h2>
 	<form action="/upload" method="POST" enctype="multipart/form-data">
 		<input type="file" name="image">
 		<input type="submit" value="Upload">
 	</form>
-    <!-- <script src="./app.js"></script> -->
+	<!-- <script src="./app.js"></script> -->
 </body>
 <body>
 
-    <h1>Formulaire vers cgi.php</h1>
+	<h1>Formulaire vers cgi.php</h1>
 
-    <form action="test.php" method="post">
-        <label for="nom">Nom :</label>
-        <input type="text" id="nom" name="nom"><br><br>
+	<form action="test.php" method="post">
+		<label for="nom">Nom :</label>
+		<input type="text" id="nom" name="nom"><br><br>
 
-        <label for="email">Email :</label>
-        <input type="email" id="email" name="email"><br><br>
+		<label for="email">Email :</label>
+		<input type="email" id="email" name="email"><br><br>
 
-        <label for="message">Message :</label><br>
-        <textarea id="message" name="message" rows="5" cols="40"></textarea><br><br>
+		<label for="message">Message :</label><br>
+		<textarea id="message" name="message" rows="5" cols="40"></textarea><br><br>
 
-        <input type="submit" value="Envoyer">
-    </form>
+		<input type="submit" value="Envoyer">
+	</form>
 
 </body>
 <body>
 
-    <h1>Formulaire vers cgi.py</h1>
+	<h1>Formulaire vers cgi.py</h1>
 
-    <form action="test.py" method="post">
-        <label for="nom">Nom :</label>
-        <input type="text" id="nom" name="nom"><br><br>
+	<form action="test.py" method="post">
+		<label for="nom">Nom :</label>
+		<input type="text" id="nom" name="nom"><br><br>
 
-        <label for="message">Message :</label><br>
-        <textarea id="message" name="message" rows="5" cols="40"></textarea><br><br>
+		<label for="message">Message :</label><br>
+		<textarea id="message" name="message" rows="5" cols="40"></textarea><br><br>
 
-        <input type="submit" value="Envoyer">
-    </form>
+		<input type="submit" value="Envoyer">
+	</form>
 
 </body>
 </html>

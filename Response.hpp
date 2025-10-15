@@ -43,7 +43,6 @@ class Response
 		void handleDelete(HeaderResponse & header, BodyResponse & body, std::string & path);
 		void handlePathDir(HeaderResponse & header, BodyResponse & body, std::string & path);
 
-
 		std::string GetErrorPath(int type_error);
 		std::string getIndex();
 		bool getAutoindex();

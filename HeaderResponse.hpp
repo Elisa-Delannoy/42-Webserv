@@ -18,6 +18,7 @@ class HeaderResponse : public Response
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
 		std::string setConnection(Clients* client);
+		std::string setCookie(Clients* client);
 
 		int 		getCloseAlive();
 		std::string getValueHeader(Clients* client, std::string key);
@@ -31,6 +32,7 @@ class HeaderResponse : public Response
 		std::string _connection;
 		std::string _allow;
 		std::string _accept;
+		std::string _cookie;
 		int 		_close_alive;
 };
 
