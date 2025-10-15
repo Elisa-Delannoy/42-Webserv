@@ -153,6 +153,7 @@ int	HTTPServer::GetServerIndex(int used_socket)
 	}
 	return (-1);
 }
+
 // -1 error
 // 0 pas fini 
 // i ok fin header

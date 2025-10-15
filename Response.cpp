@@ -196,7 +196,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::vector<char>::iterator it = request.begin();
 	for(; it != request.end(); it++)
 		std::cout << *it;
-	std::cout << "\n--------BUF END-------\n" << std::endl;
+	std::cout << "\n--------BUF END----------\n" << std::endl;
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -212,6 +212,7 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	if (!client->_cgi.GetCgiBody().empty())
 	{
 		std::cout << "cgi" << std::endl;
+		std::cout << "client->_cgi.GetCgiBody() : " << client->_cgi.GetCgiBody() << std::endl;
 		handleCgi(header, body, client);
 		return 1;
 	}
@@ -251,12 +252,6 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	size_t found = client->_cgi.GetCgiBody().find("Content-type");
 	if (found != std::string::npos)
 	{
-		while(client->_cgi.GetCgiBody()[found] != ';')
-		{
-			header._content_type += client->_cgi.GetCgiBody()[found];
-			found++;
-		}
-		header._content_type += "\r\n";
 		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found); 
 		found += 4;
 		body._body = client->_cgi.GetCgiBody().substr(found);
@@ -266,6 +261,7 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	}
 	else
 		sendError(header, body, 500);
+	client->_cgi.SetCgibody("");
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
