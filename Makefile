@@ -14,7 +14,8 @@ SRC = main.cpp \
 	HeaderResponse.cpp \
 	BodyResponse.cpp \
 	ExecCGI.cpp \
-	Clients.cpp
+	Clients.cpp \
+	SocketServer.cpp
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)
