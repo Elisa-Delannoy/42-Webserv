@@ -16,6 +16,7 @@
 #include "ExecCGI.hpp"
 #include "Epoll.hpp"
 #include "ParseBody.hpp"
+#include "SocketServer.hpp"
 
 class HTTPServer
 {
@@ -53,7 +54,7 @@ class HTTPServer
 		void		HandleCGI(Epoll& epoll, Clients* client);
 
 	private:
-		std::vector<int>		_socket_server;
+		std::vector<SocketServer>		_socket_server;
 		std::map<int, Clients*>	_socket_client;
 		std::map<int, size_t>	_attached_server;
 };

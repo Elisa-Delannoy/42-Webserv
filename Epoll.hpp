@@ -8,12 +8,13 @@
 #include <vector>
 #include <cerrno>
 #include <fcntl.h>
+#include "SocketServer.hpp"
 
 class Epoll
 {
 	public:
 		Epoll();
-		Epoll(std::vector<int> socket_servers);
+		Epoll(std::vector<SocketServer> socket_servers);
 		~Epoll();
 
 		int		epollWait();

@@ -33,14 +33,14 @@ class ExecCGI
 		ExecCGI();
 		~ExecCGI();
 
-		int Execution(ParseRequest &header, ParseBody &body, Epoll& epoll);
-		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers);
+		int Execution(ParseRequest &header, ParseBody &body, SocketServer socket_server, Epoll& epoll);
+		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &server);
 		int ReadWrite(ParseBody &body);
 		void KillAndClose();
 		void DeleteArgvEnvp();
 
-		void SetArgv(Location &location, std::string &ext);
-		void SetEnvp(ParseRequest &header, ParseBody &body, std::string path);
+		void SetArgv(Location &location, std::string &path);
+		void SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, SocketServer& socket_server);
 		void SetTimeBeginCGI();
 		void SetCgibody(std::string str);
 

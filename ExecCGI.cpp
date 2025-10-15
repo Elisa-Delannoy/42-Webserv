@@ -37,7 +37,7 @@ std::string replace_substring(std::string str, const std::string& to_replace, co
 	return str;
 }
 
-void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
+void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, SocketServer& socket_server)
 {
 	std::vector<std::string> env;
 
@@ -46,14 +46,21 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 	env.push_back("SCRIPT_FILENAME=" + path);
 	env.push_back("SCRIPT_NAME=" + header.GetPath());
 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
+	env.push_back("SERVER_SOFTWARE=WebServer/1.0");
 	env.push_back("REDIRECT_STATUS=200");
+	if (socket_server.GetPort() > 0)
+	{
+		std::ostringstream oss;
+		oss << socket_server.GetPort();
+		std::string port = oss.str();
+		env.push_back("SERVER_PORT=" + port);
+		env.push_back("REMOTE_ADDR=" + socket_server.GetHost());
+	}
 	size_t pos = header.GetPath().find('?');
 	if (pos != std::string::npos)
 		env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
 	else
-	{
 		env.push_back("QUERY_STRING=");
-	}
 	env.push_back("PATH_INFO=");
 	env.push_back("PATH_TRANSLATED=");
 	if (header.GetMethod() == "POST")
@@ -66,9 +73,13 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 	}
 	else
 	{
-		env.push_back("CONTENT_LENGTH=0");
+		env.push_back("CONTENT_LENGTH=");
 		env.push_back("CONTENT_TYPE=");
 	}
+	
+	if (_ext == ".py")
+		env.push_back("PYTHONUNBUFFERED=1");
+	
 	_envp = new char*[env.size() + 1];
 	for (size_t i = 0; i < env.size(); i++)
 	{
@@ -78,11 +89,59 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
 	_envp[env.size()] = NULL;
 }
 
+// void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
+// {
+// 	std::vector<std::string> env;
 
-void ExecCGI::SetArgv(Location &location, std::string &ext)
+// 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+// 	env.push_back("REQUEST_METHOD=" + header.GetMethod());
+// 	env.push_back("SCRIPT_FILENAME=" + path);
+// 	env.push_back("SCRIPT_NAME=" + header.GetPath());
+// 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
+// 	env.push_back("REDIRECT_STATUS=200");
+// 	size_t pos = header.GetPath().find('?');
+// 	if (pos != std::string::npos)
+// 		env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
+// 	else
+// 	{
+// 		env.push_back("QUERY_STRING=");
+// 	}
+// 	env.push_back("PATH_INFO=");
+// 	env.push_back("PATH_TRANSLATED=");
+// 	if (header.GetMethod() == "POST")
+// 	{
+// 		std::ostringstream oss;
+// 		oss << body.GetContentLen();
+// 		std::string len = oss.str();
+// 		env.push_back("CONTENT_LENGTH=" + len);
+// 		env.push_back("CONTENT_TYPE=" + body.GetContentType());
+// 	}
+// 	else
+// 	{
+// 		env.push_back("CONTENT_LENGTH=0");
+// 		env.push_back("CONTENT_TYPE=");
+// 	}
+// 	env.push_back("PYTHONUNBUFFERED=1");
+// 	_envp = new char*[env.size() + 1];
+// 	for (size_t i = 0; i < env.size(); i++)
+// 	{
+// 		_envp[i] = new char[env[i].size() + 1];
+// 		std::strcpy(_envp[i], env[i].c_str());
+// 	}
+// 	_envp[env.size()] = NULL;
+// }
+
+
+void ExecCGI::SetArgv(Location &location, std::string &path)
 {
 	std::vector<std::string> argv;
-	argv.push_back(location.GetCGIPass(ext));
+	if (_ext == ".php")
+		argv.push_back(location.GetCGIPass(_ext));
+	else
+	{
+		argv.push_back(location.GetCGIPass(_ext));
+		argv.push_back(path);
+	}
 	_argv = new char*[argv.size() + 1];
 	for (size_t i = 0; i < argv.size(); i++)
 	{
@@ -139,14 +198,14 @@ void ExecCGI::DeleteArgvEnvp()
 	}
 }
 
-int ExecCGI::Execution(ParseRequest &header, ParseBody& body, Epoll& epoll)
+int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socket_server, Epoll& epoll)
 {
 	std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
 	
 	std::string path = SetupPath(header.GetPath(), _loc.GetName(), _loc.GetRoot());
 	
-	SetArgv(_loc, _ext);
-	SetEnvp(header, body, path);
+	SetArgv(_loc, path);
+	SetEnvp(header, body, path, socket_server);
 	
 	int pipe_in[2];
 	int pipe_out[2];

@@ -15,7 +15,7 @@ HTTPServer::~HTTPServer()
 		delete it->second;
 	}
 	for(size_t i = 0; i < this->_socket_server.size(); i++)
-		close(this->_socket_server[i]);
+		close(this->_socket_server[i].GetFd());
 }
 
 void handle_sigint(int sig)
@@ -146,9 +146,9 @@ void HTTPServer::displayServers()
 
 int	HTTPServer::GetServerIndex(int used_socket)
 {
-	for (size_t j = 0; j < this->servers.size(); j++)
+	for (size_t j = 0; j < this->_socket_server.size(); j++)
 	{
-		if(used_socket == this->_socket_server[j])
+		if(used_socket == this->_socket_server[j].GetFd())
 			return (j);
 	}
 	return (-1);
@@ -309,7 +309,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
 		client->SetCgiStatus(Clients::CGI_AVAILABLE);
 	if (client->GetCgiStatus() == Clients::CGI_AVAILABLE)
 	{
-		int state = client->_cgi.Execution(client->_head, client->_body, epoll);
+		int state = client->_cgi.Execution(client->_head, client->_body, client->GetSocketServer(), epoll);
 		if (state == 0)
 			client->SetCgiStatus(Clients::CGI_EXECUTING);
 		if (state > 0)
@@ -322,6 +322,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client)
 	{
 		if (Timeout(client->_cgi.GetTimeBeginCGI(), 10))
 		{
+			std::cout << "on est ou la ???" << std::endl;
 			client->_cgi.KillAndClose();
 			client->_head.SetForError(true, 504);
 			client->SetCgiStatus(Clients::CGI_NONE);
@@ -385,13 +386,13 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 
 void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 {
-	int socket = accept(this->_socket_server[j], NULL, NULL);
+	int socket = accept(this->_socket_server[j].GetFd(), NULL, NULL);
 	if (socket < 0)
 	{
 		std::cerr << "Failed to grab socket_client." << std::endl;
 		return;
 	}
-	Clients*	client = new Clients(socket, j);
+	Clients*	client = new Clients(this->_socket_server[j], socket);
 	this->_socket_client[socket] = client;
 	if (epoll.SetEpoll(socket, EPOLLIN | EPOLLOUT) == 0)
 	{
@@ -495,7 +496,7 @@ void HTTPServer::closeServer()
 {
 	size_t size = this->_socket_server.size();
 	for (size_t i = 0; i < size; i++)
-		close(this->_socket_server[i]);
+		close(this->_socket_server[i].GetFd());
 }
 
 uint32_t HTTPServer::prepareAddrForHtonl(std::string addr)
@@ -535,11 +536,11 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 
 	if(!host_port_taken)
 	{
-		int socket_server = socket(AF_INET, SOCK_STREAM, 0);
-		if (socket_server < 0)
+		SocketServer socket_server(socket(AF_INET, SOCK_STREAM, 0), port, host, j);
+		if (socket_server.GetFd() < 0)
 		{
 			std::cerr << "Cannot create socket" << std::endl;
-			close(socket_server);
+			close(socket_server.GetFd());
 			return 1;
 		}
 
@@ -550,17 +551,17 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 
 		host_port.push_back(std::make_pair(host, port));
 		
-		if (bind(socket_server, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
+		if (bind(socket_server.GetFd(), (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0)
 		{
 			std::cerr << "Failed to bind to port " << port << "." << std::endl;
-			close(socket_server);
+			close(socket_server.GetFd());
 			return 1;
 		}
 
-		if (listen(socket_server, 10))
+		if (listen(socket_server.GetFd(), 10))
 		{
 			std::cerr << "Failed to listen on socket." << std::endl;
-			close(socket_server);
+			close(socket_server.GetFd());
 			return 1;
 		}
 		this->_socket_server.push_back(socket_server);
