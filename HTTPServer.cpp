@@ -527,12 +527,7 @@ int HTTPServer::runServer()
 			}
 			else 
 			{
-<<<<<<< HEAD
 				client = FindClient(used_socket, this->_counter_id);
-=======
-				// std::cout << used_socket << std::endl;
-				client = FindClient(used_socket);
->>>>>>> main
 				if (client != NULL)
 					handleRequest(*epoll, i, client);
 			}
