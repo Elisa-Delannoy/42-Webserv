@@ -5,6 +5,7 @@ volatile sig_atomic_t g_running = 1;
 
 HTTPServer::HTTPServer()
 {
+	this->_counter_id = 1;
 }
 
 HTTPServer::~HTTPServer()
@@ -167,6 +168,7 @@ int	HTTPServer::GetServerIndex(int used_socket)
 	}
 	return (-1);
 }
+
 // -1 error
 // 0 pas fini 
 // i ok fin header
@@ -422,13 +424,10 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 			Response resp(this->servers[client->GetServerIndex()], client);
 			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
 			{
-				if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-				{
-					client->SetStatus(Clients::CLOSED);
-					return ;
-				}
-				client->_cgi.SetCgibody("");
+				client->SetStatus(Clients::CLOSED);
+				return ;
 			}
+			client->_cgi.SetCgibody("");
 			client->ClearBuff();
 			client->SetStatus(Clients::WAITING_REQUEST);
 		}
@@ -454,13 +453,16 @@ void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 	}
 }
 
-using namespace std;
-
-Clients*	HTTPServer::FindClient(int fd)
+Clients*	HTTPServer::FindClient(int fd, int & id)
 {
+	(void)id;
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
 	if (it != this->_socket_client.end())
+	{
+		// it->second->SetSessionId(id);
+		// id++;
 		return (it->second);
+	}
 	else
 		return NULL;
 }
@@ -526,8 +528,7 @@ int HTTPServer::runServer()
 			}
 			else 
 			{
-				// std::cout << used_socket << std::endl;
-				client = FindClient(used_socket);
+				client = FindClient(used_socket, this->_counter_id);
 				if (client != NULL)
 					handleRequest(*epoll, i, client);
 			}

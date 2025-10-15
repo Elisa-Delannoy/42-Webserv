@@ -17,6 +17,11 @@ Clients::~Clients()
 	close(_socket_fd);
 }
 
+int		Clients::GetSessionId() const
+{
+	return (this->_session_id);
+}
+
 int		Clients::GetLastActivity() const
 {
 	return (this->_last_activity);
@@ -60,6 +65,11 @@ std::vector<char>& Clients::GetReadBuffer()
 int&	Clients::GetRecv()
 {
 	return (this->_recv);
+}
+
+void	Clients::SetSessionId(int id)
+{
+	this->_session_id = id;
 }
 
 void	Clients::SetLastActivity()

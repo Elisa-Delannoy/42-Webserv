@@ -16,6 +16,7 @@ class Clients
 		int					_t_begin_request;
 		std::vector<char>	_read_buff;
 		bool				_r_header;
+		int					_session_id;
 		SocketServer		_socket_server;
 
 	public:
@@ -40,6 +41,7 @@ class Clients
 		Clients(SocketServer socket_server, int _socket_fd);
 		~Clients();
 
+		int		GetSessionId() const;
 		int		GetLastActivity() const;
 		int		GetBeginRequest() const;
 		int		GetServerIndex() const;
@@ -51,6 +53,7 @@ class Clients
 		std::vector<char>&	GetReadBuffer();
 		SocketServer GetSocketServer() const; 
 
+		void	SetSessionId(int id);
 		void	SetLastActivity();
 		void	SetBeginRequest();
 		void	SetStatus(status new_status);

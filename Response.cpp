@@ -192,11 +192,11 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-	// std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	// std::vector<char>::iterator it = request.begin();
-	// for(; it != request.end(); it++)
-	// 	std::cout << *it;
-	// std::cout << "\n--------BUF END-------\n" << std::endl;
+/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
+	std::vector<char>::iterator it = request.begin();
+	for(; it != request.end(); it++)
+		std::cout << *it;
+	std::cout << "\n--------BUF END----------\n" << std::endl; */
 
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
@@ -258,12 +258,6 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	size_t found = client->_cgi.GetCgiBody().find("Content-type");
 	if (found != std::string::npos)
 	{
-		while(client->_cgi.GetCgiBody()[found] != ';')
-		{
-			header._content_type += client->_cgi.GetCgiBody()[found];
-			found++;
-		}
-		header._content_type += "\r\n";
 		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found); 
 		found += 4;
 		body._body = client->_cgi.GetCgiBody().substr(found);
@@ -277,6 +271,7 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
 {
+	std::cout << "path : " << path << std::endl;
 	int check;
 	DIR *dir;
 	dir = opendir(path.c_str());
@@ -301,6 +296,7 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients* client, std::vector<char> request)
 {
 	std::string content_type = header.getValueHeader(client, "Content-Type");
+	std::string path = client->_head.GetPath();
 
 	if (!content_type.empty() && content_type.substr(0, 20) == " multipart/form-data")
 	{
