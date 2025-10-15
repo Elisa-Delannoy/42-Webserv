@@ -4,8 +4,8 @@ Clients::Clients()
 {
 }
 
-Clients::Clients(int fd, int server_index) : _recv(0), _socket_fd(fd), _server_index(server_index),
-	 _r_header(false), _status(WAITING_REQUEST), _cgistatus(CGI_NONE)
+Clients::Clients(SocketServer socker_server, int socket_fd) : _recv(0), _socket_fd(socket_fd),
+	 _r_header(false), _socket_server(socker_server), _status(WAITING_REQUEST), _cgistatus(CGI_NONE)
 {
 	this->_read_buff.clear();
 	this->_head.SetIndexEndHeader(0);
@@ -30,6 +30,11 @@ int		Clients::GetLastActivity() const
 int		Clients::GetBeginRequest() const
 {
 	return (this->_t_begin_request);
+}
+
+SocketServer Clients::GetSocketServer() const
+{
+	return _socket_server;
 }
 
 Clients::status Clients::GetStatus() const
@@ -103,7 +108,7 @@ void Clients::ClearBuff()
 
 int Clients::GetServerIndex() const
 {
-	return (this->_server_index);
+	return (this->_socket_server.GetServerIndex());
 }
 
 int Clients::GetSocket() const

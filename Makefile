@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Werror -Wextra -std=c++98
+CFLAGS = -Wall -Werror -Wextra -std=c++98 -g
 DEBUG_FLAGS = -g
 
 NAME = server
@@ -14,7 +14,8 @@ SRC = main.cpp \
 	HeaderResponse.cpp \
 	BodyResponse.cpp \
 	ExecCGI.cpp \
-	Clients.cpp
+	Clients.cpp \
+	SocketServer.cpp
 
 OBJ_DIR = objs
 OBJ = $(SRC:.cpp=.o)

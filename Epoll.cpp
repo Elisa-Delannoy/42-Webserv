@@ -3,19 +3,19 @@
 Epoll::Epoll()
 {}
 
-Epoll::Epoll(std::vector<int> socket_servers)
+Epoll::Epoll(std::vector<SocketServer> socket_servers)
 {
-	this->_epoll_fd = epoll_create1(0);
+	this->_epoll_fd = epoll_create(1);
 	if (this->_epoll_fd == - 1)
 		throw std::runtime_error("Error: epoll is not created\n");
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
 		epoll_event event;
 		event.events = EPOLLIN;
-		event.data.fd = socket_servers[i];
-		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i], &event) == -1)
+		event.data.fd = socket_servers[i].GetFd();
+		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i].GetFd(), &event) == -1)
 		{
-			close(socket_servers[i]);
+			close(socket_servers[i].GetFd());
 			throw std::runtime_error("Error: epoll is not added\n");
 		}
 		else
