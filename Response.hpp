@@ -19,10 +19,12 @@
 class HeaderResponse;
 class BodyResponse;
 
-#define ERROR400 "<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>MyWebServ</center></body></html>"
-#define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>MyWebServ</center></body></html>"
-#define ERROR405 "<html><head><title>405 Method Not Allowed</title></head><body><center><h1>405 Method Not Allowed</h1></center><hr><center>MyWebServ</center></body></html>"
-#define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>MyWebServ</center></body></html>"
+#define ERROR400 "<html><head><title>400 Bad Request</title></head><body><center><h1>400 Bad Request</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR404 "<html><head><title>404 Not Found</title></head><body><center><h1>404 Not Found</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR408 "<html><head><title>408 Request Timeout</title></head><body><center><h1>408 Request Timeout</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR413 "<html><head><title>413 Payload Too Large</title></head><body><center><h1>413 Payload Too Large</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR504 "<html><head><title>504 Gateway Timeout</title></head><body><center><h1>504 Gateway Timeout</h1></center><hr><center>Cookieserv</center></body></html>"
 
 class Response
 {
@@ -60,6 +62,8 @@ class Response
 		std::string _root;
 		int _index_location;
 		bool _to_close;
+		std::string _begin_405;
+		std::string _end_405;
 
 	protected:
 		std::string _status;

@@ -4,6 +4,8 @@ HeaderResponse::HeaderResponse(ServerConf & servers, Clients* client, std::strin
 Response(servers, client) , _path(path), _version(version)
 {
 	this->_connection = setConnection(client);
+	if (!client->_head.GetHeader().find("Accept")->second.empty())
+		this->_accept = client->_head.GetHeader().find("Accept")->second;
 }
 
 HeaderResponse::~HeaderResponse()
@@ -43,7 +45,6 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 400 Bad Request\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		this->_connection = "Connection: close\r\n";
 		return ;
 	}
 	if (code == 403)
@@ -56,13 +57,12 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 404 Not Found\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return ;
 	}
 	if (code == 405)
 	{
 		this->_status = setStatus(" 405 Method Not Allowed\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		
+
 		for(size_t i = 0; i < methods.size(); i++)
 		{
 			if (i == 0)
@@ -73,33 +73,28 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 			else
 				this->_allow += "\r\n";
 		}
-		return ;
 	}
 	if (code == 408)
 	{
 		this->_status = setStatus(" 408 Request Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return ;
 	}
 	if (code == 413)
 	{
 		this->_status = setStatus(" 413 Payload Too Large\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return ;
 	}
 	if (code == 500)
 	{
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return ;
 	}
 	if (code == 504)
 	{
 		this->_status = setStatus(" 504 Gateway Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
-		return;
 	}
-	if (!this->_path.empty() && !this->_content_type.empty())
+	if (!this->_path.empty() && this->_content_type.empty())
 		this->_content_type = setContentType();
 }
 
@@ -112,30 +107,40 @@ std::string HeaderResponse::setContentType()
 {
 	std::string ret = "Content-Type: ";
 	if (this->_path == "/")
-	{
 		ret += "text/html";
-	}
 	else
 	{
+		std::cout << "(setContentType) this->_path : " << this->_path << std::endl;
+		std::string type;
 		size_t i = this->_path.size() - 1;
-		while (this->_path[i - 1] && this->_path[i - 1] != '.')
+		while (i > 0 && this->_path[i - 1] != '.')
 			i--;
-		std::string type = this->_path.substr(i);
-
+		type = this->_path.substr(i);
 		if (type == "jpg" || type == "jpeg" || type == "png" || type == "gif"
-			|| type == "svg" || type == "webp" || type == "ico" || type == "avif")
+			|| type == "webp" || type == "ico" || type == "avif")
 			ret += "image/" + type;
-		if (type == "css")
+		else if(type == "svg")
+			ret += "image/" + type + "+xml";
+		else if (type == "css")
 			ret += "text/css";
-		if (type == "html")
+		else if (type == "html")
 			ret += "text/html";
-		if (type == "js")
+		else if (type == "js")
 			ret += "application/javascript";
-		if (type == "pdf" || type == "zip")
+		else if (type == "pdf" || type == "zip")
 			ret += "application/" + type;
 		else
-			ret += "text/plain";
+		{
+			size_t found = this->_accept.find(",");
+			if (found != std::string::npos)
+				ret += this->_accept.substr(1, found - 1);
+			else
+				ret += "text/html";
+		}
 	}
+	size_t found = ret.find("text/");
+	if (found != std::string::npos)
+		ret += "; charset=utf-8";
 	return (ret + "\r\n");
 }
 
