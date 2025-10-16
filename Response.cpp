@@ -95,9 +95,22 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 	else
 	{
 		std::string path = GetErrorPath(code).c_str();
+		std::cout << "path error : " << path << std::endl;
 		header.setPath(path);
-		if (body.checkBody(path.substr(1).c_str()) == 0)
+		int check = body.checkBody(path.c_str());
+		if (check == 0)
+		{
+			header._body_len = body._body.size();
 			header._content_length = header.setContentLength();
+		}
+		else if (check == 404)
+		{
+			header.setHeader(404, this->_methods);
+			body._body  = ERROR404;
+			std::ostringstream oss;
+			oss << body._body.size();
+			header._content_length = "Content-Length: " + oss.str() + "\r\n";
+		}
 		else
 		{
 			header.setHeader(500, this->_methods);
@@ -116,8 +129,10 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 	dir = opendir(path.c_str());
 	if (dir == NULL)
 	{
-		std::cout << "path opendir error : " << path << std::endl;
-		sendError(header, body, 404);
+		if (errno == ENOENT)
+			sendError(header, body, 404);
+		else
+			sendError(header, body, 500);
 	}
 	else
 	{
@@ -161,24 +176,29 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 	dir = opendir("uploads/");
 	if (dir == NULL)
 	{
-		header.setHeader(404, this->_methods);
-		header.sendHeader(false, this->_to_close);
-	}
-	std::string filename = "uploads/" + body.getFilename();
-	std::ofstream out(filename.c_str(), std::ios::binary);
-	body.findBoundary(request);
-	body.findContent(request);
-
-	if (body._body.size() >= static_cast<size_t>(header._server.GetClientBodySize()))
-	{
-		out.close();
-		sendError(header, body, 413);
+		if (errno == ENOENT)
+			sendError(header, body, 404);
+		else
+			sendError(header, body, 500);
 	}
 	else
 	{
-		out.write(body.getContent().data(), body.getContent().size());
-		out.close();
-		displayUploadSuccessfull(header, body);
+		std::string filename = "uploads/" + body.getFilename();
+		std::ofstream out(filename.c_str(), std::ios::binary);
+		body.findBoundary(request);
+		body.findContent(request);
+
+		if (body._body.size() >= static_cast<size_t>(header._server.GetClientBodySize()))
+		{
+			out.close();
+			sendError(header, body, 413);
+		}
+		else
+		{
+			out.write(body.getContent().data(), body.getContent().size());
+			out.close();
+			displayUploadSuccessfull(header, body);
+		}
 	}
 	closedir(dir);
 }
@@ -212,7 +232,14 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	if (client->_head.GetPath() == "/favicon.ico")
 	{
 		header.setHeader(204, this->_methods);
-		header.sendHeader(false, false);
+		header.sendHeader(false, this->_to_close);
+		return 1;
+	}
+
+	if (client->_head.GetPath() == "/.well-known/appspecific/com.chrome.devtools.json")
+	{
+		header.setHeader(404, this->_methods);
+		header.sendHeader(false, this->_to_close);
 		return 1;
 	}
 
@@ -258,12 +285,17 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 	size_t found = client->_cgi.GetCgiBody().find("Content");
 	if (found != std::string::npos)
 	{
-		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found); 
-		found += 4;
-		body._body = client->_cgi.GetCgiBody().substr(found);
-		header._body_len = body._body.size();
-		header.setHeader(200, this->_methods);
-		sendHeaderAndBody(header, body);
+		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found);
+		if (found != std::string::npos)
+		{
+			found += 4;
+			body._body = client->_cgi.GetCgiBody().substr(found);
+			header._body_len = body._body.size();
+			header.setHeader(200, this->_methods);
+			sendHeaderAndBody(header, body);
+		}
+		else
+			sendError(header, body, 500);
 	}
 	else
 		sendError(header, body, 500);

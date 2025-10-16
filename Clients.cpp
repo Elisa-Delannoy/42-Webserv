@@ -103,7 +103,6 @@ void Clients::ClearBuff()
 	this->_t_begin_request = 0;
 	this->_head.ClearHeader();
 	this->_body.ClearBody();
-
 }
 
 int Clients::GetServerIndex() const
