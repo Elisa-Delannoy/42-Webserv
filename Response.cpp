@@ -282,23 +282,35 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 
 void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client)
 {
-	size_t found = client->_cgi.GetCgiBody().find("Content");
-	if (found != std::string::npos)
+	size_t pos = client->_cgi.GetCgiBody().find("\n\r\n");
+	if (pos == std::string::npos)
+		pos = client->_cgi.GetCgiBody().find("\n\n");
+	if (pos == std::string::npos)
 	{
-		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found);
-		if (found != std::string::npos)
-		{
-			found += 4;
-			body._body = client->_cgi.GetCgiBody().substr(found);
-			header._body_len = body._body.size();
-			header.setHeader(200, this->_methods);
-			sendHeaderAndBody(header, body);
-		}
-		else
-			sendError(header, body, 500);
-	}
-	else
 		sendError(header, body, 500);
+		return ;
+	}
+	body._body = client->_cgi.GetCgiBody().substr(pos);
+	header._body_len = body._body.size();
+	header.setHeaderCGI(client->_cgi.GetCgiBody().substr(0, pos));
+	sendHeaderAndBody(header, body);
+	// size_t found = client->_cgi.GetCgiBody().find("Content");
+	// if (found != std::string::npos)
+	// {
+	// 	found = client->_cgi.GetCgiBody().find("\r\n\r\n", found);
+	// 	if (found != std::string::npos)
+	// 	{
+	// 		found += 4;
+	// 		body._body = client->_cgi.GetCgiBody().substr(found);
+	// 		header._body_len = body._body.size();
+	// 		header.setHeader(200, this->_methods);
+			// sendHeaderAndBody(header, body);
+	// 	}
+	// 	else
+	// 		sendError(header, body, 500);
+	// }
+	// else
+	// 	sendError(header, body, 500);
 }
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)

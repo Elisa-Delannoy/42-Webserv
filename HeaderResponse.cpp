@@ -20,7 +20,7 @@ void HeaderResponse::sendHeader(bool has_body, bool & to_close)
 		this->_connection = "Connection: close\r\n";
 		this->_close_alive = 0;
 	}
-	this->_header = this->_status + this->_content_type + this->_allow
+	this->_header = this->_status + this->_header_cgi + this->_content_type + this->_allow
 		+ this->_content_length + this->_connection;
 	if (has_body)
 		this->_header += "\r\n";
@@ -46,6 +46,14 @@ void HeaderResponse::sendHeader(bool has_body, bool & to_close)
 		}
 		total_sent += sent;
 	}
+}
+
+void HeaderResponse::setHeaderCGI(std::string header)
+{
+	this->_status = setStatus(" 200 OK\r\n");
+	this->_connection = "Connection: keep-alive\r\n";
+	this->_header_cgi = header + "\r\n";
+	this->_content_length = setContentLength();
 }
 
 void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
@@ -219,12 +227,6 @@ std::string HeaderResponse::setConnection(Clients* client)
 
 	return ret;
 }
-
-/* std::string HeaderResponse::setCookie(Clients* client)
-{
-
-	this->_cookie = "Set-Cookie: "
-} */
 
 int HeaderResponse::getCloseAlive()
 {

@@ -85,6 +85,24 @@
   </div>
 
   <div class="formulaire">
+	<h2>Create Cookie</h2>
+  	<form action="cookie.php" method="POST">
+		<label for="username">Nom :</label>
+  		<input type="text" id="username" name="username"><br><br>
+
+ 		<label for="Value">Message :</label><br>
+  		<textarea id="Value" name="Value" rows="5" cols="40"></textarea><br><br>
+  		<input type="submit" value="Envoyer (GET)">
+	</form>
+	<br><br><br><br><br>
+	<h2>Create Session</h2>
+  	<form action="session.php" method="get">
+  		<input type="submit" value="Envoyer (GET)">
+	</form>
+
+  </div>
+
+  <div class="formulaire">
     <h2>Formulaire vers get.py</h2>
   	<form action="get.py" method="get">
   		<label for="nom">Nom :</label>

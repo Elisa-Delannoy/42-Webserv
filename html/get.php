@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/php-cgi
 <?php
 // Script CGI PHP — méthode GET
 

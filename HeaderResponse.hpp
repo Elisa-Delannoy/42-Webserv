@@ -13,12 +13,12 @@ class HeaderResponse : public Response
 
 		//SETTING HEADER
 		void 		setHeader(int code, std::vector<std::string> & methods);
+		void 		setHeaderCGI(std::string header);
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
 		std::string setConnection(Clients* client);
-		std::string setCookie(Clients* client);
 
 		int 		getCloseAlive();
 		std::string getValueHeader(Clients* client, std::string key);
@@ -32,7 +32,7 @@ class HeaderResponse : public Response
 		std::string _connection;
 		std::string _allow;
 		std::string _accept;
-		std::string _cookie;
+		std::string _header_cgi;
 		int 		_close_alive;
 };
 
