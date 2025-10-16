@@ -1,7 +1,8 @@
 #include "ExecCGI.hpp"
 
 ExecCGI::ExecCGI() : _wrote(false), _read(false), _w_len(0), _count_read(0), _count_write(0), _time_begin_cgi(0)
-{}
+{
+}
 
 ExecCGI::~ExecCGI()
 {
@@ -119,48 +120,6 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, 
 	_envp[env.size()] = NULL;
 }
 
-// void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string path)
-// {
-// 	std::vector<std::string> env;
-
-// 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-// 	env.push_back("REQUEST_METHOD=" + header.GetMethod());
-// 	env.push_back("SCRIPT_FILENAME=" + path);
-// 	env.push_back("SCRIPT_NAME=" + header.GetPath());
-// 	env.push_back("SERVER_PROTOCOL=" + header.GetVersion());
-// 	env.push_back("REDIRECT_STATUS=200");
-// 	size_t pos = header.GetPath().find('?');
-// 	if (pos != std::string::npos)
-// 		env.push_back("QUERY_STRING=" + header.GetPath().substr(pos + 1));
-// 	else
-// 	{
-// 		env.push_back("QUERY_STRING=");
-// 	}
-// 	env.push_back("PATH_INFO=");
-// 	env.push_back("PATH_TRANSLATED=");
-// 	if (header.GetMethod() == "POST")
-// 	{
-// 		std::ostringstream oss;
-// 		oss << body.GetContentLen();
-// 		std::string len = oss.str();
-// 		env.push_back("CONTENT_LENGTH=" + len);
-// 		env.push_back("CONTENT_TYPE=" + body.GetContentType());
-// 	}
-// 	else
-// 	{
-// 		env.push_back("CONTENT_LENGTH=0");
-// 		env.push_back("CONTENT_TYPE=");
-// 	}
-// 	env.push_back("PYTHONUNBUFFERED=1");
-// 	_envp = new char*[env.size() + 1];
-// 	for (size_t i = 0; i < env.size(); i++)
-// 	{
-// 		_envp[i] = new char[env[i].size() + 1];
-// 		std::strcpy(_envp[i], env[i].c_str());
-// 	}
-// 	_envp[env.size()] = NULL;
-// }
-
 void ExecCGI::SetArgv(Location &location, std::string &path)
 {
 	std::vector<std::string> argv;
@@ -226,7 +185,6 @@ void ExecCGI::DeleteArgvEnvp()
 		delete [] _envp;
 	}
 }
-using namespace std;
 
 void	ExecCGI::ChildExec(int pipe_in[2], int pipe_out[2])
 {
@@ -251,15 +209,12 @@ void	ExecCGI::ChildExec(int pipe_in[2], int pipe_out[2])
 
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socket_server, Epoll& epoll)
 {
-	std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
-	
+	// std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
 	std::string path = SetupPath(header.GetPath(), _loc.GetName(), _loc.GetRoot());
-	
 	SetArgv(_loc, path);
 	SetEnvp(header, body, path, socket_server);
 	this->_count_read = 0;
 	this->_count_write = 0;
-	
 	int pipe_in[2];
 	int pipe_out[2];
 
@@ -280,7 +235,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
-		std::cout << "fdin = " << _fdin << " | fdou = " << _fdout << std::endl;
+		// std::cout << "fdin = " << _fdin << " | fdou = " << _fdout << std::endl;
 		DeleteArgvEnvp();
 	}
 	return 0;
@@ -323,7 +278,7 @@ int ExecCGI::Read(Epoll& epoll)
 	}
 	else if (bytesRead == -1)
 	{
-		std::cout << "dans -1 " << std::endl;
+		// std::cout << "dans -1 " << std::endl;
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
@@ -333,17 +288,16 @@ int ExecCGI::Read(Epoll& epoll)
 		int status;
 		if (waitpid(_pid, &status, WNOHANG) == 0)
 			return (-1);
-		// close(_fdout);
 		return (ExitCode(status));
 	}
-	(void) epoll; /*si ok pour sur eppolin supp epoll de read*/
+	(void) epoll; /*si ok pour sans eppolin pour supp epoll de read*/
 
-	epoll_event	event;
-	event.events = EPOLLIN;
-	event.data.fd = this->_fdout;
-	std::cout << "avant new epoll " << std::endl;
-	if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
-		return (500);
+	// epoll_event	event;
+	// event.events = EPOLLIN;
+	// event.data.fd = this->_fdout;
+	// std::cout << "avant new epoll " << std::endl;
+	// if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
+	// 	return (500);
 	return -1;
 }
 
@@ -364,7 +318,6 @@ int ExecCGI::Write(ParseBody& body)
 			this->_w_len += written;
 			if (this->_w_len >= bodyContent.size())
 			{
-				// close(_fdin);
 				this->_wrote = true;
 				return (0);
 			}
@@ -372,15 +325,11 @@ int ExecCGI::Write(ParseBody& body)
 		return (-1);
 	}
 	else
-	{
-		std::cout << " dans pas de body " << std::endl;
-		// close(_fdin);
 		this->_wrote = true;
-	}
 	return (0);
 }
 
-bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
+bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers)
 {
 	(void)body;
 	(void)servers;
@@ -405,12 +354,13 @@ bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &server
 	return false;
 }
 
-void	ExecCGI::KillAndClose()
+int	ExecCGI::Kill()
 {
-	kill(_pid, SIGKILL);
-	waitpid(_pid, NULL, WNOHANG);
-
-	
-	close(_fdin);
-	close(_fdout);
+	if (this->_pid > 0)
+	{
+		kill(_pid, SIGKILL);
+		if (waitpid(_pid, NULL, 0) != 0)
+			return (1);	
+	}
+	return (0);
 }

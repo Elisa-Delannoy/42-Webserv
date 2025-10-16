@@ -51,10 +51,10 @@ class HTTPServer
 		int			CheckEndRead(Clients* client);
 		int			CheckEndWithChunk(Clients* client);
 		int			CheckEndWithLen(Clients* client);
-		void		CheckToDelete(Epoll& epoll);
 		void		HandleCGI(Epoll& epoll, Clients* client, int i);
 		void		HandleExcevCGI(Epoll& epoll, Clients* client, int i);
 		void		CleanCGI(int fd, Epoll& epoll);
+		void		CleanForTimeout(Clients* client, Epoll& epoll);
 
 	private:
 		std::vector<SocketServer>		_socket_server;

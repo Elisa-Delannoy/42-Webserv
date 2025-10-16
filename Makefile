@@ -2,7 +2,7 @@ CC = c++
 CFLAGS = -Wall -Werror -Wextra -std=c++98 -g
 DEBUG_FLAGS = -g
 
-NAME = server
+NAME = webserv
 SRC = main.cpp \
 	HTTPServer.cpp \
 	Epoll.cpp \

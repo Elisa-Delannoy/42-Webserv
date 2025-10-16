@@ -4,7 +4,6 @@
 import cgi
 import html
 import sys
-
 # En-tête CGI obligatoire
 print("Content-Type: text/html\r\n\r\n")
 

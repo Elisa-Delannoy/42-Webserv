@@ -40,7 +40,7 @@ class ExecCGI
 		int Execution(ParseRequest &header, ParseBody &body, SocketServer socket_server, Epoll& epoll);
 		void	ChildExec(int pipe_in[2], int pipe_out[2]);
 		bool CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &server);
-		void KillAndClose();
+		int Kill();
 		void DeleteArgvEnvp();
 		int Read(Epoll& epoll);
 		int Write(ParseBody &body);
