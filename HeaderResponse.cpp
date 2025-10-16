@@ -89,6 +89,11 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 	}
+	if (code == 503)
+	{
+		this->_status = setStatus(" 503 Service Unavailable Error\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+	}
 	if (code == 504)
 	{
 		this->_status = setStatus(" 504 Gateway Timeout\r\n");
