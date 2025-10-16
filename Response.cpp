@@ -52,16 +52,10 @@ void Response::setRootLocationAndMethods(std::string & path)
 		path.replace(0, name.size() - 1, this->_root);
 	}
 }
-/*
-#define ERROR408 "<html><head><title>408 Request Timeout</title></head><body><center><h1>408 Request Timeout</h1></center><hr><center>MyWebServ</center></body></html>"
-#define ERROR413 "<html><head><title>413 Payload Too Large</title></head><body><center><h1>413 Payload Too Large</h1></center><hr><center>MyWebServ</center></body></html>"
-#define ERROR504 "<html><head><title>504 Gateway Timeout</title></head><body><center><h1>504 Gateway Timeout</h1></center><hr><center>MyWebServ</center></body></html>"
 
-*/
 void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 {
 	header.setHeader(code, this->_methods);
-	std::cout << "this->_errors_path.find(code) : " << this->_errors_path[code] << std::endl;
 	if (this->_errors_path[code].empty())
 	{
 		if (code == 400)
@@ -85,6 +79,8 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 			body._body  = ERROR413;
 		else if (code == 500)
 			body._body  = ERROR500;
+		else if (code == 503)
+			body._body  = ERROR503;
 		else if (code == 504)
 			body._body  = ERROR504;
 
@@ -95,7 +91,6 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 	else
 	{
 		std::string path = GetErrorPath(code).c_str();
-		std::cout << "path error : " << path << std::endl;
 		header.setPath(path);
 		int check = body.checkBody(path.c_str());
 		if (check == 0)
@@ -103,18 +98,18 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 			header._body_len = body._body.size();
 			header._content_length = header.setContentLength();
 		}
-		else if (check == 404)
-		{
-			header.setHeader(404, this->_methods);
-			body._body  = ERROR404;
-			std::ostringstream oss;
-			oss << body._body.size();
-			header._content_length = "Content-Length: " + oss.str() + "\r\n";
-		}
 		else
 		{
-			header.setHeader(500, this->_methods);
-			body._body  = ERROR500;
+			if (check == 404)
+			{
+				header.setHeader(404, this->_methods);
+				body._body  = ERROR404;
+			}
+			else
+			{
+				header.setHeader(500, this->_methods);
+				body._body  = ERROR500;
+			}
 			std::ostringstream oss;
 			oss << body._body.size();
 			header._content_length = "Content-Length: " + oss.str() + "\r\n";
@@ -212,12 +207,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
 
-/* 	std::cout << "\n\n--------BUF BEGIN--------" << std::endl;
-	std::vector<char>::iterator it = request.begin();
-	for(; it != request.end(); it++)
-		std::cout << *it;
-	std::cout << "\n--------BUF END----------\n" << std::endl; */
-
 	setRootLocationAndMethods(path);
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
@@ -303,7 +292,6 @@ void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* 
 
 void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::string & path)
 {
-	std::cout << "path : " << path << std::endl;
 	int check;
 	DIR *dir;
 	dir = opendir(path.c_str());
@@ -375,7 +363,6 @@ void Response::handleDelete(HeaderResponse & header, BodyResponse & body, std::s
 	}
 	else
 	{
-		std::cout << "path.substr(0, 8)" << path.substr(0, 8) << std::endl;
 		if (path.substr(0, 8) != "uploads/")
 		{
 			header.setHeader(403, this->_methods);
@@ -398,7 +385,7 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 {
 	int check;
 	std::string index = getIndex();
-
+	std::cout << "handlepathdir" << std::endl;
 	if (index.empty())
 	{
 		bool autoindex = getAutoindex();
@@ -417,7 +404,7 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 			sendHeaderAndBody(header, body);
 		}
 		else
-			sendError(header, body, 500);
+			sendError(header, body, 404);
 	}
 }
 
@@ -435,7 +422,7 @@ bool Response::isMethodAllowed(std::string method)
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 {
 	header.sendHeader(true, this->_to_close);
-	body.sendBody();
+	body.sendBody(header);
 }
 
 //Return index from conf file
