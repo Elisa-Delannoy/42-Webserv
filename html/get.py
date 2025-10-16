@@ -6,7 +6,7 @@
 import cgi
 import html
 
-print("Content-Type: text/html; charset=utf-8")
+print("Content-Type: text/html; charset=utf-8\r\n\r\n")
 print()  # ligne vide obligatoire entre headers et contenu
 
 # Récupérer les paramètres GET
