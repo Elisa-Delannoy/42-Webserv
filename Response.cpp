@@ -96,7 +96,7 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 	{
 		std::string path = GetErrorPath(code).c_str();
 		header.setPath(path);
-		if (body.checkBody(path.c_str()) == 0)
+		if (body.checkBody(path.substr(1).c_str()) == 0)
 			header._content_length = header.setContentLength();
 		else
 		{

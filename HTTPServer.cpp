@@ -263,6 +263,8 @@ int	HTTPServer::CheckEndRead(Clients* client)
 			return (0);
 		client->SetReadHeader(true);
 	}
+	if (client->GetReadBuffer().size() - client->_head.GetIndexEndHeader() - 1 > static_cast<size_t>(this->servers[client->GetServerIndex()].GetClientBodySize()))
+		return (client->_head.SetForError(true, 413), client->SetStatus(Clients::SENDING_RESPONSE), -1);
 	if (!client->_body.IsBody(client->_head))
 		return (1);
 	else if (CheckEndWithChunk(client) == 1 || CheckEndWithLen(client) == 1)
@@ -287,8 +289,7 @@ void HTTPServer::ReadAllRequest(Clients* client, int fd)
 	}
 	client->SetReadBuff(buffer, bytes);
 	// if (client->GetReadBuffer().size() - client->GetServerIndex() > static_cast<size_t>(this->servers[client->GetServerIndex()].GetClientBodySize()))
-	if (client->GetReadBuffer().size() > static_cast<size_t>(this->servers[client->GetServerIndex()].GetClientBodySize()))
-		return (client->_head.SetForError(true, 413), client->SetStatus(Clients::SENDING_RESPONSE));
+	
 	if (bytes > 0 && CheckEndRead(client) > 0)
 		client->SetStatus(Clients::PARSING_REQUEST);
 	if (bytes == 0)
@@ -415,7 +416,6 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		HandleAfterReading(request, client);
 	if (client->GetStatus() == Clients::SENDING_RESPONSE)
 	{
-		std::cout << "client->GetCgiStatus(): " << client->GetCgiStatus() << std::endl;
 		client->SetLastActivity();
 		if (client->_head.GetError() == 0)
 			HandleCGI(epoll, client, i);
@@ -599,7 +599,7 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 
 	if(!host_port_taken)
 	{
-		SocketServer socket_server(socket(AF_INET, SOCK_STREAM, 0), port, host, j);
+		SocketServer socket_server(socket(AF_INET, SOCK_STREAM, 0), port, host, i);
 		if (socket_server.GetFd() < 0)
 		{
 			std::cerr << "Cannot create socket" << std::endl;
