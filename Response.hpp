@@ -24,6 +24,7 @@ class BodyResponse;
 #define ERROR408 "<html><head><title>408 Request Timeout</title></head><body><center><h1>408 Request Timeout</h1></center><hr><center>Cookieserv</center></body></html>"
 #define ERROR413 "<html><head><title>413 Payload Too Large</title></head><body><center><h1>413 Payload Too Large</h1></center><hr><center>Cookieserv</center></body></html>"
 #define ERROR500 "<html><head><title>500 Internal Server Error</title></head><body><center><h1>500 Internal Server Error</h1></center><hr><center>Cookieserv</center></body></html>"
+#define ERROR503 "<html><head><title>503 Service Unavailable Error</title></head><body><center><h1>503 Service Unavailable Error</h1></center><hr><center>Cookieserv</center></body></html>"
 #define ERROR504 "<html><head><title>504 Gateway Timeout</title></head><body><center><h1>504 Gateway Timeout</h1></center><hr><center>Cookieserv</center></body></html>"
 
 class Response

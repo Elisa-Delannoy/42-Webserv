@@ -1,4 +1,5 @@
 #include "BodyResponse.hpp"
+#include "HeaderResponse.hpp"
 
 BodyResponse::BodyResponse(ServerConf & servers, Clients* client) :
 Response(servers, client), _has_filename(false)
@@ -7,19 +8,26 @@ Response(servers, client), _has_filename(false)
 BodyResponse::~BodyResponse()
 { }
 
-void BodyResponse::sendBody()
+void BodyResponse::sendBody(HeaderResponse & header)
 {
-	size_t data_sent = 0;
-	while(data_sent < this->_body.size())
+	size_t total_sent = 0;
+	const char* buffer = this->_body.data();
+	size_t to_send = this->_body.size();
+
+	while (total_sent < to_send)
 	{
-		ssize_t data_read = send(this->_client_fd, this->_body.data() + data_sent,
-			this->_body.size() - data_sent, 0);
-		if (data_read == -1)
+		ssize_t sent = send(this->_client_fd, buffer + total_sent, to_send - total_sent, 0);
+
+		if (sent <= 0)
 		{
-			std::cerr << "Error while sending content." << std::endl;
+			if (sent == 0)
+				std::cerr << "Client closed connection while sending body." << std::endl;
+			else
+				std::cerr << "Error while sending body: " << strerror(errno) << std::endl;
+			header.setCloseAlive(0);
 			break;
 		}
-		data_sent += data_read;
+		total_sent += sent;
 	}
 }
 

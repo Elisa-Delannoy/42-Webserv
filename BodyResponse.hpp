@@ -9,7 +9,7 @@ class BodyResponse : public Response
 		BodyResponse(ServerConf & servers, Clients* client);
 		~BodyResponse();
 
-		void sendBody();
+		void sendBody(HeaderResponse & header);
 		int checkBody(const char* path);
 
 		bool				getHasFilename() const;
