@@ -4,14 +4,16 @@ HeaderResponse::HeaderResponse(ServerConf & servers, Clients* client, std::strin
 Response(servers, client) , _path(path), _version(version)
 {
 	this->_connection = setConnection(client);
-	if (!client->_head.GetHeader().find("Accept")->second.empty())
+	std::map<std::string, std::string>::const_iterator it;
+	it = client->_head.GetHeader().find("Accept");
+	if (it != client->_head.GetHeader().end())
 		this->_accept = client->_head.GetHeader().find("Accept")->second;
 }
 
 HeaderResponse::~HeaderResponse()
 { }
 
-void HeaderResponse::sendHeader(bool has_body, bool to_close)
+void HeaderResponse::sendHeader(bool has_body, bool & to_close)
 {
 	if (to_close)
 	{
@@ -22,9 +24,26 @@ void HeaderResponse::sendHeader(bool has_body, bool to_close)
 		+ this->_content_length + this->_connection;
 	if (has_body)
 		this->_header += "\r\n";
-	
-	if(send(this->_client_fd, this->_header.c_str(), this->_header.size(), 0) == -1)
-		std::cerr << "Error while sending headers." << std::endl;
+
+	ssize_t total_sent = 0;
+	ssize_t to_send = this->_header.size();
+	const char* buffer = this->_header.c_str();
+
+	while (total_sent < to_send)
+	{
+		ssize_t sent = send(this->_client_fd, buffer + total_sent, to_send - total_sent, 0);
+
+		if (sent <= 0)
+		{
+			if (sent == 0)
+				std::cerr << "Client closed connection while sending headers." << std::endl;
+			else
+				std::cerr << "Error while sending headers: " << strerror(errno) << std::endl;
+			to_close = true;
+			return;
+		}
+		total_sent += sent;
+	}
 }
 
 void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
@@ -78,6 +97,8 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 408 Request Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		this->_close_alive = 0;
 	}
 	if (code == 413)
 	{
@@ -88,6 +109,8 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		this->_close_alive = 0;
 	}
 	if (code == 503)
 	{
@@ -98,6 +121,8 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 	{
 		this->_status = setStatus(" 504 Gateway Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		this->_close_alive = 0;
 	}
 	if (!this->_path.empty() && this->_content_type.empty())
 		this->_content_type = setContentType();
@@ -115,7 +140,6 @@ std::string HeaderResponse::setContentType()
 		ret += "text/html";
 	else
 	{
-		std::cout << "(setContentType) this->_path : " << this->_path << std::endl;
 		std::string type;
 		size_t i = this->_path.size() - 1;
 		while (i > 0 && this->_path[i - 1] != '.')
@@ -173,6 +197,7 @@ std::string HeaderResponse::setSize(const char* path_image)
 	if (stat(path_image, &info) < 0)
 	{
 		std::cerr << "Error stat file" << std::endl;
+		return "0";
 	}
 	oss << info.st_size;
 	this->_body_len = info.st_size;
@@ -198,11 +223,10 @@ std::string HeaderResponse::setConnection(Clients* client)
 	return ret;
 }
 
-/* std::string HeaderResponse::setCookie(Clients* client)
+void HeaderResponse::setCloseAlive(int x)
 {
-
-	this->_cookie = "Set-Cookie: "
-} */
+	this->_close_alive = x;
+}
 
 int HeaderResponse::getCloseAlive()
 {

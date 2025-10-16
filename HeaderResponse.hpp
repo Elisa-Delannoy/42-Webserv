@@ -9,7 +9,7 @@ class HeaderResponse : public Response
 		HeaderResponse(ServerConf & servers, Clients* client, std::string & path, std::string version);
 		~HeaderResponse();
 
-		void 		sendHeader(bool has_body, bool to_close);
+		void 		sendHeader(bool has_body, bool & to_close);
 
 		//SETTING HEADER
 		void 		setHeader(int code, std::vector<std::string> & methods);
@@ -18,7 +18,7 @@ class HeaderResponse : public Response
 		std::string setSize(const char* path_image);
 		std::string setContentLength();
 		std::string setConnection(Clients* client);
-		std::string setCookie(Clients* client);
+		void		setCloseAlive(int x);
 
 		int 		getCloseAlive();
 		std::string getValueHeader(Clients* client, std::string key);

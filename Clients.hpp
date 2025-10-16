@@ -51,7 +51,7 @@ class Clients
 		status	GetStatus() const;
 		cgistatus GetCgiStatus() const;
 		std::vector<char>&	GetReadBuffer();
-		SocketServer GetSocketServer() const; 
+		SocketServer GetSocketServer() const;
 
 		void	SetSessionId(int id);
 		void	SetLastActivity();
@@ -62,7 +62,7 @@ class Clients
 		void	SetReadHeader(bool r_header);
 		void	SetRecv(int count);
 
-		void	ClearBuff();		
+		void	ClearBuff();
 
 		ParseRequest	_head;
 		ParseBody		_body;
