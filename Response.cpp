@@ -268,13 +268,14 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 
 void Response::handleCgi(HeaderResponse & header, BodyResponse & body, Clients* client)
 {
+	std::cout << "client->_cgi.GetCgiBody() : " << client->_cgi.GetCgiBody() << std::endl;
 	size_t found = client->_cgi.GetCgiBody().find("Content");
 	if (found != std::string::npos)
 	{
 		found = client->_cgi.GetCgiBody().find("\r\n\r\n", found);
 		if (found != std::string::npos)
 		{
-			found += 4;
+			found += 2;
 			body._body = client->_cgi.GetCgiBody().substr(found);
 			header._body_len = body._body.size();
 			header.setHeader(200, this->_methods);
