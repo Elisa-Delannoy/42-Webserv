@@ -12,6 +12,7 @@ class HeaderResponse : public Response
 		void 		sendHeader(bool has_body, bool & to_close);
 
 		void 		setHeader(int code, std::vector<std::string> & methods);
+		void 		setHeaderCGI(std::string header);
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
@@ -31,7 +32,7 @@ class HeaderResponse : public Response
 		std::string _connection;
 		std::string _allow;
 		std::string _accept;
-		std::string _cookie;
+		std::string _header_cgi;
 		int 		_close_alive;
 };
 

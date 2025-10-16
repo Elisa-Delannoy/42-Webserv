@@ -69,7 +69,7 @@ textarea {
 
 input[type="submit"] {
   margin-top: 15px;
-  background-color: #4CAF50;
+  background-color: #5a3b18;
   color: white;
   border: none;
   padding: 10px;
@@ -79,7 +79,7 @@ input[type="submit"] {
 }
 
 input[type="submit"]:hover {
-  background-color: #45a049;
+  background-color: #815220;
 }
 
 @media (max-width: 900px) {
