@@ -111,10 +111,5 @@ std::string BodyResponse::getFilename() const
 
 std::vector<char> BodyResponse::getContent()
 {
-	/* std::cout << "\n\n--------this->_content BEGIN--------" << std::endl;
-	std::vector<char>::iterator it = this->_content.begin();
-	for(; it != this->_content.end(); it++)
-		std::cout << *it;
-	std::cout << "\n--------this->_content END-------\n" << std::endl; */
 	return this->_content;
 }

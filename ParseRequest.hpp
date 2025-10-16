@@ -26,8 +26,8 @@ class ParseRequest
 		void	DivideHeader(std::string& first_line);
 		int		DivideFirstLine(std::string& first_line);
 		
-		int	GetError() const;
-		int	GetIndexEndHeader() const;
+		int		GetError() const;
+		int		GetIndexEndHeader() const;
 		bool	GetToClose() const;
 		void	ClearHeader();
 		const std::string&	GetPath() const;

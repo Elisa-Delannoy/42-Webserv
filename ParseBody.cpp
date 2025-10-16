@@ -2,11 +2,6 @@
 
 ParseBody::ParseBody() : _len(0), _line(0), _content_chunk(false)
 {
-	Part	parts;
-	parts.name = "";
-	parts.filename = "";
-	parts.type = "";
-	parts.content.push_back('\0');
 }
 
 ParseBody::~ParseBody()

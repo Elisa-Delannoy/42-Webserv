@@ -124,4 +124,3 @@ void Clients::SetReadHeader(bool r_header)
 {
 	this->_r_header = r_header;
 }
-

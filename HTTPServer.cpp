@@ -5,7 +5,6 @@ volatile sig_atomic_t g_running = 1;
 
 HTTPServer::HTTPServer()
 {
-	// std::cout << "construcetru : " << std::endl;
 	this->_counter_id = 1;
 }
 
@@ -14,9 +13,7 @@ HTTPServer::~HTTPServer()
 	std::map<int, Clients*>::iterator it = this->_socket_client.begin();
 	for (; it != this->_socket_client.end(); it++)
 	{
-		// std::cout << "destructeur : " << it->first << std::endl;
 		close(it->first);
-		// if (UniqueClient(it) == true)
 		delete it->second;
 	}
 	for(size_t i = 0; i < this->_socket_server.size(); i++)
@@ -48,9 +45,6 @@ bool	Timeout(int last_time, int limit)
 		return (true);
 	return (false);
 }
-
-//READ REQUEST UNTIL END OF HEADERS
-//GET SIZE OF CONTENT_LENGTH(FOR BODY REQUEST)
 
 //PARSING CONF
 bool CheckServerStart(std::string line)
@@ -96,6 +90,8 @@ bool CheckLocationStart(std::string line)
 bool HTTPServer::ParsingConf(std::string conf_file)
 {
 	std::ifstream conf(conf_file.c_str());
+	if (!conf)
+		return (false);
 	std::string line;
 	while (std::getline(conf, line))
 	{
@@ -139,8 +135,8 @@ void HTTPServer::displayServers()
 		std::cout << "Serveur numero : " << r+1 << std::endl;
 		for (size_t i = 0; i < this->servers[r].GetServerName().size() ;i++)
 			std::cout << this->servers[r].GetServerName()[i] << std::endl;
-		std::cout << "HOST :" << this->servers[r].GetPort(0) << std::endl;
-		std::cout << "PORT :" << this->servers[r].GetHost(0) << std::endl;
+		std::cout << "Port :" << this->servers[r].GetPort(0) << std::endl;
+		std::cout << "Host :" << this->servers[r].GetHost(0) << std::endl;
 		std::cout << "ClientBody :" << this->servers[r].GetClientBodySize() << std::endl;
 		std::cout << "Error 404 :" << this->servers[r].GetErrorPath(404) << std::endl;
 		std::cout << "Error 500 :" << this->servers[r].GetErrorPath(500) << std::endl;
@@ -152,7 +148,6 @@ void HTTPServer::displayServers()
 			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
 				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
 			std::cout << "AUTOINNDEX Location : " << servers[r].GetLocation(f).GetAutoindex() << std::endl;
-			// std::cout << "CGI Location : " << servers[r].GetLocation(f).GetCGIPass() << std::endl;
 			std::cout << "Index : " << servers[r].GetLocation(f).GetIndex() << std::endl;
 			std::cout << "\n";
 		}
@@ -170,9 +165,6 @@ int	HTTPServer::GetServerIndex(int used_socket)
 	return (-1);
 }
 
-// -1 error
-// 0 pas fini 
-// i ok fin header
 int HTTPServer::readHeaderRequest(Clients* client, std::vector<char> request)
 {
 	bool	first = false;
@@ -239,9 +231,6 @@ int	HTTPServer::CheckEndWithLen(Clients* client)
 		return (0);
 }
 
-// -1 error to send parse request
-// 1 ok fini 
-// 0 pas fini
 int	HTTPServer::CheckEndRead(Clients* client)
 {
 	const char* endheader = "\r\n\r\n";;
@@ -321,16 +310,12 @@ void HTTPServer::HandleAfterReading(std::vector<char>& request, Clients* client)
 
 void	HTTPServer::HandleExcevCGI(Epoll& epoll, Clients* client, int i)
 {
-	// std::cout << epoll.getEvent(i).data.fd << "\n is executing \n" << std::endl;
 	if (epoll.getEvent(i).events & EPOLLOUT && client->_cgi.GetWrote() == false)
 	{
-		std::cout << "dans write" << std::endl;
 		int state = client->_cgi.Write(client->_body);
-		// std::cout << "dans write " << state << std::endl;
 		if (state == 0)
 		{
 			CleanCGI(client->_cgi.GetFdIn(), epoll);
-			// CleanClient(client->_cgi.GetFdOut(), epoll);
 			client->_cgi.SetWrote(true);
 		}
 		if (state > 0)
@@ -338,13 +323,10 @@ void	HTTPServer::HandleExcevCGI(Epoll& epoll, Clients* client, int i)
 			client->_head.SetForError(true, state);
 			client->SetCgiStatus(Clients::CGI_ERROR);
 		}
-		// std::cout << "client->_cgi.GetWrote()" << client->_cgi.GetWrote() << "client->_cgi.GetRead()" << client->_cgi.GetRead() << std::endl;
 	}
 	if ((epoll.getEvent(i).events & EPOLLIN || epoll.getEvent(i).events & EPOLLHUP) && client->_cgi.GetRead() == false)
 	{
-		// std::cout << "dans read" << std::endl;
 		int state = client->_cgi.Read(epoll);
-		// std::cout << "state read = " << state << std::endl;
 		if (state == 0)
 		{
 			CleanCGI(client->_cgi.GetFdOut(), epoll);
@@ -355,7 +337,6 @@ void	HTTPServer::HandleExcevCGI(Epoll& epoll, Clients* client, int i)
 			client->_head.SetForError(true, state);
 			client->SetCgiStatus(Clients::CGI_ERROR);
 		}
-		// std::cout << "client->_cgi.GetWrote()" << client->_cgi.GetWrote() << "client->_cgi.GetRead()" << client->_cgi.GetRead() << std::endl;
 	}
 	if (client->_cgi.GetWrote() == true && client->_cgi.GetRead() == true)
 		client->SetCgiStatus(Clients::CGI_FINISHED);
@@ -368,17 +349,14 @@ void	HTTPServer::CleanCGI(int fd, Epoll& epoll)
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
 	if (it != this->_socket_client.end())
 	{
-		// std::cout << "client clean cgi = " << fd << std::endl;
 		this->_socket_client.erase(it);
 	}
 }
 
 void	HTTPServer::CleanForTimeout(Clients* client, Epoll& epoll)
 {
-	std::cout << "dans time out " << std::endl;
 	if (client->_cgi.Kill() == 0)
 		return;
-	std::cout << "dans time out2 " << std::endl;
 	CleanCGI(client->_cgi.GetFdOut(), epoll);
 	CleanCGI(client->_cgi.GetFdIn(), epoll);
 	client->_head.SetForError(true, 504);
@@ -395,7 +373,6 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 		int state = client->_cgi.Execution(client->_head, client->_body, client->GetSocketServer(), epoll);
 		if (state == 0)
 		{
-			// std::cout << "dans exec reussie " << std::endl;
 			this->_socket_client[client->_cgi.GetFdIn()] = client;
 			this->_socket_client[client->_cgi.GetFdOut()] = client;
 			client->SetCgiStatus(Clients::CGI_EXECUTING);
@@ -414,7 +391,6 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	}
 	if (client->GetCgiStatus() == Clients::CGI_FINISHED)
 	{
-		// std::cout << "body :\n" << client->_cgi.GetCgiBody() << std::endl;
 		client->_cgi.SetWrote(false);
 		client->_cgi.SetRead(false);
 		client->SetCgiStatus(Clients::CGI_NONE);
@@ -423,7 +399,6 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	{
 		CleanCGI(client->_cgi.GetFdIn(), epoll);
 		CleanCGI(client->_cgi.GetFdOut(), epoll);
-		// std::cout << "dans error " << std::endl;
 		client->SetCgiStatus(Clients::CGI_NONE);	
 	}
 }
@@ -433,10 +408,7 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 	std::vector<char> request;
 	int client_fd = epoll.getEvent(i).data.fd;
 	if (epoll.getEvent(i).events & EPOLLIN && client->GetStatus() == Clients::WAITING_REQUEST)
-	{
-		// std::cout << "------------REQUEST------------" << client_fd << std::endl;
 		ReadAllRequest(client, client_fd);
-	}
 	if (client->GetStatus() == Clients::PARSING_REQUEST)
 		HandleAfterReading(request, client);
 	if (client->GetStatus() == Clients::SENDING_RESPONSE)
@@ -448,21 +420,14 @@ void HTTPServer::handleRequest(Epoll& epoll, int i, Clients* client)
 		{
 			Response resp(this->servers[client->GetServerIndex()], client);
 			if (resp.sendResponse(this->servers[client->GetServerIndex()], client, request) == 0)
-			{
-				// std::cout << "dasn response" << std::endl;
-				client->SetStatus(Clients::CLOSED);
-				return ;
-			}
+				return (client->SetStatus(Clients::CLOSED));
 			client->_cgi.SetCgibody("");
 			client->ClearBuff();
 			client->SetStatus(Clients::WAITING_REQUEST);
 		}
 	}
 	if (client->GetStatus() == Clients::CLOSED)
-	{
-		// std::cout << "close dans handle request" << std::endl;
 		CleanClient(client_fd, epoll);
-	}
 }
 
 void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
@@ -470,15 +435,14 @@ void	HTTPServer::AcceptRequest(Epoll& epoll, int j)
 	int socket = accept(this->_socket_server[j].GetFd(), NULL, NULL);
 	if (socket < 0)
 	{
-		std::cerr << "Failed to grab socket_client." << std::endl;
+		std::cerr << "Failed to grab socket_client\n" << std::endl;
 		return;
 	}
 	Clients*	client = new Clients(this->_socket_server[j], socket);
-	// std::cout << "creation  : " << socket << std::endl;
 	this->_socket_client[socket] = client;
 	if (epoll.SetEpoll(socket, EPOLLIN | EPOLLOUT) == 0)
 	{
-		std::cerr << "Error: client socket is not created" << std::endl;
+		std::cerr << "Error: client socket is not created\n" << std::endl;
 		CleanClient(client->GetSocket(), epoll);
 	}
 }
@@ -488,11 +452,7 @@ Clients*	HTTPServer::FindClient(int fd, int & id)
 	(void)id;
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(fd);
 	if (it != this->_socket_client.end())
-	{
-		// it->second->SetSessionId(id);
-		// id++;
 		return (it->second);
-	}
 	else
 		return NULL;
 }
@@ -503,15 +463,8 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 	epoll.deleteClient(client_fd);
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(client_fd);
 	if (it != this->_socket_client.end())
-	{
-		// close(it->first);;
-		// if (UniqueClient(it) == true)
-		// {
-			// std::cout << "is unique = " << it->second << std::endl;
 		delete it->second;
-	}
-		this->_socket_client.erase(it);
-	// }
+	this->_socket_client.erase(it);
 }
 
 int HTTPServer::runServer()
@@ -541,10 +494,7 @@ int HTTPServer::runServer()
 			int	used_socket = epoll->getEvent(i).data.fd;
 			server_index = GetServerIndex(used_socket);
 			if (server_index >= 0)
-			{
-				// std::cout << used_socket << std::endl;
 				AcceptRequest(*epoll, server_index);
-			}
 			else 
 			{
 				client = FindClient(used_socket, this->_counter_id);
@@ -554,8 +504,6 @@ int HTTPServer::runServer()
 		}
 	}
 	delete epoll;
-	//to do gerer ctrl+C pour quitter proprement
-	//=>fermer tous les sockets, etc
 	return 0;
 }
 
@@ -564,7 +512,7 @@ int HTTPServer::startServer(std::string conf_file)
 	if (ParsingConf(conf_file) == false)
 		return 1;
 
-	displayServers(); // temporaire
+	displayServers();
 
 	if (prepareServerSockets() == 1)
 		return 1;
@@ -593,7 +541,7 @@ uint32_t HTTPServer::prepareAddrForHtonl(std::string addr)
 		while(addr[i] && addr[i] != '.')
 			i++;
 	}
-	ret = (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3]; /*si  erreur et pas v3 ?*/
+	ret = (v[0] << 24) | (v[1] << 16) | (v[2] << 8) | v[3];
 	v.clear();
 	return ret;
 }
@@ -621,7 +569,7 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 		SocketServer socket_server(socket(AF_INET, SOCK_STREAM, 0), port, host, i);
 		if (socket_server.GetFd() < 0)
 		{
-			std::cerr << "Cannot create socket" << std::endl;
+			std::cerr << "Cannot create socket\n" << std::endl;
 			close(socket_server.GetFd());
 			return 1;
 		}
@@ -642,7 +590,7 @@ int HTTPServer::createServerSocket(std::vector<std::pair<std::string, int> > &ho
 
 		if (listen(socket_server.GetFd(), 10))
 		{
-			std::cerr << "Failed to listen on socket." << std::endl;
+			std::cerr << "Failed to listen on socket\n" << std::endl;
 			close(socket_server.GetFd());
 			return 1;
 		}

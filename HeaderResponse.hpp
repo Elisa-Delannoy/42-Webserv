@@ -11,7 +11,6 @@ class HeaderResponse : public Response
 
 		void 		sendHeader(bool has_body, bool & to_close);
 
-		//SETTING HEADER
 		void 		setHeader(int code, std::vector<std::string> & methods);
 		std::string setStatus(std::string code);
 		std::string setContentType();
@@ -19,11 +18,11 @@ class HeaderResponse : public Response
 		std::string setContentLength();
 		std::string setConnection(Clients* client);
 		void		setCloseAlive(int x);
+		void 		setPath(std::string path);
 
 		int 		getCloseAlive();
 		std::string getValueHeader(Clients* client, std::string key);
 
-		void setPath(std::string path);
 
 	private:
 		std::string _header;

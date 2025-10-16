@@ -14,7 +14,6 @@
 #include <vector>
 #include "ServerConf.hpp"
 #include "Clients.hpp"
-// #include "ExecCGI.hpp"
 
 class HeaderResponse;
 class BodyResponse;
@@ -51,8 +50,6 @@ class Response
 
 		void displayAutoindex(HeaderResponse & header, BodyResponse & body, std::string path);
 		void displayUploadSuccessfull(HeaderResponse & header, BodyResponse & body);
-
-		//POST
 		void createFileOnServer(HeaderResponse & header, BodyResponse & body, std::vector<char> & request);
 
 	private:

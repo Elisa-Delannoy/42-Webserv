@@ -30,7 +30,6 @@ void Response::setRootLocationAndMethods(std::string & path)
 			this->_index_location = i;
 		if (!name.empty() && name != "/" && path.compare(0, name.size(), name) == 0)
 		{
-			//add allowed methods
 			for (int j = 0; j < this->_server.GetLocation(i).nb_methods; j++)
 				this->_methods.push_back(this->_server.GetLocation(i).GetMethods(j));
 
@@ -43,7 +42,6 @@ void Response::setRootLocationAndMethods(std::string & path)
 	}
 	if (this->_root.empty())
 	{
-		//add allowed methods
 		for (int j = 0; j < this->_server.GetLocation(this->_index_location).nb_methods; j++)
 			this->_methods.push_back(this->_server.GetLocation(this->_index_location).GetMethods(j));
 
@@ -211,7 +209,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	HeaderResponse header(servers, client, path, version);
 	BodyResponse body(servers, client);
 
-	//error in header
 	if (client->_head.GetError() != 0)
 	{
 		sendError(header, body, client->_head.GetError());

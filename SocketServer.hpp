@@ -9,6 +9,7 @@ class SocketServer
 		int _port;
 		std::string _host;
 		int _server_index;
+
 	public:
 		SocketServer();
 		SocketServer(int fd, int port, std::string host, int server_index);

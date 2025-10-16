@@ -60,6 +60,6 @@ int Epoll::SetEpoll(int & fd, uint32_t events)
 void Epoll::deleteClient(int client_fd)
 {
 	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
-		std::cerr << "Delete error" << std::endl;
+		std::cerr << "Delete error\n" << std::endl;
 	close(client_fd);
 }

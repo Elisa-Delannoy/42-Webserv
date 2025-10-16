@@ -32,7 +32,7 @@ class HTTPServer
 		void	AcceptRequest(Epoll& epoll, int j);
 		void	CleanClient(int client_fd, Epoll& epoll);
 
-		int	GetServerIndex(int used_socket);
+		int		GetServerIndex(int used_socket);
 
 		//Parsing .conf
 		bool ParsingConf(std::string conf_file);

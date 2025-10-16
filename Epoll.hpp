@@ -30,5 +30,4 @@ class Epoll
 		int _epoll_fd;
 };
 
-
 #endif

@@ -209,7 +209,6 @@ void	ExecCGI::ChildExec(int pipe_in[2], int pipe_out[2])
 
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socket_server, Epoll& epoll)
 {
-	// std::cout << "\n========== DEBUT EXECUTION CGI ==========" << std::endl;
 	std::string path = SetupPath(header.GetPath(), _loc.GetName(), _loc.GetRoot());
 	SetArgv(_loc, path);
 	SetEnvp(header, body, path, socket_server);
@@ -235,7 +234,6 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
-		// std::cout << "fdin = " << _fdin << " | fdou = " << _fdout << std::endl;
 		DeleteArgvEnvp();
 	}
 	return 0;
@@ -278,7 +276,6 @@ int ExecCGI::Read(Epoll& epoll)
 	}
 	else if (bytesRead == -1)
 	{
-		// std::cout << "dans -1 " << std::endl;
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
@@ -290,14 +287,7 @@ int ExecCGI::Read(Epoll& epoll)
 			return (-1);
 		return (ExitCode(status));
 	}
-	(void) epoll; /*si ok pour sans eppolin pour supp epoll de read*/
-
-	// epoll_event	event;
-	// event.events = EPOLLIN;
-	// event.data.fd = this->_fdout;
-	// std::cout << "avant new epoll " << std::endl;
-	// if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
-	// 	return (500);
+	(void) epoll;
 	return -1;
 }
 
