@@ -95,11 +95,21 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 	else
 	{
 		std::string path = GetErrorPath(code).c_str();
+		std::cout << "path error : " << path << std::endl;
 		header.setPath(path);
-		if (body.checkBody(path.c_str()) == 0)
+		int check = body.checkBody(path.c_str());
+		if (check == 0)
 		{
 			header._body_len = body._body.size();
 			header._content_length = header.setContentLength();
+		}
+		else if (check == 404)
+		{
+			header.setHeader(404, this->_methods);
+			body._body  = ERROR404;
+			std::ostringstream oss;
+			oss << body._body.size();
+			header._content_length = "Content-Length: " + oss.str() + "\r\n";
 		}
 		else
 		{
