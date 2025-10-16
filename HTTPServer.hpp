@@ -42,7 +42,7 @@ class HTTPServer
 		int		readHeaderRequest(Clients* client, std::vector<char> request);
 		void	HandleAfterReading(std::vector<char>& request, Clients* client);
 		void	handleRequest(Epoll& epoll, int i, Clients* client);
-		bool	UniqueClient(std::map<int, Clients*>::iterator it, std::map<int, Clients*>::iterator same_it);
+		bool	UniqueClient(std::map<int, Clients*>::iterator it);
 
 		uint32_t 	prepareAddrForHtonl(std::string addr);
 		bool 		checkPortHostTaken(std::vector<std::pair<std::string, int> >host_port, std::string host, int port);
@@ -54,6 +54,7 @@ class HTTPServer
 		void		CheckToDelete(Epoll& epoll);
 		void		HandleCGI(Epoll& epoll, Clients* client, int i);
 		void		HandleExcevCGI(Epoll& epoll, Clients* client, int i);
+		void		CleanCGI(int fd, Epoll& epoll);
 
 	private:
 		std::vector<SocketServer>		_socket_server;
