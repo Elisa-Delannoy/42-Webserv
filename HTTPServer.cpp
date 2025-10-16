@@ -487,7 +487,7 @@ void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 	std::map<int, Clients*>::iterator same_it = it;
 	if (it != this->_socket_client.end())
 	{
-		close(it->first);;
+		close(it->first);
 		if (UniqueClient(it, same_it) == true)
 			delete it->second;
 		this->_socket_client.erase(it);
