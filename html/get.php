@@ -1,15 +1,10 @@
 #!/usr/bin/php
 <?php
-// Script CGI PHP — méthode GET
-
-// Indiquer au serveur qu'on renvoie du HTML
 header("Content-Type: text/html; charset=utf-8");
 
-// Récupérer les paramètres GET
 $nom = isset($_GET['nom']) ? htmlspecialchars($_GET['nom']) : '';
 $message = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : '';
 
-// Générer la page HTML
 ?>
 <!DOCTYPE html>
 <html lang="fr">

@@ -1,16 +1,12 @@
 #!/usr/bin/php-cgi
 <?php
-// En-tête CGI obligatoire
 
-// Lire les données POST
 parse_str(file_get_contents("php://input"), $_POST);
 
-// Récupérer les champs du formulaire
 $nom = isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : '';
 $email = isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '';
 $message = isset($_POST['message']) ? nl2br(htmlspecialchars($_POST['message'])) : '';
-// Affichage HTML
-while(1)
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
