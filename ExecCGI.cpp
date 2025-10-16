@@ -257,6 +257,8 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	
 	SetArgv(_loc, path);
 	SetEnvp(header, body, path, socket_server);
+	this->_count_read = 0;
+	this->_count_write = 0;
 	
 	int pipe_in[2];
 	int pipe_out[2];
@@ -278,12 +280,13 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 		_pid = pid;
 		_fdin = pipe_in[1];
 		_fdout = pipe_out[0];
+		std::cout << "fdin = " << _fdin << " | fdou = " << _fdout << std::endl;
 		DeleteArgvEnvp();
 	}
 	return 0;
 }
 
-int	ErrorCode(int status)
+int	ExitCode(int status)
 {
 	int error_code;
 
@@ -320,6 +323,7 @@ int ExecCGI::Read(Epoll& epoll)
 	}
 	else if (bytesRead == -1)
 	{
+		std::cout << "dans -1 " << std::endl;
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
@@ -329,16 +333,17 @@ int ExecCGI::Read(Epoll& epoll)
 		int status;
 		if (waitpid(_pid, &status, WNOHANG) == 0)
 			return (-1);
-		close(_fdout);
-		return (ErrorCode(status));
+		// close(_fdout);
+		return (ExitCode(status));
 	}
 	(void) epoll; /*si ok pour sur eppolin supp epoll de read*/
 
-	// epoll_event	event;
-	// event.events = EPOLLIN;
-	// event.data.fd = this->_fdout;
-	// if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
-	// 	return (500);
+	epoll_event	event;
+	event.events = EPOLLIN;
+	event.data.fd = this->_fdout;
+	std::cout << "avant new epoll " << std::endl;
+	if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
+		return (500);
 	return -1;
 }
 
@@ -359,7 +364,7 @@ int ExecCGI::Write(ParseBody& body)
 			this->_w_len += written;
 			if (this->_w_len >= bodyContent.size())
 			{
-				close(_fdin);
+				// close(_fdin);
 				this->_wrote = true;
 				return (0);
 			}
@@ -368,7 +373,8 @@ int ExecCGI::Write(ParseBody& body)
 	}
 	else
 	{
-		close(_fdin);
+		std::cout << " dans pas de body " << std::endl;
+		// close(_fdin);
 		this->_wrote = true;
 	}
 	return (0);
