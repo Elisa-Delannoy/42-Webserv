@@ -67,7 +67,6 @@ void ExecCGI::SetWrote(bool state)
 	this->_wrote = state;
 }
 
-
 void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, SocketServer& socket_server)
 {
 	std::vector<std::string> env;
@@ -162,7 +161,6 @@ void ExecCGI::SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, 
 // 	_envp[env.size()] = NULL;
 // }
 
-
 void ExecCGI::SetArgv(Location &location, std::string &path)
 {
 	std::vector<std::string> argv;
@@ -230,6 +228,26 @@ void ExecCGI::DeleteArgvEnvp()
 }
 using namespace std;
 
+void	ExecCGI::ChildExec(int pipe_in[2], int pipe_out[2])
+{
+	close(pipe_in[1]);
+	close(pipe_out[0]);
+	
+	if (dup2(pipe_in[0], STDIN_FILENO) == -1 || dup2(pipe_out[1], STDOUT_FILENO) == -1)
+	{
+		std::cerr << "Error : dup2" << strerror(errno) << std::endl;
+		exit(500);
+	}
+	close(pipe_in[0]);
+	close(pipe_out[1]);
+	execve(_loc.GetCGIPass(_ext).c_str(), GetArgv(), GetEnvp());
+	if (errno == ENOENT)
+		exit(404);
+	if (errno == EACCES)
+		exit(403);
+	else
+		exit(500);
+}
 
 int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socket_server, Epoll& epoll)
 {
@@ -243,67 +261,17 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	int pipe_in[2];
 	int pipe_out[2];
 
-	if (pipe(pipe_in) == -1)
-	{
-		std::cerr << "[ERROR] pipe_in failed: " << strerror(errno) << std::endl;
-		return (500);
-	}
-	if (pipe(pipe_out) == -1)
-	{
-		std::cerr << "[ERROR] pipe_out failed: " << strerror(errno) << std::endl;
-		return (500);
-	}
-
-	cout << pipe_in[1] << " " << pipe_out[0] << endl;
-	if (epoll.SetEpoll(pipe_in[1], EPOLLOUT) == 0)
-	{
-		std::cerr << "Error: client socket is not created" << std::endl;
-		// CleanClient(client->GetSocket(), epoll);
-		return (500);
-	}
-	if (epoll.SetEpoll(pipe_out[0], EPOLLIN) == 0)
-	{
-		std::cerr << "Error: client socket is not created" << std::endl;
-		// CleanClient(client->GetSocket(), epoll);
-		return (500);
-	}
+	if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1)
+		return (std::cerr << "Error: pipe failed: " << strerror(errno) << std::endl, 500);
+	if (epoll.SetEpoll(pipe_in[1], EPOLLOUT) == 0 || epoll.SetEpoll(pipe_out[0], EPOLLIN) == 0)
+		return (std::cerr << "Error: socket is not created\n" << std::endl, 500);
 	pid_t pid = fork();
 	if (pid == -1)
-	{
-		std::cerr << "[ERROR] fork failed: " << strerror(errno) << std::endl;
-		return (500);
-	}
-	
+		return (std::cerr << "Error: fork failed: " << strerror(errno) << std::endl, 500);
 	if (pid == 0)
-	{
-		close(pipe_in[1]);
-		close(pipe_out[0]);
-		
-		if (dup2(pipe_in[0], STDIN_FILENO) == -1)
-		{
-			std::cerr << "[CHILD ERROR] dup2 stdin: " << strerror(errno) << std::endl;
-			exit(500);
-		}
-		if (dup2(pipe_out[1], STDOUT_FILENO) == -1)
-		{
-			std::cerr << "[CHILD ERROR] dup2 stdout: " << strerror(errno) << std::endl;
-			exit(500);
-		}
-		
-		close(pipe_in[0]);
-		close(pipe_out[1]);
-
-		execve(_loc.GetCGIPass(_ext).c_str(), GetArgv(), GetEnvp());
-		if (errno == ENOENT)
-			exit(404);
-		if (errno == EACCES)
-			exit(403);
-		else
-			exit(500);
-	}
+		ChildExec(pipe_in, pipe_out);
 	else
 	{
-		// std::cout << "test8" << std::endl;
 		SetTimeBeginCGI();
 		close(pipe_in[0]);
 		close(pipe_out[1]);
@@ -315,81 +283,73 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	return 0;
 }
 
+int	ErrorCode(int status)
+{
+	int error_code;
+
+	if (WIFEXITED(status)) 
+		error_code = WEXITSTATUS(status);
+	else if (WIFSIGNALED(status))
+	{
+		int sig = WTERMSIG(status);
+		switch(sig)
+		{
+			case SIGKILL:
+				error_code = 504;
+				break;
+			case SIGTERM:  
+				error_code = 503;
+				break;
+			default:
+				error_code = 500;
+		}
+	}
+	else
+		error_code = 500;
+	return (error_code);
+}
+
 int ExecCGI::Read(Epoll& epoll)
 {
 	char buffer[4096];
 	ssize_t bytesRead = read(_fdout, buffer, sizeof(buffer) - 1);
-	// std::cout << "test " << std::endl;
 	if (bytesRead  > 0)
 	{
 		buffer[bytesRead] = '\0';
-		// std::cout << "test4 " << bytesRead<< std::endl;
 		_cgibody += buffer;
 	}
 	else if (bytesRead == -1)
 	{
-		// std::cout << "dans read -1 " << std::endl;
-
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
-		// this->_wrote = false;
-		// std::cerr << "[PARENT ERROR] read failed: " << strerror(errno) << std::endl;
 	}
 	else if (bytesRead == 0)
 	{
-		// std::cout << "dans == 0 " << std::endl;
-		// this->_wrote = false;
-		close(_fdout);
 		int status;
-		int	error_code;
-		waitpid(_pid, &status, WNOHANG);
-		if (WIFEXITED(status)) 
-			error_code = WEXITSTATUS(status);
-		else if (WIFSIGNALED(status))
-		{
-			int sig = WTERMSIG(status);
-			switch(sig)
-			{
-				case SIGKILL:
-					error_code = 504;  // Gateway Timeout
-					break;
-				case SIGTERM:  // arrêt du service ou kill
-					error_code = 503;  // Service Unavailable
-					break;
-				case SIGSEGV:
-					error_code = 500;
-					break;
-				default:
-					error_code = 500;
-			}
-		}
-		else
-			error_code = 500;
-		return (error_code);
+		if (waitpid(_pid, &status, WNOHANG) == 0)
+			return (-1);
+		close(_fdout);
+		return (ErrorCode(status));
 	}
-	(void) epoll;
-	epoll_event	event;
-	event.events = EPOLLIN;
-	event.data.fd = this->_fdout;
-	if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
-		return (500);
-	// std::cout << "test2" << std::endl;
+	(void) epoll; /*si ok pour sur eppolin supp epoll de read*/
+
+	// epoll_event	event;
+	// event.events = EPOLLIN;
+	// event.data.fd = this->_fdout;
+	// if (epoll_ctl(epoll.getEpollFd(), EPOLL_CTL_MOD, this->_fdout, &event) == -1)
+	// 	return (500);
 	return -1;
 }
 
 int ExecCGI::Write(ParseBody& body)
 {
 	std::string bodyContent = body.GetBody();
-	// std::cout << "test3" << std::endl;
 	if (!bodyContent.empty())
 	{
-		// std::cout << "non vide\n" << std::endl;
 		ssize_t written = write(_fdin, bodyContent.c_str() + this->_w_len, bodyContent.length() - this->_w_len);
-		// std::cout << " written " << written << std::endl;
 		if (written == -1)
 		{
-			// std::cerr << "[PARENT ERROR] write failed: " << strerror(errno) << std::endl;
 			if (this->_count_write > 10)
 				return (500);
 			this->_count_write++;
@@ -397,20 +357,22 @@ int ExecCGI::Write(ParseBody& body)
 		else
 		{
 			this->_w_len += written;
-			// std::cout << "bodyContent.size() " << bodyContent.size() << " _w_len " << _w_len<< std::endl;
 			if (this->_w_len >= bodyContent.size())
 			{
 				close(_fdin);
 				this->_wrote = true;
-				//sleep(1);
 				return (0);
 			}
 		}
 		return (-1);
 	}
+	else
+	{
+		close(_fdin);
+		this->_wrote = true;
+	}
 	return (0);
 }
-
 
 bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &servers) /*reference ?*/
 {
@@ -440,7 +402,7 @@ bool ExecCGI::CheckCGI(ParseRequest &header, ParseBody &body, ServerConf &server
 void	ExecCGI::KillAndClose()
 {
 	kill(_pid, SIGKILL);
-	waitpid(_pid, NULL, 0);
+	waitpid(_pid, NULL, WNOHANG);
 
 	
 	close(_fdin);
