@@ -189,6 +189,11 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 		else
 		{
 			out.write(body.getContent().data(), body.getContent().size());
+			if (!out)
+			{
+				sendError(header, body, 500);
+				return ;
+			}	
 			out.close();
 			displayUploadSuccessfull(header, body);
 		}

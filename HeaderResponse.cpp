@@ -41,7 +41,7 @@ void HeaderResponse::sendHeader(bool has_body, bool & to_close)
 				std::cerr << "Client closed connection while sending headers." << std::endl;
 			else
 				std::cerr << "Error while sending headers: " << strerror(errno) << std::endl;
-			to_close = true;
+			this->_close_alive = 0;
 			return;
 		}
 		total_sent += sent;

@@ -385,7 +385,7 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	}
 	if (client->GetCgiStatus() == Clients::CGI_EXECUTING)
 	{
-		if (Timeout(client->_cgi.GetTimeBeginCGI(), 10))
+		if (Timeout(client->_cgi.GetTimeBeginCGI(), 5))
 			return (CleanForTimeout(client, epoll));
 		HandleExcevCGI(epoll, client, i);
 	}
@@ -393,12 +393,14 @@ void	HTTPServer::HandleCGI(Epoll& epoll, Clients* client, int i)
 	{
 		client->_cgi.SetWrote(false);
 		client->_cgi.SetRead(false);
+		std::cout << "test =" << client->_cgi.GetCgiBody() << std::endl;
 		client->SetCgiStatus(Clients::CGI_NONE);
 	}
 	if (client->GetCgiStatus() == Clients::CGI_ERROR)
 	{
 		CleanCGI(client->_cgi.GetFdIn(), epoll);
 		CleanCGI(client->_cgi.GetFdOut(), epoll);
+		std::cout << "test 2=" << client->_cgi.GetCgiBody() << std::endl;
 		client->SetCgiStatus(Clients::CGI_NONE);	
 	}
 }
@@ -459,7 +461,6 @@ Clients*	HTTPServer::FindClient(int fd, int & id)
 
 void	HTTPServer::CleanClient(int client_fd, Epoll& epoll)
 {
-	std::cout << "client clean = " << client_fd << std::endl;
 	epoll.deleteClient(client_fd);
 	std::map<int, Clients*>::iterator it = this->_socket_client.find(client_fd);
 	if (it != this->_socket_client.end())
