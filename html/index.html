@@ -84,13 +84,14 @@
 
   <div class="formulaire">
 	<h2>Create Cookie</h2>
-  	<form action="cookie.php" method="POST">
-		<label for="username">Nom :</label>
-  		<input type="text" id="username" name="username"><br><br>
-
- 		<label for="Value">Message :</label><br>
-  		<textarea id="Value" name="Value" rows="5" cols="40"></textarea><br><br>
-  		<input type="submit" value="Envoyer (GET)">
+	<form action="cookie.php" method="get">
+	  <label for="name">Nom du cookie :</label>
+	  <input type="text" id="name" name="name" required><br><br>
+  
+	  <label for="value">Valeur du cookie :</label>
+	  <input type="text" id="value" name="value" required><br><br>
+  
+	  <input type="submit" value="Créer le cookie">
 	</form>
 	<br><br><br><br><br>
 	<h2>Create Session</h2>
