@@ -517,11 +517,30 @@ int HTTPServer::runServer()
 	return 0;
 }
 
+bool HTTPServer::CheckPort()
+{
+	std::vector<int> ports;
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		for (size_t j = 0; j < servers[i].GetHostPortSize(); j++)
+			ports.push_back(servers[i].GetPort(j));
+	}
+	std::set<int> check;
+	for (std::vector<int>::const_iterator it = ports.begin(); it != ports.end(); ++it)
+	{
+        if(check.find(*it) != check.end())
+            return true; 
+        check.insert(*it);
+    }
+    return false;
+}
+
 int HTTPServer::startServer(std::string conf_file)
 {
 	if (ParsingConf(conf_file) == false)
 		return 1;
-
+	if (CheckPort())
+		return (std::cerr << "Error : Double Port detected.", 1);
 	displayServers();
 
 	if (prepareServerSockets() == 1)

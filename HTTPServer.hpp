@@ -16,6 +16,7 @@
 #include "Epoll.hpp"
 #include "ParseBody.hpp"
 #include "SocketServer.hpp"
+#include <set>
 
 class HTTPServer
 {
@@ -54,6 +55,7 @@ class HTTPServer
 		void		HandleExcevCGI(Epoll& epoll, Clients* client, int i);
 		void		CleanCGI(int fd, Epoll& epoll);
 		void		CleanForTimeout(Clients* client, Epoll& epoll);
+		bool		CheckPort();
 
 	private:
 		std::vector<SocketServer>		_socket_server;
