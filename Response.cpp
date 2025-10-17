@@ -35,6 +35,8 @@ void Response::setRootLocationAndMethods(std::string & path)
 
 			this->_index_location = i;
 			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
+			if (!this->_server.GetLocation(i).GetRedirection().empty())
+				this->_redirection = this->_server.GetLocation(i).GetRedirection();
 			if (this->_root[0] == '/')
 				this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 			path.replace(0, name.size(), this->_root);
@@ -47,6 +49,8 @@ void Response::setRootLocationAndMethods(std::string & path)
 			this->_methods.push_back(this->_server.GetLocation(this->_index_location).GetMethods(j));
 
 		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
+		if (!this->_server.GetLocation(this->_index_location).GetRedirection().empty())
+			this->_redirection = this->_server.GetLocation(this->_index_location).GetRedirection();
 		if (this->_root[0] == '/')
 			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 		path.replace(0, name.size() - 1, this->_root);
@@ -239,9 +243,9 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		return 1;
 	}
 
-	if (this->_path_unchanged == "/redirect")
+	if (!this->_redirection.empty())
 	{
-		header.setRedirect();
+		header.setRedirect(this->_redirection);
 		header.sendHeader(this->_to_close);
 		return 1;
 	}
@@ -407,13 +411,17 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 	else
 	{
 		std::cout << "root : " << this->_root << std::endl;
-		if (path == this->_root + "/")
+		std::string root = this->_root;
+		if (root[root.size()-1] != '/')
+			root += "/";
+		if (path == root)
 		{
 			path += index;
 			std::cout << "path handlepathdir : " << path << std::endl;
 			check = body.checkBody(path.c_str());
 			if (check == 0)
 			{
+				std::cout << "ok" << std::endl;
 				header.setHeader(200, this->_methods);
 				sendHeaderAndBody(header, body);
 			}

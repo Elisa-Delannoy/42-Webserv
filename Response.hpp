@@ -62,6 +62,7 @@ class Response
 		std::string _begin_405;
 		std::string _end_405;
 		std::string _path_unchanged;
+		std::string _redirection;
 
 	protected:
 		std::string _status;

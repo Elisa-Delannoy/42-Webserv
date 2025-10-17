@@ -48,12 +48,12 @@ void HeaderResponse::sendHeader(bool & to_close)
 	}
 }
 
-void HeaderResponse::setRedirect()
+void HeaderResponse::setRedirect(std::string path_redirection)
 {
 	this->_status = setStatus(" 301 Moved Permanently\r\n");
 	this->_connection = "Connection: keep-alive\r\n";
 	this->_content_length = "Content-Length: 0\r\n";
-	this->_location = "Location: /\r\n";
+	this->_location = "Location: " + path_redirection + "\r\n";
 }
 
 void HeaderResponse::setHeaderCGI(std::string header)
@@ -72,30 +72,30 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		if (this->_content_length.empty())
 			this->_content_length = setContentLength();
 	}
-	if (code == 204)
+	else if (code == 204)
 	{
 		this->_status = setStatus(" 204 No Content\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
-	if (code == 400)
+	else if (code == 400)
 	{
 		this->_status = setStatus(" 400 Bad Request\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
-	if (code == 403)
+	else if (code == 403)
 	{
 		this->_status = setStatus(" 403 Forbidden\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		return ;
 	}
-	if (code == 404)
+	else if (code == 404)
 	{
 		this->_status = setStatus(" 404 Not Found\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 	}
-	if (code == 405)
+	else if (code == 405)
 	{
 		this->_status = setStatus(" 405 Method Not Allowed\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
@@ -111,31 +111,31 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 				this->_allow += "\r\n";
 		}
 	}
-	if (code == 408)
+	else if (code == 408)
 	{
 		this->_status = setStatus(" 408 Request Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		this->_connection = "Connection: close\r\n";
 		this->_close_alive = 0;
 	}
-	if (code == 413)
+	else if (code == 413)
 	{
 		this->_status = setStatus(" 413 Payload Too Large\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 	}
-	if (code == 500)
+	else if (code == 500)
 	{
 		this->_status = setStatus(" 500 Internal Server Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 		this->_connection = "Connection: close\r\n";
 		this->_close_alive = 0;
 	}
-	if (code == 503)
+	else if (code == 503)
 	{
 		this->_status = setStatus(" 503 Service Unavailable Error\r\n");
 		this->_content_length = "Content-Length: 0\r\n";
 	}
-	if (code == 504)
+	else if (code == 504)
 	{
 		this->_status = setStatus(" 504 Gateway Timeout\r\n");
 		this->_content_length = "Content-Length: 0\r\n";

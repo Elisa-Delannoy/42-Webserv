@@ -13,7 +13,7 @@ class HeaderResponse : public Response
 
 		void 		setHeader(int code, std::vector<std::string> & methods);
 		void 		setHeaderCGI(std::string header);
-		void		setRedirect();
+		void		setRedirect(std::string path_redirection);
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
