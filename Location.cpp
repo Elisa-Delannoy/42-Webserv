@@ -38,6 +38,11 @@ void Location::SetCGIPass(std::string ext, std::string path)
 	_cgi[ext] = path;
 }
 
+void Location::SetRedirection(std::string redirection)
+{
+	_redirection = redirection;
+}
+
 void Location::SetIndex(std::string index)
 {
 	_index = index;
@@ -61,6 +66,11 @@ std::string Location::GetMethods(int nb) const
 bool Location::GetAutoindex() const
 {
 	return _autoindex;
+}
+
+std::string Location::GetRedirection() const
+{
+	return _redirection;
 }
 
 std::string Location::GetCGIPass(std::string ext) const
@@ -108,6 +118,8 @@ int Location::AddRoot(std::string line)
 		return 1;
 	ss >> word;
 	if (word != "root")
+		return 9;
+	if (!_redirection.empty())
 		return 9;
 	ss >> word;
 	word.erase(word.length() - 1);
@@ -198,6 +210,24 @@ int Location::AddIndex(std::string line)
 		return 9;
 	word.erase(word.length() - 1);
 	SetIndex(word);
+	return 0;
+}
+
+int Location::AddRedirection(std::string line)
+{
+	std::istringstream ss(line);
+	std::string word;
+
+	if (line[line.length() - 1] != ';')
+		return 1;
+	ss >> word;
+	if (word != "redirection")
+		return 9;
+	if (!_root.empty())
+		return 9;
+	ss >> word;
+	word.erase(word.length() - 1);
+	SetRedirection(word);
 	return 0;
 }
 

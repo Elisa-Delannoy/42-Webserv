@@ -13,7 +13,6 @@
 #include <signal.h>
 #include "ServerConf.hpp"
 #include "Response.hpp"
-// #include "ExecCGI.hpp"
 #include "Epoll.hpp"
 #include "ParseBody.hpp"
 #include "SocketServer.hpp"
@@ -26,7 +25,7 @@ class HTTPServer
 
 		int		startServer(std::string conf_file);
 		int		runServer();
-		void	closeServer();
+		void	closeServer(Epoll& epoll);
 		int		prepareServerSockets();
 		int		createServerSocket(std::vector<std::pair<std::string, int> > &host_port, size_t i, size_t j);
 		void	AcceptRequest(Epoll& epoll, int j);

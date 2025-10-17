@@ -52,6 +52,8 @@ class ExecCGI
 		void SetEnvp(ParseRequest &header, ParseBody &body, std::string& path, SocketServer& socket_server);
 		void SetTimeBeginCGI();
 		void SetCgibody(std::string str);
+		void SetFdOut(int fd);
+		void SetFdIn(int fd);
 
 		char** GetEnvp() const;
 		char** GetArgv() const;

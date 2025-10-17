@@ -244,6 +244,8 @@ int ServerConf::AddLocation(std::ifstream& conf, std::string line)
 			error = location.AddCGIPass(removeInlineComment(line));
 		else if (line.find("index") != std::string::npos)
 			error = location.AddIndex(removeInlineComment(line));
+		else if (line.find("redirection") != std::string::npos)
+			error = location.AddRedirection(removeInlineComment(line));
 		else
 			error = 9;
 		if (error != 0)
