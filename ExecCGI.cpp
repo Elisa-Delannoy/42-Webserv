@@ -225,6 +225,7 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 	SetEnvp(header, body, path, socket_server);
 	this->_count_read = 0;
 	this->_count_write = 0;
+	this->_w_len = 0;
 	int pipe_in[2];
 	int pipe_out[2];
 
