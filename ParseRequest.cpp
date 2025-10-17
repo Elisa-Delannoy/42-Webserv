@@ -28,6 +28,8 @@ void ParseRequest::DivideHeader(std::string& line)
 
 int ParseRequest::DivideFirstLine(std::string& first_line)
 {
+	if (first_line.empty())
+		return(SetForError(true, 404), 0);
 	int len = first_line.length();
 	std::istringstream	ss_first_line(first_line);
 
