@@ -142,6 +142,13 @@ void HeaderResponse::setHeader(int code, std::vector<std::string> & methods)
 		this->_connection = "Connection: close\r\n";
 		this->_close_alive = 0;
 	}
+	else
+	{
+		this->_status = setStatus(" 500 Internal Server Error\r\n");
+		this->_content_length = "Content-Length: 0\r\n";
+		this->_connection = "Connection: close\r\n";
+		this->_close_alive = 0;
+	}
 	if (!this->_path.empty() && this->_content_type.empty())
 		this->_content_type = setContentType();
 }

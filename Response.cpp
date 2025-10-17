@@ -35,7 +35,8 @@ void Response::setRootLocationAndMethods(std::string & path)
 
 			this->_index_location = i;
 			this->_root = this->_server.GetLocation(i).GetRoot() + "/";
-			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+			if (this->_root[0] == '/')
+				this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 			path.replace(0, name.size(), this->_root);
 			return;
 		}
@@ -46,7 +47,8 @@ void Response::setRootLocationAndMethods(std::string & path)
 			this->_methods.push_back(this->_server.GetLocation(this->_index_location).GetMethods(j));
 
 		this->_root = this->_server.GetLocation(this->_index_location).GetRoot();
-		this->_root.erase(this->_root.begin(), this->_root.begin()+1);
+		if (this->_root[0] == '/')
+			this->_root.erase(this->_root.begin(), this->_root.begin()+1);
 		path.replace(0, name.size() - 1, this->_root);
 	}
 }
@@ -81,6 +83,8 @@ void Response::sendError(HeaderResponse & header, BodyResponse & body, int code)
 			body._body  = ERROR503;
 		else if (code == 504)
 			body._body  = ERROR504;
+		else
+			body._body  = ERROR500;
 
 		std::ostringstream oss;
 		oss << body._body.size();
