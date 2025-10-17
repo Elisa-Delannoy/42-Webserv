@@ -146,7 +146,6 @@ void Response::displayAutoindex(HeaderResponse & header, BodyResponse & body, st
 			size_t found = name.find(".");
 			if (found == std::string::npos)
 				name += "/";
-			std::cout << "path : " << path << std::endl;
 			if (path == "uploads/")
 				body._body += "<li><a href=\"" + path + name + "\">" + name + "</a></li>";
 			else
@@ -252,7 +251,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 
 	if (!client->_cgi.GetCgiBody().empty())
 	{
-		std::cout << "cgi" << std::endl;
 		handleCgi(header, body, client);
 		return 1;
 	}
@@ -260,7 +258,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	bool method_allowed = isMethodAllowed(method);
 	if (method == "GET")
 	{
-		std::cout << "get method" << std::endl;
 		if (method_allowed)
 			handleGet(header, body, path);
 		else
@@ -268,7 +265,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	}
 	else if (method == "POST")
 	{
-		std::cout << "post method" << std::endl;
 		if (method_allowed)
 			handlePost(header, body, client, request);
 		else
@@ -276,7 +272,6 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 	}
 	else if (method == "DELETE")
 	{
-		std::cout << "delete method" << std::endl;
 		if (method_allowed)
 			handleDelete(header, body, path);
 		else
@@ -307,7 +302,6 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 {
 	int check;
 	DIR *dir;
-	std::cout << "path : " << path << std::endl;
 	dir = opendir(path.c_str());
 	if (dir != NULL) //path is a dir
 		handlePathDir(header, body, path);
@@ -351,13 +345,13 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 		std::string temp(request.begin(), request.end());
 		if (temp.empty())
 		{
-			header.setHeader(204, this->_methods); //200 or 204?
+			header.setHeader(204, this->_methods);
 			header.sendHeader(this->_to_close);
 		}
 		else
 		{
 			body._body = temp;
-			header._body_len = temp.size(); //+2?
+			header._body_len = temp.size();
 			header.setHeader(200, this->_methods);
 			sendHeaderAndBody(header, body);
 		}
@@ -399,7 +393,6 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 {
 	int check;
 	std::string index = getIndex();
-	std::cout << "handlepathdir" << std::endl;
 	if (index.empty())
 	{
 		bool autoindex = getAutoindex();
@@ -410,18 +403,15 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 	}
 	else
 	{
-		std::cout << "root : " << this->_root << std::endl;
 		std::string root = this->_root;
 		if (root[root.size()-1] != '/')
 			root += "/";
 		if (path == root)
 		{
 			path += index;
-			std::cout << "path handlepathdir : " << path << std::endl;
 			check = body.checkBody(path.c_str());
 			if (check == 0)
 			{
-				std::cout << "ok" << std::endl;
 				header.setHeader(200, this->_methods);
 				sendHeaderAndBody(header, body);
 			}
@@ -430,12 +420,9 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 		}
 		else
 		{
-			std::cout << "path handlepathdir : " << path << std::endl;
 			check = body.checkBody(path.c_str());
 			if (check == 0)
-			{
 				displayAutoindex(header, body, path);
-			}
 			else
 				sendError(header, body, 404);
 		}

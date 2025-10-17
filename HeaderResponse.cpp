@@ -24,8 +24,6 @@ void HeaderResponse::sendHeader(bool & to_close)
 	this->_header = this->_status + this->_location + this->_header_cgi + this->_content_type
 		+ this->_allow + this->_content_length + this->_connection + "\r\n";
 
-	std::cout << "header : " << this->_header << std::endl;
-
 	ssize_t total_sent = 0;
 	ssize_t to_send = this->_header.size();
 	const char* buffer = this->_header.c_str();

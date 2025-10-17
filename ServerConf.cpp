@@ -184,15 +184,12 @@ int ServerConf::AddClientBody(std::string line)
 	}
 	if (value > LONG_MAX || value == 0)
 		return 4;
-	std::cout << value << std::endl;
-	std::cout << word.length() << std::endl;
 	if (i == word.length())
 	{
 		this->SetClientBodySize(value);
 		return 0;
 	}
 	char multiplier = word[i];
-	std::cout << multiplier << std::endl;
 	if (word[++i] != '\0')
 		return 4;
 	ClientBodyValue(value, multiplier);
