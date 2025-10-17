@@ -18,6 +18,7 @@ class Location
 		bool _autoindex;
 		std::map<std::string, std::string> _cgi;
 		std::string _index;
+		std::string _redirection;
 	public:
 		int nb_methods;
 
@@ -30,6 +31,7 @@ class Location
 		void SetAutoindex(bool autoindex);
 		void SetCGIPass(std::string ext, std::string path);
 		void SetIndex(std::string index);
+		void SetRedirection(std::string redirection);
 
 		std::string GetName() const;
 		std::string GetRoot() const;
@@ -38,6 +40,7 @@ class Location
 		std::string GetCGIPass(std::string ext) const;
 		std::map<std::string, std::string> GetCgi() const;
 		std::string GetIndex() const;
+		std::string GetRedirection() const;
 
 		int AddName(std::string line);
 		int AddRoot(std::string line);
@@ -45,6 +48,7 @@ class Location
 		int AddAutoindex(std::string line);
 		int AddCGIPass(std::string line);
 		int AddIndex(std::string line);
+		int AddRedirection(std::string line);
 
 		bool CheckMethod(std::string method);
 };
