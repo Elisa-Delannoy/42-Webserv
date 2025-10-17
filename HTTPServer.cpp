@@ -144,6 +144,7 @@ void HTTPServer::displayServers()
 		{
 			std::cout << "location numero : " << f+1 << std::endl;
 			std::cout << "NAME Location :" << servers[r].GetLocation(f).GetName() << std::endl;
+			std::cout << "REDIRECTION location:" << servers[r].GetLocation(f).GetRedirection() << std::endl;
 			std::cout << "ROOT Location :" << servers[r].GetLocation(f).GetRoot() << std::endl;
 			for (int i = 0; i < servers[r].GetLocation(f).nb_methods; i++)
 				std::cout << "ME Location :" << servers[r].GetLocation(f).GetMethods(i) << std::endl;
