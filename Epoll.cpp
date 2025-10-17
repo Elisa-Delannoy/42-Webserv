@@ -10,16 +10,16 @@ Epoll::Epoll(std::vector<SocketServer> socket_servers)
 		throw std::runtime_error("Error: epoll is not created\n");
 	for(size_t i = 0; i < socket_servers.size(); i++)
 	{
-		epoll_event event;
-		event.events = EPOLLIN;
-		event.data.fd = socket_servers[i].GetFd();
-		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, socket_servers[i].GetFd(), &event) == -1)
-		{
-			close(socket_servers[i].GetFd());
-			throw std::runtime_error("Error: epoll is not added\n");
-		}
+		int fd = socket_servers[i].GetFd();
+		if (SetEpoll(fd, EPOLLIN) == 0)
+			throw std::runtime_error("Error: epoll is not created\n");
 		else
+		{
+			epoll_event	event;
+			event.events = EPOLLIN;
+			event.data.fd = fd;
 			this->_servers_event.push_back(event);
+		}
 	}
 }
 
@@ -51,15 +51,26 @@ int Epoll::SetEpoll(int & fd, uint32_t events)
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1) 
 		return (0);
-	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 		return (0);
+	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
+	{
+		close(fd);
+		return (0);
+	}
 	return (1);
 }
 
 void Epoll::deleteClient(int client_fd)
 {
-	if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
-		std::cerr << "Delete error\n" << std::endl;
-	close(client_fd);
+	// std::cout << "delete cleint fd = " << client_fd << std::endl;
+	if (client_fd != -1)
+	{
+		if (epoll_ctl(this->_epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) == -1)
+		{
+			std::cerr << "\n\nDelete error\nn" << std::endl;
+			return;
+		}
+		close(client_fd);
+	}
 }

@@ -18,6 +18,5 @@ int main(int argc, char **argv)
 		conf_file = argv[1];
 	signal(SIGPIPE, SIG_IGN);
 	server.startServer(conf_file);
-	server.closeServer();
 	return 0;
 }

@@ -170,6 +170,17 @@ void ExecCGI::SetTimeBeginCGI()
 	this->_time_begin_cgi = now;
 }
 
+void ExecCGI::SetFdOut(int fd)
+{
+	this->_fdout = fd;
+}
+
+void ExecCGI::SetFdIn(int fd)
+{
+	this->_fdin = fd;
+}
+
+
 void ExecCGI::DeleteArgvEnvp()
 {
 	if (_argv)
@@ -242,11 +253,16 @@ int ExecCGI::Execution(ParseRequest &header, ParseBody& body, SocketServer socke
 int	ExitCode(int status)
 {
 	int error_code;
-
+	// std::cout << "wifexited" << std::endl;
 	if (WIFEXITED(status)) 
+	{
 		error_code = WEXITSTATUS(status);
+		if (error_code != 0)
+			error_code = 500;
+	}
 	else if (WIFSIGNALED(status))
 	{
+		// std::cout << "WIFSIGNALED" << std::endl;
 		int sig = WTERMSIG(status);
 		switch(sig)
 		{
@@ -262,26 +278,34 @@ int	ExitCode(int status)
 	}
 	else
 		error_code = 500;
+	// std::cout << "eror code" << error_code << std::endl;
 	return (error_code);
 }
 
 int ExecCGI::Read(Epoll& epoll)
 {
+	// std::cout << "read fdin " << this->_fdin << std::endl;
+	// std::cout << "read fdout " << this->_fdout << std::endl;
+
 	char buffer[4096];
 	ssize_t bytesRead = read(_fdout, buffer, sizeof(buffer) - 1);
 	if (bytesRead  > 0)
 	{
+		// std::cout << "read > 0" << std::endl;
 		buffer[bytesRead] = '\0';
 		_cgibody += buffer;
 	}
 	else if (bytesRead == -1)
 	{
+		// perror("read failed");
+		// std::cout << "read == -1" << std::endl;
 		if (this->_count_read > 10)
 			return (500);
 		this->_count_read++;
 	}
 	else if (bytesRead == 0)
 	{
+		// std::cout << "read == 0" << std::endl;
 		int status;
 		if (waitpid(_pid, &status, WNOHANG) == 0)
 			return (-1);
@@ -293,6 +317,8 @@ int ExecCGI::Read(Epoll& epoll)
 
 int ExecCGI::Write(ParseBody& body)
 {
+	// std::cout << "write fdin " << this->_fdin << std::endl;
+	// std::cout << "write fdout " << this->_fdout << std::endl;
 	std::string bodyContent = body.GetBody();
 	if (!bodyContent.empty())
 	{

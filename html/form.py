@@ -10,7 +10,7 @@ form = cgi.FieldStorage()
 nom = html.escape(form.getfirst("nom", ""))
 message = html.escape(form.getfirst("message", ""))
 
-message = message.replace("\n", "<br>")
+message = message.replace("\n", "<br>");;
 
 print("""<!DOCTYPE html>
 <html lang="fr">
