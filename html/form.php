@@ -6,7 +6,7 @@ parse_str(file_get_contents("php://input"), $_POST);
 $nom = isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : '';
 $email = isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '';
 $message = isset($_POST['message']) ? nl2br(htmlspecialchars($_POST['message'])) : '';
-while(1)
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">

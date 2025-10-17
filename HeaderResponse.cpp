@@ -12,7 +12,6 @@ Response(servers, client) , _path(path), _version(version)
 
 HeaderResponse::~HeaderResponse()
 {
-
 }
 
 void HeaderResponse::sendHeader(bool & to_close)
