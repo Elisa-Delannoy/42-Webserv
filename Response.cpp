@@ -206,6 +206,7 @@ void Response::createFileOnServer(HeaderResponse & header, BodyResponse & body, 
 int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<char> request)
 {
 	std::string path = client->_head.GetPath();
+	this->_path_unchanged = client->_head.GetPath();;
 	std::string method = client->_head.GetMethod();
 	std::string version = client->_head.GetVersion();
 	std::cout << "|" << path << "|" << method << "|" << version << "|" << std::endl;
@@ -220,17 +221,24 @@ int Response::sendResponse(ServerConf & servers, Clients* client, std::vector<ch
 		return (header.getCloseAlive());
 	}
 
-	if (client->_head.GetPath() == "/favicon.ico")
+	if (this->_path_unchanged == "/favicon.ico")
 	{
 		header.setHeader(204, this->_methods);
-		header.sendHeader(false, this->_to_close);
+		header.sendHeader(this->_to_close);
 		return 1;
 	}
 
-	if (client->_head.GetPath() == "/.well-known/appspecific/com.chrome.devtools.json")
+	if (this->_path_unchanged == "/.well-known/appspecific/com.chrome.devtools.json")
 	{
 		header.setHeader(404, this->_methods);
-		header.sendHeader(false, this->_to_close);
+		header.sendHeader(this->_to_close);
+		return 1;
+	}
+
+	if (this->_path_unchanged == "/redirect")
+	{
+		header.setRedirect();
+		header.sendHeader(this->_to_close);
 		return 1;
 	}
 
@@ -291,6 +299,7 @@ void Response::handleGet(HeaderResponse & header, BodyResponse & body, std::stri
 {
 	int check;
 	DIR *dir;
+	std::cout << "path : " << path << std::endl;
 	dir = opendir(path.c_str());
 	if (dir != NULL) //path is a dir
 		handlePathDir(header, body, path);
@@ -335,7 +344,7 @@ void Response::handlePost(HeaderResponse & header, BodyResponse & body, Clients*
 		if (temp.empty())
 		{
 			header.setHeader(204, this->_methods); //200 or 204?
-			header.sendHeader(false, this->_to_close);
+			header.sendHeader(this->_to_close);
 		}
 		else
 		{
@@ -363,14 +372,14 @@ void Response::handleDelete(HeaderResponse & header, BodyResponse & body, std::s
 		if (path.substr(0, 8) != "uploads/")
 		{
 			header.setHeader(403, this->_methods);
-			header.sendHeader(false, this->_to_close);
+			header.sendHeader(this->_to_close);
 		}
 		else
 		{
 			if (unlink(path.c_str()) == 0) //delete file
 			{
 				header.setHeader(204, this->_methods);
-				header.sendHeader(false, this->_to_close);
+				header.sendHeader(this->_to_close);
 			}
 			else //could not delete file
 				sendError(header, body, 404);
@@ -393,15 +402,31 @@ void Response::handlePathDir(HeaderResponse & header, BodyResponse & body, std::
 	}
 	else
 	{
-		path += index;
-		check = body.checkBody(path.c_str());
-		if (check == 0)
+		std::cout << "root : " << this->_root << std::endl;
+		if (path == this->_root + "/")
 		{
-			header.setHeader(200, this->_methods);
-			sendHeaderAndBody(header, body);
+			path += index;
+			std::cout << "path handlepathdir : " << path << std::endl;
+			check = body.checkBody(path.c_str());
+			if (check == 0)
+			{
+				header.setHeader(200, this->_methods);
+				sendHeaderAndBody(header, body);
+			}
+			else
+				sendError(header, body, 404);
 		}
 		else
-			sendError(header, body, 404);
+		{
+			std::cout << "path handlepathdir : " << path << std::endl;
+			check = body.checkBody(path.c_str());
+			if (check == 0)
+			{
+				displayAutoindex(header, body, path);
+			}
+			else
+				sendError(header, body, 404);
+		}
 	}
 }
 
@@ -418,7 +443,7 @@ bool Response::isMethodAllowed(std::string method)
 
 void Response::sendHeaderAndBody(HeaderResponse & header, BodyResponse & body)
 {
-	header.sendHeader(true, this->_to_close);
+	header.sendHeader(this->_to_close);
 	body.sendBody(header);
 }
 

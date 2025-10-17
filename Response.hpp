@@ -61,6 +61,7 @@ class Response
 		bool _to_close;
 		std::string _begin_405;
 		std::string _end_405;
+		std::string _path_unchanged;
 
 	protected:
 		std::string _status;

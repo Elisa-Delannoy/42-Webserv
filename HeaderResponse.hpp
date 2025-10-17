@@ -9,10 +9,11 @@ class HeaderResponse : public Response
 		HeaderResponse(ServerConf & servers, Clients* client, std::string & path, std::string version);
 		~HeaderResponse();
 
-		void 		sendHeader(bool has_body, bool & to_close);
+		void 		sendHeader(bool & to_close);
 
 		void 		setHeader(int code, std::vector<std::string> & methods);
 		void 		setHeaderCGI(std::string header);
+		void		setRedirect();
 		std::string setStatus(std::string code);
 		std::string setContentType();
 		std::string setSize(const char* path_image);
@@ -33,6 +34,7 @@ class HeaderResponse : public Response
 		std::string _allow;
 		std::string _accept;
 		std::string _header_cgi;
+		std::string _location;
 		int 		_close_alive;
 };
 

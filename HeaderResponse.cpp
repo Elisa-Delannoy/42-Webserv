@@ -15,17 +15,17 @@ HeaderResponse::~HeaderResponse()
 
 }
 
-void HeaderResponse::sendHeader(bool has_body, bool & to_close)
+void HeaderResponse::sendHeader(bool & to_close)
 {
 	if (to_close)
 	{
 		this->_connection = "Connection: close\r\n";
 		this->_close_alive = 0;
 	}
-	this->_header = this->_status + this->_header_cgi + this->_content_type + this->_allow
-		+ this->_content_length + this->_connection;
-	if (has_body)
-		this->_header += "\r\n";
+	this->_header = this->_status + this->_location + this->_header_cgi + this->_content_type
+		+ this->_allow + this->_content_length + this->_connection + "\r\n";
+
+	std::cout << "header : " << this->_header << std::endl;
 
 	ssize_t total_sent = 0;
 	ssize_t to_send = this->_header.size();
@@ -46,6 +46,14 @@ void HeaderResponse::sendHeader(bool has_body, bool & to_close)
 		}
 		total_sent += sent;
 	}
+}
+
+void HeaderResponse::setRedirect()
+{
+	this->_status = setStatus(" 301 Moved Permanently\r\n");
+	this->_connection = "Connection: keep-alive\r\n";
+	this->_content_length = "Content-Length: 0\r\n";
+	this->_location = "Location: /\r\n";
 }
 
 void HeaderResponse::setHeaderCGI(std::string header)
